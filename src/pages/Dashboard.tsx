@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ManualForm } from "@/components/ManualForm";
 import { ExcelUpload } from "@/components/ExcelUpload";
+import { PasswordReset } from "@/components/PasswordReset";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
@@ -14,22 +15,16 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [requiresPasswordReset, setRequiresPasswordReset] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check authentication
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        setLoading(false);
-      } else {
-        navigate("/auth");
-      }
-    });
+    checkAuthAndProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        setLoading(false);
+        checkProfile(session.user.id);
       } else {
         navigate("/auth");
       }
@@ -37,6 +32,43 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const checkAuthAndProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      setUser(session.user);
+      await checkProfile(session.user.id);
+    } else {
+      navigate("/auth");
+    }
+  };
+
+  const checkProfile = async (userId: string) => {
+    // Check if password reset is required
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("requires_password_reset")
+      .eq("id", userId)
+      .single();
+
+    if (profile?.requires_password_reset) {
+      setRequiresPasswordReset(true);
+      setLoading(false);
+      return;
+    }
+
+    // Check if user is admin
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    setIsAdmin(roleData?.role === "admin");
+    setRequiresPasswordReset(false);
+    setLoading(false);
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -55,20 +87,40 @@ const Dashboard = () => {
     );
   }
 
+  if (requiresPasswordReset && user) {
+    return (
+      <PasswordReset 
+        userId={user.id} 
+        onComplete={() => {
+          setRequiresPasswordReset(false);
+          checkAuthAndProfile();
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h1 className="text-5xl font-black bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent tracking-tight">
               LEAP
             </h1>
-            <p className="text-xs text-muted-foreground">Lead Enrichment & Automation Platform</p>
+            <p className="text-sm text-muted-foreground mt-1 tracking-wide">Lead Enrichment & Automation Platform</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button variant="secondary" size="sm" onClick={() => navigate("/admin")}>
+                <Shield className="mr-2 h-4 w-4" />
+                Admin Panel
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 

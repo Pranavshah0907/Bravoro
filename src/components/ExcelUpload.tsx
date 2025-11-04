@@ -15,26 +15,9 @@ interface ExcelUploadProps {
 export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [searchId, setSearchId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | null>(null);
-
-  useEffect(() => {
-    // Load webhook URL from settings
-    const loadWebhookUrl = async () => {
-      const { data } = await supabase
-        .from("webhook_settings")
-        .select("webhook_url")
-        .eq("user_id", userId)
-        .single();
-      
-      if (data?.webhook_url) {
-        setWebhookUrl(data.webhook_url);
-      }
-    };
-    loadWebhookUrl();
-  }, [userId]);
 
   const handleDownloadTemplate = () => {
     // Create CSV template
@@ -90,26 +73,9 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       return;
     }
 
-    if (!webhookUrl.trim()) {
-      toast({
-        title: "Webhook URL Required",
-        description: "Please enter your n8n webhook URL",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Save webhook URL if changed
-      await supabase
-        .from("webhook_settings")
-        .upsert({
-          user_id: userId,
-          webhook_url: webhookUrl.trim(),
-        });
-
       // Create search record
       const { data: search, error: searchError } = await supabase
         .from("searches")
@@ -129,64 +95,13 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
 
       // Convert file to base64
       const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const base64Content = reader.result?.toString().split(",")[1];
+      toast({
+        title: "File Uploaded",
+        description: "Your Excel file is being processed",
+      });
+      
+      setLoading(false);
 
-          // Send to n8n webhook
-          const response = await fetch(webhookUrl.trim(), {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              searchId: search.id,
-              fileName: selectedFile.name,
-              fileContent: base64Content,
-              timestamp: new Date().toISOString(),
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Webhook request failed with status ${response.status}`);
-          }
-
-          toast({
-            title: "File Uploaded",
-            description: "Your Excel file is being processed",
-          });
-        } catch (webhookError: any) {
-          // Update search status to error
-          await supabase
-            .from("searches")
-            .update({
-              status: "error",
-              error_message: webhookError.message,
-            })
-            .eq("id", search.id);
-
-          setProcessingStatus("error");
-          
-          toast({
-            title: "Upload Failed",
-            description: webhookError.message,
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      reader.onerror = () => {
-        toast({
-          title: "File Read Error",
-          description: "Failed to read the file",
-          variant: "destructive",
-        });
-        setLoading(false);
-      };
-
-      reader.readAsDataURL(selectedFile);
     } catch (error: any) {
       toast({
         title: "Submission Failed",
@@ -216,18 +131,6 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="webhook-excel">n8n Webhook URL *</Label>
-          <Input
-            id="webhook-excel"
-            type="url"
-            placeholder="https://your-n8n-instance.com/webhook/..."
-            value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
-            required
-          />
-        </div>
-
         <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg bg-muted/20">
           <FileSpreadsheet className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">Download Template First</h3>
@@ -260,7 +163,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
           <Button
             type="submit"
             className="w-full"
-            disabled={!selectedFile || !webhookUrl.trim() || loading}
+            disabled={!selectedFile || loading}
           >
             {loading ? (
               <>

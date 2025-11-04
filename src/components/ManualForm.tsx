@@ -14,12 +14,28 @@ import { z } from "zod";
 const COUNTRIES = [
   "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", 
   "India", "China", "Japan", "Brazil", "Mexico", "Spain", "Italy", "Netherlands",
-  "Singapore", "Switzerland", "Sweden", "Norway", "Denmark", "Finland"
+  "Singapore", "Switzerland", "Sweden", "Norway", "Denmark", "Finland", "Belgium",
+  "Austria", "Ireland", "Poland", "Czech Republic", "Portugal", "Greece", "Hungary",
+  "Romania", "South Korea", "Malaysia", "Thailand", "Indonesia", "Philippines",
+  "Vietnam", "United Arab Emirates", "Saudi Arabia", "Israel", "Turkey", "Egypt",
+  "South Africa", "Nigeria", "Kenya", "Argentina", "Chile", "Colombia", "Peru"
 ].sort();
 
 const SENIORITY_LEVELS = [
-  "C-Level", "VP", "Director", "Manager", "Senior", "Entry Level", "Intern"
+  "Owner", "Partner", "C-Suite (CXO)", "VP", "SVP", "EVP", "Director", 
+  "Senior Manager", "Manager", "Team Lead", "Senior", "Mid-Level", 
+  "Entry Level", "Intern", "Training"
 ];
+
+const LINKEDIN_FUNCTIONS = [
+  "Accounting", "Administrative", "Arts and Design", "Business Development",
+  "Community and Social Services", "Consulting", "Education", "Engineering",
+  "Entrepreneurship", "Finance", "Healthcare Services", "Human Resources",
+  "Information Technology", "Legal", "Marketing", "Media and Communication",
+  "Military and Protective Services", "Operations", "Product Management",
+  "Program and Project Management", "Purchasing", "Quality Assurance",
+  "Real Estate", "Research", "Sales", "Support"
+].sort();
 
 const formSchema = z.object({
   companyName: z.string().trim().min(1, "Company name is required"),
@@ -41,25 +57,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
   const [geography, setGeography] = useState("");
   const [seniority, setSeniority] = useState("");
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [searchId, setSearchId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | null>(null);
-
-  useEffect(() => {
-    // Load webhook URL from settings
-    const loadWebhookUrl = async () => {
-      const { data } = await supabase
-        .from("webhook_settings")
-        .select("webhook_url")
-        .eq("user_id", userId)
-        .single();
-      
-      if (data?.webhook_url) {
-        setWebhookUrl(data.webhook_url);
-      }
-    };
-    loadWebhookUrl();
-  }, [userId]);
 
   const handleFunctionToggle = (func: string) => {
     setSelectedFunctions((prev) =>
@@ -68,7 +67,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   };
 
   const isFormValid = () => {
-    return companyName.trim() && selectedFunctions.length > 0 && geography && seniority && webhookUrl.trim();
+    return companyName.trim() && selectedFunctions.length > 0 && geography && seniority;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,19 +83,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         seniority,
       });
 
-      if (!webhookUrl.trim()) {
-        throw new Error("Webhook URL is required");
-      }
-
       setLoading(true);
-
-      // Save webhook URL if changed
-      await supabase
-        .from("webhook_settings")
-        .upsert({
-          user_id: userId,
-          webhook_url: webhookUrl.trim(),
-        });
 
       // Create search record
       const { data: search, error: searchError } = await supabase
@@ -119,45 +106,10 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
       setSearchId(search.id);
       setProcessingStatus("processing");
 
-      // Send to n8n webhook
-      try {
-        const response = await fetch(webhookUrl.trim(), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            searchId: search.id,
-            companyName: companyName.trim(),
-            domain: domain.trim() || null,
-            functions: selectedFunctions,
-            geography,
-            seniority,
-            timestamp: new Date().toISOString(),
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Webhook request failed with status ${response.status}`);
-        }
-
-        toast({
-          title: "Request Submitted",
-          description: "Your lead enrichment request is being processed",
-        });
-      } catch (webhookError: any) {
-        // Update search status to error
-        await supabase
-          .from("searches")
-          .update({
-            status: "error",
-            error_message: webhookError.message,
-          })
-          .eq("id", search.id);
-
-        setProcessingStatus("error");
-        throw webhookError;
-      }
+      toast({
+        title: "Request Submitted",
+        description: "Your lead enrichment request is being processed",
+      });
     } catch (error: any) {
       toast({
         title: "Submission Failed",
@@ -194,18 +146,6 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="webhook">n8n Webhook URL *</Label>
-            <Input
-              id="webhook"
-              type="url"
-              placeholder="https://your-n8n-instance.com/webhook/..."
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="company">Company Name *</Label>
             <Input
               id="company"
@@ -228,22 +168,27 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Functions *</Label>
-            <div className="space-y-2">
-              {["Sales", "Marketing", "Accounting"].map((func) => (
+          <div className="space-y-3">
+            <Label>Functions * (Select all that apply)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 border rounded-lg bg-muted/20">
+              {LINKEDIN_FUNCTIONS.map((func) => (
                 <div key={func} className="flex items-center space-x-2">
                   <Checkbox
                     id={func}
                     checked={selectedFunctions.includes(func)}
                     onCheckedChange={() => handleFunctionToggle(func)}
                   />
-                  <Label htmlFor={func} className="font-normal cursor-pointer">
+                  <Label htmlFor={func} className="font-normal cursor-pointer text-sm">
                     {func}
                   </Label>
                 </div>
               ))}
             </div>
+            {selectedFunctions.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Selected: {selectedFunctions.length} function(s)
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
