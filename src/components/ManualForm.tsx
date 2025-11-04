@@ -103,6 +103,33 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
       if (searchError) throw searchError;
 
+      // Trigger N8N webhook
+      try {
+        const { error: webhookError } = await supabase.functions.invoke(
+          "trigger-n8n-webhook",
+          {
+            body: {
+              searchData: {
+                id: search.id,
+                company_name: companyName.trim(),
+                domain: domain.trim() || null,
+                functions: selectedFunctions,
+                geography,
+                seniority,
+                user_id: userId,
+                search_type: "manual",
+              },
+            },
+          }
+        );
+
+        if (webhookError) {
+          console.error("N8N webhook error:", webhookError);
+        }
+      } catch (webhookError) {
+        console.error("N8N webhook trigger failed:", webhookError);
+      }
+
       setSearchId(search.id);
       setProcessingStatus("processing");
 
