@@ -9,6 +9,8 @@ import { ManualForm } from "@/components/ManualForm";
 import { ExcelUpload } from "@/components/ExcelUpload";
 import { PasswordReset } from "@/components/PasswordReset";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import leapLogo from "@/assets/leap-logo.png";
+import leapFont from "@/assets/leap-font.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -103,11 +105,12 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-5xl font-black bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent tracking-tight">
-              LEAP
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1 tracking-wide">Lead Enrichment & Automation Platform</p>
+          <div className="flex items-center gap-4">
+            <img src={leapLogo} alt="LEAP Logo" className="h-12 w-12" />
+            <div>
+              <img src={leapFont} alt="LEAP" className="h-8" />
+              <p className="text-sm text-muted-foreground mt-1 tracking-wide">Lead Enrichment & Automation Platform</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (

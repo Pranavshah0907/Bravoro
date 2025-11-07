@@ -52,8 +52,9 @@ export type Database = {
           geography: string | null
           id: string
           result_url: string | null
+          results_per_function: number | null
           search_type: string
-          seniority: string | null
+          seniority: string[] | null
           status: string
           updated_at: string | null
           user_id: string
@@ -68,8 +69,9 @@ export type Database = {
           geography?: string | null
           id?: string
           result_url?: string | null
+          results_per_function?: number | null
           search_type: string
-          seniority?: string | null
+          seniority?: string[] | null
           status?: string
           updated_at?: string | null
           user_id: string
@@ -84,8 +86,9 @@ export type Database = {
           geography?: string | null
           id?: string
           result_url?: string | null
+          results_per_function?: number | null
           search_type?: string
-          seniority?: string | null
+          seniority?: string[] | null
           status?: string
           updated_at?: string | null
           user_id?: string

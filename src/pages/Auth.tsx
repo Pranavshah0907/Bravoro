@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogIn, Loader2, Mail, Lock } from "lucide-react";
 import { z } from "zod";
+import leapLogo from "@/assets/leap-logo.png";
+import leapFont from "@/assets/leap-font.png";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -86,11 +88,10 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
       <Card className="w-full max-w-md shadow-strong border-border/50">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto">
-            <h1 className="text-5xl font-black bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent tracking-tight">
-              LEAP
-            </h1>
-            <p className="text-sm text-muted-foreground mt-2 tracking-wide">
+          <div className="mx-auto flex flex-col items-center gap-3">
+            <img src={leapLogo} alt="LEAP Logo" className="h-16 w-16" />
+            <img src={leapFont} alt="LEAP" className="h-10" />
+            <p className="text-sm text-muted-foreground tracking-wide">
               Lead Enrichment & Automation Platform
             </p>
           </div>
