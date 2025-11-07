@@ -39,10 +39,11 @@ const LINKEDIN_FUNCTIONS = [
 
 const formSchema = z.object({
   companyName: z.string().trim().min(1, "Company name is required"),
-  domain: z.string().trim().optional(),
+  domain: z.string().trim().min(1, "Domain name is required"),
   functions: z.array(z.string()).min(1, "At least one function must be selected"),
+  seniority: z.array(z.string()).min(1, "At least one seniority level must be selected"),
   geography: z.string().min(1, "Geography is required"),
-  seniority: z.string().min(1, "Seniority level is required"),
+  resultsPerFunction: z.number().min(1, "Results per function must be at least 1"),
 });
 
 interface ManualFormProps {
@@ -55,8 +56,9 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const [companyName, setCompanyName] = useState("");
   const [domain, setDomain] = useState("");
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
+  const [selectedSeniority, setSelectedSeniority] = useState<string[]>([]);
   const [geography, setGeography] = useState("");
-  const [seniority, setSeniority] = useState("");
+  const [resultsPerFunction, setResultsPerFunction] = useState<number>(10);
   const [searchId, setSearchId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | null>(null);
 
@@ -66,8 +68,14 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
     );
   };
 
+  const handleSeniorityToggle = (level: string) => {
+    setSelectedSeniority((prev) =>
+      prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]
+    );
+  };
+
   const isFormValid = () => {
-    return companyName.trim() && selectedFunctions.length > 0 && geography && seniority;
+    return companyName.trim() && domain.trim() && selectedFunctions.length > 0 && selectedSeniority.length > 0 && geography && resultsPerFunction > 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,8 +87,9 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         companyName,
         domain,
         functions: selectedFunctions,
+        seniority: selectedSeniority,
         geography,
-        seniority,
+        resultsPerFunction,
       });
 
       setLoading(true);
@@ -92,10 +101,11 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
           user_id: userId,
           search_type: "manual",
           company_name: companyName.trim(),
-          domain: domain.trim() || null,
+          domain: domain.trim(),
           functions: selectedFunctions,
+          seniority: selectedSeniority,
           geography,
-          seniority,
+          results_per_function: resultsPerFunction,
           status: "processing",
         })
         .select()
@@ -112,10 +122,11 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               searchData: {
                 id: search.id,
                 company_name: companyName.trim(),
-                domain: domain.trim() || null,
+                domain: domain.trim(),
                 functions: selectedFunctions,
+                seniority: selectedSeniority,
                 geography,
-                seniority,
+                results_per_function: resultsPerFunction,
                 user_id: userId,
                 search_type: "manual",
               },
@@ -152,8 +163,9 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
     setCompanyName("");
     setDomain("");
     setSelectedFunctions([]);
+    setSelectedSeniority([]);
     setGeography("");
-    setSeniority("");
+    setResultsPerFunction(10);
     setSearchId(null);
     setProcessingStatus(null);
   };
@@ -185,13 +197,14 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="domain">Domain Name (Optional)</Label>
+            <Label htmlFor="domain">Domain Name *</Label>
             <Input
               id="domain"
               type="text"
               placeholder="acme.com"
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
+              required
             />
           </div>
 
@@ -218,6 +231,42 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             )}
           </div>
 
+          <div className="space-y-3">
+            <Label>Seniority Level * (Select all that apply)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 border rounded-lg bg-muted/20">
+              {SENIORITY_LEVELS.map((level) => (
+                <div key={level} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={level}
+                    checked={selectedSeniority.includes(level)}
+                    onCheckedChange={() => handleSeniorityToggle(level)}
+                  />
+                  <Label htmlFor={level} className="font-normal cursor-pointer text-sm">
+                    {level}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {selectedSeniority.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Selected: {selectedSeniority.length} seniority level(s)
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="resultsPerFunction">Results Per Function *</Label>
+            <Input
+              id="resultsPerFunction"
+              type="number"
+              min="1"
+              placeholder="10"
+              value={resultsPerFunction}
+              onChange={(e) => setResultsPerFunction(parseInt(e.target.value) || 0)}
+              required
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="geography">Geography *</Label>
             <Select value={geography} onValueChange={setGeography} required>
@@ -228,22 +277,6 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 {COUNTRIES.map((country) => (
                   <SelectItem key={country} value={country}>
                     {country}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="seniority">Seniority Level *</Label>
-            <Select value={seniority} onValueChange={setSeniority} required>
-              <SelectTrigger id="seniority">
-                <SelectValue placeholder="Select seniority level" />
-              </SelectTrigger>
-              <SelectContent>
-                {SENIORITY_LEVELS.map((level) => (
-                  <SelectItem key={level} value={level}>
-                    {level}
                   </SelectItem>
                 ))}
               </SelectContent>
