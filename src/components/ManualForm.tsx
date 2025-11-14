@@ -113,37 +113,32 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
       if (searchError) throw searchError;
 
-      // Trigger N8N webhook
-      try {
-        const { error: webhookError } = await supabase.functions.invoke(
-          "trigger-n8n-webhook",
-          {
-            body: {
-              searchId: search.id,
-              searchData: {
-                id: search.id,
-                company_name: companyName.trim(),
-                domain: domain.trim(),
-                functions: selectedFunctions,
-                seniority: selectedSeniority,
-                geography,
-                results_per_function: resultsPerFunction,
-                user_id: userId,
-                search_type: "manual",
-              },
-            },
-          }
-        );
-
-        if (webhookError) {
-          console.error("N8N webhook error:", webhookError);
-        }
-      } catch (webhookError) {
-        console.error("N8N webhook trigger failed:", webhookError);
-      }
-
+      // Immediately show processing status
       setSearchId(search.id);
       setProcessingStatus("processing");
+
+      // Trigger N8N webhook in background (don't await)
+      supabase.functions.invoke(
+        "trigger-n8n-webhook",
+        {
+          body: {
+            searchId: search.id,
+            searchData: {
+              id: search.id,
+              company_name: companyName.trim(),
+              domain: domain.trim(),
+              functions: selectedFunctions,
+              seniority: selectedSeniority,
+              geography,
+              results_per_function: resultsPerFunction,
+              user_id: userId,
+              search_type: "manual",
+            },
+          },
+        }
+      ).catch((webhookError) => {
+        console.error("N8N webhook trigger failed:", webhookError);
+      });
 
       toast({
         title: "Request Submitted",
