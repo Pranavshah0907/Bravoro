@@ -48,7 +48,7 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('id', searchId);
-    } else if (result.status === 'completed') {
+    } else if (result.status === 'completed' || result.status === 'success') {
       await supabase
         .from('searches')
         .update({
