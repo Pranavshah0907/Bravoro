@@ -77,9 +77,31 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
     };
   }, [searchId, toast]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (resultUrl) {
-      window.open(resultUrl, "_blank");
+      try {
+        // Extract file ID from Google Sheets URL and convert to download URL
+        const fileIdMatch = resultUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (fileIdMatch) {
+          const fileId = fileIdMatch[1];
+          const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
+          
+          // Create a temporary anchor element to trigger download
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = 'enriched-leads.xlsx';
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else {
+          // Fallback if URL format is different
+          window.open(resultUrl, "_blank");
+        }
+      } catch (error) {
+        console.error('Download error:', error);
+        window.open(resultUrl, "_blank");
+      }
     }
   };
 
