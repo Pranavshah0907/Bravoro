@@ -86,14 +86,8 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
           const fileId = fileIdMatch[1];
           const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
           
-          // Create a temporary anchor element to trigger download
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.download = 'enriched-leads.xlsx';
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          // Open download URL in new window - browser will trigger download
+          window.open(downloadUrl, "_blank");
         } else {
           // Fallback if URL format is different
           window.open(resultUrl, "_blank");
