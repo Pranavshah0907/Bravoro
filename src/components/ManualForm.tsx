@@ -119,6 +119,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
           "trigger-n8n-webhook",
           {
             body: {
+              searchId: search.id,
               searchData: {
                 id: search.id,
                 company_name: companyName.trim(),
