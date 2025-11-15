@@ -49,11 +49,14 @@ serve(async (req) => {
         })
         .eq('id', searchId);
     } else if (result.status === 'completed' || result.status === 'success') {
+      // Construct download URL from file_id
+      const downloadUrl = `https://n8n.srv1081444.hstgr.cloud/webhook-test/download?fileId=${result.file_id}`;
+      
       await supabase
         .from('searches')
         .update({
           status: 'completed',
-          result_url: result.result_url,
+          result_url: downloadUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', searchId);

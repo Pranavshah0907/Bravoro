@@ -34,11 +34,17 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
           setStatus(newStatus);
           
           if (newStatus === "completed") {
-            setResultUrl(payload.new.result_url);
-            toast({
-              title: "Processing Complete",
-              description: "Your results are ready to download",
-            });
+            const url = payload.new.result_url;
+            setResultUrl(url);
+            
+            // Auto-trigger download
+            if (url) {
+              window.open(url, "_blank");
+              toast({
+                title: "Report Downloaded Successfully!",
+                description: "Your enriched data has been downloaded",
+              });
+            }
           } else if (newStatus === "error") {
             setErrorMessage(payload.new.error_message);
             toast({
@@ -62,8 +68,15 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
       if (data) {
         const searchStatus = data.status as "processing" | "completed" | "error";
         setStatus(searchStatus);
-        if (searchStatus === "completed") {
+        if (searchStatus === "completed" && data.result_url) {
           setResultUrl(data.result_url);
+          
+          // Auto-trigger download if already completed
+          window.open(data.result_url, "_blank");
+          toast({
+            title: "Report Downloaded Successfully!",
+            description: "Your enriched data has been downloaded",
+          });
         } else if (searchStatus === "error") {
           setErrorMessage(data.error_message);
         }
@@ -77,25 +90,9 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
     };
   }, [searchId, toast]);
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (resultUrl) {
-      try {
-        // Extract file ID from Google Sheets URL and convert to download URL
-        const fileIdMatch = resultUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-        if (fileIdMatch) {
-          const fileId = fileIdMatch[1];
-          const downloadUrl = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
-          
-          // Open download URL in new window - browser will trigger download
-          window.open(downloadUrl, "_blank");
-        } else {
-          // Fallback if URL format is different
-          window.open(resultUrl, "_blank");
-        }
-      } catch (error) {
-        console.error('Download error:', error);
-        window.open(resultUrl, "_blank");
-      }
+      window.open(resultUrl, "_blank");
     }
   };
 
