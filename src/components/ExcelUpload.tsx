@@ -19,20 +19,32 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const [searchId, setSearchId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | null>(null);
 
-  const handleDownloadTemplate = () => {
-    // Download the Excel template
-    const link = document.createElement("a");
-    link.setAttribute("href", "/Final_template.xlsm");
-    link.setAttribute("download", "Final_template.xlsm");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch("/Final_template.xlsm");
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Final_template.xlsm";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
-    toast({
-      title: "Template Downloaded",
-      description: "Fill in the template and upload it back",
-    });
+      toast({
+        title: "Template Downloaded",
+        description: "Fill in the template and upload it back",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
