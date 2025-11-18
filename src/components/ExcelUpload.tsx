@@ -20,13 +20,10 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | null>(null);
 
   const handleDownloadTemplate = () => {
-    // Create CSV template
-    const csvContent = "Company Name,Domain,Functions,Geography,Seniority\nAcme Corp,acme.com,\"Sales,Marketing\",United States,C-Level\n";
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    // Download the Excel template
     const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "leap_template.csv");
+    link.setAttribute("href", "/Final_template.xlsm");
+    link.setAttribute("download", "Final_template.xlsm");
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -45,13 +42,14 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       const validTypes = [
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel.sheet.macroEnabled.12",
         "text/csv",
       ];
       
-      if (!validTypes.includes(file.type) && !file.name.endsWith(".csv") && !file.name.endsWith(".xlsx")) {
+      if (!validTypes.includes(file.type) && !file.name.endsWith(".csv") && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xlsm")) {
         toast({
           title: "Invalid File Type",
-          description: "Please upload an Excel (.xlsx) or CSV file",
+          description: "Please upload an Excel (.xlsx, .xlsm) or CSV file",
           variant: "destructive",
         });
         return;
@@ -93,8 +91,20 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       setSearchId(search.id);
       setProcessingStatus("processing");
 
-      // Convert file to base64
-      const reader = new FileReader();
+      // Send file to N8N webhook with binary data field named 'data'
+      const formData = new FormData();
+      formData.append('data', selectedFile);
+      formData.append('searchId', search.id);
+
+      const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook-test/upload-excel', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!webhookResponse.ok) {
+        throw new Error('Failed to upload file to webhook');
+      }
+
       toast({
         title: "File Uploaded",
         description: "Your Excel file is being processed",
@@ -149,7 +159,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
             <Input
               id="file"
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls,.xlsm,.csv"
               onChange={handleFileChange}
               required
             />
