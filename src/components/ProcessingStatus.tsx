@@ -17,6 +17,34 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const handleDownload = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'leap_results.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "Report Downloaded Successfully!",
+        description: "Your enriched data has been downloaded",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download the file. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     // Subscribe to real-time updates
     const channel = supabase
@@ -39,11 +67,7 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
             
             // Auto-trigger download
             if (url) {
-              window.open(url, "_blank");
-              toast({
-                title: "Report Downloaded Successfully!",
-                description: "Your enriched data has been downloaded",
-              });
+              handleDownload(url);
             }
           } else if (newStatus === "error") {
             setErrorMessage(payload.new.error_message);
@@ -72,11 +96,7 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
           setResultUrl(data.result_url);
           
           // Auto-trigger download if already completed
-          window.open(data.result_url, "_blank");
-          toast({
-            title: "Report Downloaded Successfully!",
-            description: "Your enriched data has been downloaded",
-          });
+          handleDownload(data.result_url);
         } else if (searchStatus === "error") {
           setErrorMessage(data.error_message);
         }
@@ -89,12 +109,6 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
       supabase.removeChannel(channel);
     };
   }, [searchId, toast]);
-
-  const handleDownload = () => {
-    if (resultUrl) {
-      window.open(resultUrl, "_blank");
-    }
-  };
 
   return (
     <Card className="shadow-soft">
@@ -120,7 +134,7 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
             <p className="text-sm text-muted-foreground text-center mb-6">
               Your enriched data is ready to download
             </p>
-            <Button onClick={handleDownload} size="lg" className="mb-4">
+            <Button onClick={() => resultUrl && handleDownload(resultUrl)} size="lg" className="mb-4">
               <Download className="mr-2 h-5 w-5" />
               Download Results
             </Button>
