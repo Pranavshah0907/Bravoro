@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield } from "lucide-react";
+import { LogOut, Shield, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ManualForm } from "@/components/ManualForm";
 import { ExcelUpload } from "@/components/ExcelUpload";
@@ -113,13 +113,17 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/results")}>
+              <FileText className="mr-2 h-4 w-4" />
+              View Results
+            </Button>
             {isAdmin && (
               <Button variant="secondary" size="sm" onClick={() => navigate("/admin")}>
                 <Shield className="mr-2 h-4 w-4" />
                 Admin Panel
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </Button>

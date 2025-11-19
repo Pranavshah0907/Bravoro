@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2, FileSpreadsheet } from "lucide-react";
-import { ProcessingStatus } from "./ProcessingStatus";
+import { Download, Upload, Loader2 } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 interface ExcelUploadProps {
   userId: string;
@@ -16,8 +16,6 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [searchId, setSearchId] = useState<string | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | null>(null);
 
   const handleDownloadTemplate = async () => {
     try {
@@ -50,7 +48,6 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file type
       const validTypes = [
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -71,6 +68,32 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
     }
   };
 
+  const parseExcelToJSON = async (file: File): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          
+          const result: any = {};
+          workbook.SheetNames.forEach(sheetName => {
+            const worksheet = workbook.Sheets[sheetName];
+            result[sheetName] = XLSX.utils.sheet_to_json(worksheet);
+          });
+          
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsBinaryString(file);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -86,120 +109,128 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
     setLoading(true);
 
     try {
-      // Create search record
-      const { data: search, error: searchError } = await supabase
-        .from("searches")
+      // Step 1: Parse Excel to JSON
+      console.log('Parsing Excel file...');
+      const excelData = await parseExcelToJSON(selectedFile);
+      
+      // Step 2: Insert job record into Supabase
+      console.log('Creating job record...');
+      const { data: job, error: jobError } = await supabase
+        .from("jobs")
         .insert({
           user_id: userId,
-          search_type: "excel",
-          status: "processing",
-          excel_file_name: selectedFile.name,
+          status: "pending",
         })
         .select()
         .single();
 
-      if (searchError) throw searchError;
+      if (jobError) throw jobError;
 
-      setSearchId(search.id);
-      setProcessingStatus("processing");
+      console.log('Job created with ID:', job.id);
 
-      // Send file to N8N webhook with binary data field named 'data'
-      const formData = new FormData();
-      formData.append('data', selectedFile);
-      formData.append('searchId', search.id);
-
-      const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook-test/upload-excel', {
+      // Step 3: Send data to N8N webhook
+      const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/2116f42f-51a7-448b-8b17-06dc01a6a91d';
+      
+      const webhookResponse = await fetch(n8nWebhookUrl, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          job_id: job.id,
+          data: excelData
+        }),
       });
 
       if (!webhookResponse.ok) {
-        throw new Error('Failed to upload file to webhook');
+        throw new Error(`N8N webhook failed with status: ${webhookResponse.status}`);
       }
 
-      toast({
-        title: "File Uploaded",
-        description: "Your Excel file is being processed",
-      });
-      
-      setLoading(false);
+      console.log('Webhook triggered successfully');
 
-    } catch (error: any) {
       toast({
-        title: "Submission Failed",
-        description: error.message,
+        title: "Processing Started",
+        description: "Your request is being processed. You will receive an email when your results are ready.",
+      });
+
+      // Reset form
+      setSelectedFile(null);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast({
+        title: "Processing Failed",
+        description: error instanceof Error ? error.message : "Failed to process your request",
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleReset = () => {
-    setSelectedFile(null);
-    setSearchId(null);
-    setProcessingStatus(null);
-  };
-
-  if (searchId && processingStatus) {
-    return <ProcessingStatus searchId={searchId} onReset={handleReset} />;
-  }
-
   return (
-    <Card className="shadow-soft">
+    <Card className="border-border/50 shadow-lg">
       <CardHeader>
-        <CardTitle>Excel Upload</CardTitle>
+        <CardTitle className="text-2xl">Excel Upload</CardTitle>
         <CardDescription>
-          Upload a filled template to submit multiple lead enrichment requests
+          Download the template, fill it with your data, and upload it back
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg bg-muted/20">
-          <FileSpreadsheet className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">Download Template First</h3>
-          <p className="text-sm text-muted-foreground text-center mb-4">
-            Download our Excel template, fill it with your data, and upload it back
-          </p>
-          <Button type="button" variant="outline" onClick={handleDownloadTemplate}>
-            <Download className="mr-2 h-4 w-4" />
-            Download Template
-          </Button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="file">Upload Filled Template</Label>
-            <Input
-              id="file"
-              type="file"
-              accept=".xlsx,.xls,.xlsm,.csv"
-              onChange={handleFileChange}
-              required
-            />
-            {selectedFile && (
-              <p className="text-sm text-muted-foreground">
-                Selected: {selectedFile.name}
-              </p>
-            )}
-          </div>
-
+        <div className="space-y-4">
           <Button
-            type="submit"
+            onClick={handleDownloadTemplate}
+            variant="outline"
             className="w-full"
-            disabled={!selectedFile || loading}
+            size="lg"
           >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload & Submit
-              </>
-            )}
+            <Download className="mr-2 h-5 w-5" />
+            Download Excel Template
           </Button>
-        </form>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="excel-file">Upload Filled Template</Label>
+              <Input
+                id="excel-file"
+                type="file"
+                accept=".xlsx,.xlsm,.csv"
+                onChange={handleFileChange}
+                disabled={loading}
+                className="cursor-pointer"
+              />
+            </div>
+
+            {selectedFile && (
+              <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+                <p className="text-sm text-muted-foreground">
+                  Selected: <span className="text-foreground font-medium">{selectedFile.name}</span>
+                </p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={!selectedFile || loading}
+              className="w-full"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-5 w-5" />
+                  Upload & Process
+                </>
+              )}
+            </Button>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );
