@@ -24,20 +24,24 @@ import { Badge } from "@/components/ui/badge";
 import leapLogo from "@/assets/leap-logo.png";
 import leapFont from "@/assets/leap-font.png";
 
-interface Job {
+interface Search {
   id: string;
   status: string;
   created_at: string;
-  completed_at: string | null;
-  result_file_url: string | null;
+  updated_at: string | null;
+  result_url: string | null;
   error_message: string | null;
+  excel_file_name: string | null;
+  search_type: string;
+  company_name: string | null;
+  domain: string | null;
 }
 
 const Results = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [searches, setSearches] = useState<Search[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
 
@@ -47,7 +51,7 @@ const Results = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        fetchJobs(session.user.id);
+        fetchSearches(session.user.id);
       } else {
         navigate("/auth");
       }
@@ -59,7 +63,7 @@ const Results = () => {
   useEffect(() => {
     if (user) {
       const interval = setInterval(() => {
-        fetchJobs(user.id);
+        fetchSearches(user.id);
       }, 10000); // Auto-refresh every 10 seconds
 
       return () => clearInterval(interval);
@@ -71,29 +75,29 @@ const Results = () => {
     
     if (session?.user) {
       setUser(session.user);
-      await fetchJobs(session.user.id);
+      await fetchSearches(session.user.id);
     } else {
       navigate("/auth");
     }
   };
 
-  const fetchJobs = async (userId: string) => {
+  const fetchSearches = async (userId: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("jobs")
+        .from("searches")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      setJobs(data || []);
+      setSearches(data || []);
     } catch (error) {
-      console.error("Error fetching jobs:", error);
+      console.error("Error fetching searches:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch job results",
+        description: "Failed to fetch search results",
         variant: "destructive",
       });
     } finally {
@@ -160,9 +164,9 @@ const Results = () => {
     }
   };
 
-  const filteredJobs = jobs.filter(job => {
+  const filteredSearches = searches.filter(search => {
     if (filter === "all") return true;
-    return job.status === filter;
+    return search.status === filter;
   });
 
   return (
@@ -192,8 +196,8 @@ const Results = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold">Job Results</h1>
-              <p className="text-muted-foreground mt-1">Track your processing requests</p>
+              <h1 className="text-3xl font-bold">Search Results</h1>
+              <p className="text-muted-foreground mt-1">Track your enrichment requests</p>
             </div>
             <div className="flex items-center gap-4">
               <Select value={filter} onValueChange={setFilter}>
@@ -211,7 +215,7 @@ const Results = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => user && fetchJobs(user.id)}
+                onClick={() => user && fetchSearches(user.id)}
                 disabled={loading}
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -225,45 +229,57 @@ const Results = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px]">#</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Details</TableHead>
                   <TableHead>Created At</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Completed At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading && jobs.length === 0 ? (
+                {loading && searches.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Loading...
                     </TableCell>
                   </TableRow>
-                ) : filteredJobs.length === 0 ? (
+                ) : filteredSearches.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No jobs found
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No searches found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredJobs.map((job, index) => (
-                    <TableRow key={job.id}>
+                  filteredSearches.map((search, index) => (
+                    <TableRow key={search.id}>
                       <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>{new Date(job.created_at).toLocaleString()}</TableCell>
-                      <TableCell>{getStatusBadge(job.status)}</TableCell>
                       <TableCell>
-                        {job.completed_at ? new Date(job.completed_at).toLocaleString() : "-"}
+                        <Badge variant={search.search_type === "bulk" ? "default" : "secondary"}>
+                          {search.search_type === "bulk" ? "Bulk Upload" : "Manual Entry"}
+                        </Badge>
                       </TableCell>
+                      <TableCell>
+                        {search.search_type === "bulk" && search.excel_file_name ? (
+                          <span className="text-sm">{search.excel_file_name}</span>
+                        ) : search.company_name ? (
+                          <span className="text-sm">{search.company_name}</span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
+                      <TableCell>{getStatusBadge(search.status)}</TableCell>
                       <TableCell className="text-right">
-                        {job.status === "completed" && job.result_file_url ? (
+                        {search.status === "completed" && search.result_url ? (
                           <Button
                             size="sm"
-                            onClick={() => handleDownload(job.result_file_url!)}
+                            onClick={() => handleDownload(search.result_url!)}
                           >
                             <Download className="h-4 w-4 mr-2" />
                             Download
                           </Button>
-                        ) : job.status === "error" && job.error_message ? (
-                          <span className="text-sm text-destructive">{job.error_message}</span>
+                        ) : search.status === "error" && search.error_message ? (
+                          <span className="text-sm text-destructive">{search.error_message}</span>
                         ) : (
                           <span className="text-sm text-muted-foreground">-</span>
                         )}

@@ -19,17 +19,17 @@ serve(async (req) => {
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const jobId = formData.get('job_id') as string;
+    const searchId = formData.get('search_id') as string;
 
-    if (!file || !jobId) {
+    if (!file || !searchId) {
       return new Response(
-        JSON.stringify({ error: 'Missing file or job_id' }),
+        JSON.stringify({ error: 'Missing file or search_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const fileBuffer = await file.arrayBuffer();
-    const fileName = `${jobId}_result.xlsx`;
+    const fileName = `${searchId}_result.xlsx`;
 
     // Upload to storage
     const { error: uploadError } = await supabaseClient.storage
@@ -47,15 +47,15 @@ serve(async (req) => {
       );
     }
 
-    // Update job status
+    // Update search status
     const { error: updateError } = await supabaseClient
-      .from('jobs')
+      .from('searches')
       .update({
         status: 'completed',
-        result_file_url: fileName,
-        completed_at: new Date().toISOString()
+        result_url: fileName,
+        updated_at: new Date().toISOString()
       })
-      .eq('id', jobId);
+      .eq('id', searchId);
 
     if (updateError) {
       console.error('Update error:', updateError);

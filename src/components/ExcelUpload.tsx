@@ -113,20 +113,22 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       console.log('Parsing Excel file...');
       const excelData = await parseExcelToJSON(selectedFile);
       
-      // Step 2: Insert job record into Supabase
-      console.log('Creating job record...');
-      const { data: job, error: jobError } = await supabase
-        .from("jobs")
+      // Step 2: Insert search record into Supabase
+      console.log('Creating search record...');
+      const { data: search, error: searchError } = await supabase
+        .from("searches")
         .insert({
           user_id: userId,
-          status: "pending",
+          search_type: "bulk",
+          excel_file_name: selectedFile.name,
+          status: "processing",
         })
         .select()
         .single();
 
-      if (jobError) throw jobError;
+      if (searchError) throw searchError;
 
-      console.log('Job created with ID:', job.id);
+      console.log('Search created with ID:', search.id);
 
       // Step 3: Send data to N8N webhook
       const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/upload-excel';
@@ -137,7 +139,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          job_id: job.id,
+          search_id: search.id,
           data: excelData
         }),
       });
@@ -173,7 +175,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   return (
     <Card className="border-border/50 shadow-lg">
       <CardHeader>
-        <CardTitle className="text-2xl">Excel Upload</CardTitle>
+        <CardTitle className="text-2xl">Bulk Upload</CardTitle>
         <CardDescription>
           Download the template, fill it with your data, and upload it back
         </CardDescription>

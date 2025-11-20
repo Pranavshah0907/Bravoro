@@ -142,14 +142,14 @@ const Dashboard = () => {
         <Tabs defaultValue="manual" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-            <TabsTrigger value="excel">Excel Upload</TabsTrigger>
+            <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
           </TabsList>
 
           <TabsContent value="manual">
             <ManualForm userId={user?.id || ""} />
           </TabsContent>
 
-          <TabsContent value="excel">
+          <TabsContent value="bulk">
             <ExcelUpload userId={user?.id || ""} />
           </TabsContent>
         </Tabs>
