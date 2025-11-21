@@ -27,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending welcome email to:", email);
 
     const emailResponse = await resend.emails.send({
-      from: "LEAP <onboarding@resend.dev>",
+      from: "LEAP <noreply@leap.com>",
       to: [email],
       subject: "Welcome to LEAP - Your Account Details",
       html: `
