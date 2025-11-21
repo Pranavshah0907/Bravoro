@@ -137,6 +137,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'type_of_entry': 'bulk_upload',
         },
         body: JSON.stringify({
           search_id: search.id,
