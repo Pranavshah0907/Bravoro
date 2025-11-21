@@ -17,19 +17,30 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleDownload = async (fileName: string) => {
+  const handleDownload = async (path: string) => {
     try {
+      // If result_url is a full URL (legacy/manual results), just open it
+      if (path.startsWith("http://") || path.startsWith("https://")) {
+        window.open(path, "_blank");
+        toast({
+          title: "Report Opened",
+          description: "Your enriched data has been opened in a new tab",
+        });
+        return;
+      }
+
+      // Otherwise, treat it as a file name in the `results` storage bucket
       const { data, error } = await supabase.storage
-        .from('results')
-        .download(fileName);
+        .from("results")
+        .download(path);
 
       if (error) throw error;
 
       const blob = data;
       const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = fileName.split('/').pop() || 'leap_results.xlsx';
+      link.download = path.split("/").pop() || "leap_results.xlsx";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -40,7 +51,7 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
         description: "Your enriched data has been downloaded",
       });
     } catch (error) {
-      console.error('Download error:', error);
+      console.error("Download error:", error);
       toast({
         title: "Download Failed",
         description: "Failed to download the file. Please try again.",
