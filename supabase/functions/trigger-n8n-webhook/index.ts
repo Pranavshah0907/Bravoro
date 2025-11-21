@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { searchData, searchId } = await req.json();
+    const { searchData, searchId, entryType } = await req.json();
     console.log('Triggering N8N webhook with data:', searchData);
 
     const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/manual-entry';
@@ -22,6 +22,7 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'type_of_entry': entryType || 'manual_entry',
       },
       body: JSON.stringify(searchData),
     });

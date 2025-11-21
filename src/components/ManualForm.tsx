@@ -123,6 +123,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         {
           body: {
             searchId: search.id,
+            entryType: 'manual_entry',
             searchData: {
               id: search.id,
               company_name: companyName.trim(),
