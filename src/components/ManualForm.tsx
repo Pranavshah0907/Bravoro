@@ -125,7 +125,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             searchId: search.id,
             entryType: 'manual_entry',
             searchData: {
-              id: search.id,
+              search_id: search.id,
               company_name: companyName.trim(),
               domain: domain.trim(),
               functions: selectedFunctions,
