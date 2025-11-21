@@ -449,19 +449,21 @@ const Results = () => {
                       <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
                       <TableCell>{getStatusBadge(search.status)}</TableCell>
                       <TableCell className="text-right">
-                        {search.status === "completed" && search.result_url ? (
-                          <Button
-                            size="sm"
-                            onClick={() => handleDownload(search.result_url!)}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        ) : search.status === "error" && search.error_message ? (
-                          <span className="text-sm text-destructive">{search.error_message}</span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
+                        <div className="min-h-[40px] flex items-center justify-end">
+                          {search.status === "completed" && search.result_url ? (
+                            <Button
+                              size="sm"
+                              onClick={() => handleDownload(search.result_url!)}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                          ) : search.status === "error" && search.error_message ? (
+                            <span className="text-sm text-destructive">{search.error_message}</span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">-</span>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
