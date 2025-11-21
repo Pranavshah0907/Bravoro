@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { searchData, searchId, entryType } = await req.json();
+    const { searchData, searchId, entryType, apollo_credits = 0, cleon1_credits = 0, lusha_credits = 0 } = await req.json();
     console.log('Triggering N8N webhook with data:', searchData);
 
     const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/incoming_request';
@@ -39,6 +39,26 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Get user_id from the search record
+    const { data: searchRecord } = await supabase
+      .from('searches')
+      .select('user_id')
+      .eq('id', searchId)
+      .single();
+
+    // Store credit usage if credits are provided
+    if ((apollo_credits > 0 || cleon1_credits > 0 || lusha_credits > 0) && searchRecord?.user_id) {
+      await supabase
+        .from('credit_usage')
+        .insert({
+          user_id: searchRecord.user_id,
+          search_id: searchId,
+          apollo_credits,
+          cleon1_credits,
+          lusha_credits,
+        });
+    }
+
     // Update the search record based on n8n response
     if (result.status === 'error') {
       await supabase
@@ -61,6 +81,19 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq('id', searchId);
+
+      // Store credit usage from n8n response if provided
+      if ((result.apollo_credits > 0 || result.cleon1_credits > 0 || result.lusha_credits > 0) && searchRecord?.user_id) {
+        await supabase
+          .from('credit_usage')
+          .insert({
+            user_id: searchRecord.user_id,
+            search_id: searchId,
+            apollo_credits: result.apollo_credits || 0,
+            cleon1_credits: result.cleon1_credits || 0,
+            lusha_credits: result.lusha_credits || 0,
+          });
+      }
     }
 
     return new Response(
