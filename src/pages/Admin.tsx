@@ -137,10 +137,13 @@ const Admin = () => {
     }
 
     try {
-      // Delete user using admin API
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      // Call edge function to delete user
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "User Deleted",
@@ -169,51 +172,43 @@ const Admin = () => {
 
       setCreatingUser(true);
 
-      // Create user using admin privileges
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newUserEmail.trim(),
-        password: newUserTempPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: newUserFullName.trim(),
+      // Call edge function to create user
+      const { data, error: createError } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: newUserEmail.trim(),
+          fullName: newUserFullName.trim(),
+          tempPassword: newUserTempPassword,
         },
       });
 
-      if (authError) throw authError;
+      if (createError) throw createError;
+      if (data?.error) throw new Error(data.error);
 
-      if (authData.user) {
-        // Mark user as requiring password reset
-        await supabase
-          .from("profiles")
-          .update({ requires_password_reset: true })
-          .eq("id", authData.user.id);
-
-        // Send welcome email
-        try {
-          const websiteUrl = window.location.origin;
-          await supabase.functions.invoke("send-welcome-email", {
-            body: {
-              email: newUserEmail.trim(),
-              fullName: newUserFullName.trim(),
-              tempPassword: newUserTempPassword,
-              websiteUrl: websiteUrl,
-            },
-          });
-        } catch (emailError) {
-          console.error("Failed to send welcome email:", emailError);
-          // Don't fail user creation if email fails
-        }
-
-        toast({
-          title: "User Created",
-          description: `User ${newUserEmail} has been created and welcome email sent`,
+      // Send welcome email
+      try {
+        const websiteUrl = window.location.origin;
+        await supabase.functions.invoke("send-welcome-email", {
+          body: {
+            email: newUserEmail.trim(),
+            fullName: newUserFullName.trim(),
+            tempPassword: newUserTempPassword,
+            websiteUrl: websiteUrl,
+          },
         });
-
-        setNewUserEmail("");
-        setNewUserFullName("");
-        setNewUserTempPassword("");
-        loadUsers();
+      } catch (emailError) {
+        console.error("Failed to send welcome email:", emailError);
+        // Don't fail user creation if email fails
       }
+
+      toast({
+        title: "User Created",
+        description: `User ${newUserEmail} has been created and welcome email sent`,
+      });
+
+      setNewUserEmail("");
+      setNewUserFullName("");
+      setNewUserTempPassword("");
+      loadUsers();
     } catch (error: any) {
       toast({
         title: "Failed to Create User",
