@@ -3,8 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Download, RefreshCw } from "lucide-react";
+import { LogOut, Download, RefreshCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -146,6 +157,33 @@ const Results = () => {
     }
   };
 
+  const handleDelete = async (searchId: string) => {
+    try {
+      const { error } = await supabase
+        .from("searches")
+        .delete()
+        .eq("id", searchId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Search Deleted",
+        description: "Search entry has been removed",
+      });
+
+      if (user) {
+        fetchSearches(user.id);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the search entry",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -267,19 +305,48 @@ const Results = () => {
                       <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
                       <TableCell>{getStatusBadge(search.status)}</TableCell>
                       <TableCell className="text-right">
-                        {search.status === "completed" && search.result_url ? (
-                          <Button
-                            size="sm"
-                            onClick={() => handleDownload(search.result_url!)}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        ) : search.status === "error" && search.error_message ? (
-                          <span className="text-sm text-destructive">{search.error_message}</span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {search.status === "completed" && search.result_url ? (
+                            <Button
+                              size="sm"
+                              onClick={() => handleDownload(search.result_url!)}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                          ) : search.status === "error" && search.error_message ? (
+                            <span className="text-sm text-destructive">{search.error_message}</span>
+                          ) : null}
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Search Entry?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete this search entry. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(search.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
