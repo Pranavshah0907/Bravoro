@@ -130,23 +130,23 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
 
       console.log('Search created with ID:', search.id);
 
-      // Step 3: Send data to N8N webhook
-      const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/incoming_request';
-      
-      const webhookResponse = await fetch(n8nWebhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'type_of_entry': 'bulk_upload',
-        },
-        body: JSON.stringify({
-          search_id: search.id,
-          data: excelData
-        }),
-      });
+      // Step 3: Trigger N8N webhook via edge function
+      const { error: webhookError } = await supabase.functions.invoke(
+        "trigger-n8n-webhook",
+        {
+          body: {
+            searchId: search.id,
+            entryType: 'bulk_upload',
+            searchData: {
+              search_id: search.id,
+              data: excelData
+            },
+          },
+        }
+      );
 
-      if (!webhookResponse.ok) {
-        throw new Error(`N8N webhook failed with status: ${webhookResponse.status}`);
+      if (webhookError) {
+        throw new Error(`N8N webhook trigger failed: ${webhookError.message}`);
       }
 
       console.log('Webhook triggered successfully');
