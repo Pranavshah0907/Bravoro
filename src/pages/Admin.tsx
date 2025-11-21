@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Loader2, Shield, Users } from "lucide-react";
+import { ArrowLeft, UserPlus, Loader2, Shield, Users, Shuffle, Trash2 } from "lucide-react";
 import { z } from "zod";
 
 const createUserSchema = z.object({
@@ -24,6 +24,7 @@ interface UserWithRole {
   full_name: string | null;
   role: string;
   created_at: string;
+  requires_password_reset: boolean | null;
 }
 
 const Admin = () => {
@@ -78,7 +79,7 @@ const Admin = () => {
   const loadUsers = async () => {
     const { data: profilesData } = await supabase
       .from("profiles")
-      .select("id, email, full_name, created_at");
+      .select("id, email, full_name, created_at, requires_password_reset");
 
     if (!profilesData) return;
 
@@ -99,6 +100,61 @@ const Admin = () => {
     );
 
     setUsers(usersWithRoles);
+  };
+
+  const generateStrongPassword = () => {
+    const length = 16;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+    let password = "";
+    
+    // Ensure at least one of each type
+    password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+    password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+    password += "0123456789"[Math.floor(Math.random() * 10)];
+    password += "!@#$%^&*"[Math.floor(Math.random() * 8)];
+    
+    // Fill the rest randomly
+    for (let i = password.length; i < length; i++) {
+      password += charset[Math.floor(Math.random() * charset.length)];
+    }
+    
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generateStrongPassword();
+    setNewUserTempPassword(newPassword);
+    toast({
+      title: "Password Generated",
+      description: "Strong password has been generated",
+    });
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to delete user ${userEmail}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Delete user using admin API
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "User Deleted",
+        description: `User ${userEmail} has been deleted successfully`,
+      });
+
+      loadUsers();
+    } catch (error: any) {
+      toast({
+        title: "Failed to Delete User",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -132,9 +188,25 @@ const Admin = () => {
           .update({ requires_password_reset: true })
           .eq("id", authData.user.id);
 
+        // Send welcome email
+        try {
+          const websiteUrl = window.location.origin;
+          await supabase.functions.invoke("send-welcome-email", {
+            body: {
+              email: newUserEmail.trim(),
+              fullName: newUserFullName.trim(),
+              tempPassword: newUserTempPassword,
+              websiteUrl: websiteUrl,
+            },
+          });
+        } catch (emailError) {
+          console.error("Failed to send welcome email:", emailError);
+          // Don't fail user creation if email fails
+        }
+
         toast({
           title: "User Created",
-          description: `User ${newUserEmail} has been created successfully`,
+          description: `User ${newUserEmail} has been created and welcome email sent`,
         });
 
         setNewUserEmail("");
@@ -224,14 +296,26 @@ const Admin = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tempPassword">Temporary Password *</Label>
-                <Input
-                  id="tempPassword"
-                  type="password"
-                  placeholder="Min 8 characters"
-                  value={newUserTempPassword}
-                  onChange={(e) => setNewUserTempPassword(e.target.value)}
-                  required
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="tempPassword"
+                    type="text"
+                    placeholder="Min 8 characters"
+                    value={newUserTempPassword}
+                    onChange={(e) => setNewUserTempPassword(e.target.value)}
+                    required
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGeneratePassword}
+                    className="shrink-0"
+                  >
+                    <Shuffle className="h-4 w-4 mr-2" />
+                    Generate
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   User will be required to change this password on first login
                 </p>
@@ -271,7 +355,9 @@ const Admin = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Full Name</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -284,8 +370,24 @@ const Admin = () => {
                         {user.role}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Badge variant={user.requires_password_reset ? "outline" : "default"}>
+                        {user.requires_password_reset ? "Pending" : "Active"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id, user.email)}
+                        disabled={user.role === "admin"}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
