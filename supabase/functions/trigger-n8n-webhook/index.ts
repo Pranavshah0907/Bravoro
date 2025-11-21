@@ -16,7 +16,7 @@ serve(async (req) => {
     const { searchData, searchId, entryType } = await req.json();
     console.log('Triggering N8N webhook with data:', searchData);
 
-    const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/manual-entry';
+    const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/incoming_request';
 
     const response = await fetch(n8nWebhookUrl, {
       method: 'POST',
