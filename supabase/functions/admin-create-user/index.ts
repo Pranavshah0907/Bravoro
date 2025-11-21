@@ -75,11 +75,75 @@ Deno.serve(async (req) => {
         .eq('id', authData.user.id);
 
       console.log('User created successfully:', authData.user.id);
+
+      // Send welcome email via n8n webhook
+      const origin = req.headers.get('origin') || supabaseUrl;
+      console.log('Calling n8n webhook to send welcome email');
+      
+      try {
+        const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook-test/email-sender', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            fullName: fullName,
+            tempPassword: tempPassword,
+            websiteUrl: origin,
+          }),
+        });
+
+        const webhookResult = await webhookResponse.json();
+        console.log('n8n webhook response:', webhookResult);
+
+        if (!webhookResult.success) {
+          // Email failed but user was created
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: webhookResult.error || 'Failed to send welcome email',
+              userCreated: true,
+            }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Both user creation and email sending succeeded
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            user: authData.user,
+            message: 'User created and welcome email sent successfully',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (webhookError) {
+        console.error('Error calling n8n webhook:', webhookError);
+        // User was created but email failed
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'User created but failed to send welcome email: ' + (webhookError instanceof Error ? webhookError.message : 'Unknown error'),
+            userCreated: true,
+          }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
     }
 
     return new Response(
-      JSON.stringify({ success: true, user: authData.user }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, error: 'Failed to create user' }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
     );
   } catch (error) {
     console.error('Error in admin-create-user:', error);
