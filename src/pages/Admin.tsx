@@ -181,28 +181,39 @@ const Admin = () => {
         },
       });
 
-      if (createError) throw createError;
-      if (data?.error) throw new Error(data.error);
-
-      // Send welcome email
-      try {
-        const websiteUrl = window.location.origin;
-        await supabase.functions.invoke("send-welcome-email", {
-          body: {
-            email: newUserEmail.trim(),
-            fullName: newUserFullName.trim(),
-            tempPassword: newUserTempPassword,
-            websiteUrl: websiteUrl,
-          },
-        });
-      } catch (emailError) {
-        console.error("Failed to send welcome email:", emailError);
-        // Don't fail user creation if email fails
+      if (createError) {
+        throw new Error(createError.message || "Failed to create user");
       }
 
+      // Handle specific error responses from edge function
+      if (!data?.success) {
+        if (data?.error) {
+          // Check for specific error types
+          if (data.error.includes("already been registered")) {
+            throw new Error("This email address is already registered. Please use a different email or contact support if you believe this is an error.");
+          } else if (data.error.includes("welcome email")) {
+            // User created but email failed
+            toast({
+              title: "User Created with Warning",
+              description: `User ${newUserEmail} was created but the welcome email failed to send. ${data.error}`,
+              variant: "default",
+            });
+            
+            setNewUserEmail("");
+            setNewUserFullName("");
+            setNewUserTempPassword("");
+            loadUsers();
+            return;
+          }
+          throw new Error(data.error);
+        }
+        throw new Error("Failed to create user");
+      }
+
+      // Success - user created and email sent
       toast({
-        title: "User Created",
-        description: `User ${newUserEmail} has been created and welcome email sent`,
+        title: "User Created Successfully",
+        description: data.message || `User ${newUserEmail} has been created and welcome email sent`,
       });
 
       setNewUserEmail("");
