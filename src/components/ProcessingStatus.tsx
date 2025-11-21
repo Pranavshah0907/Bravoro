@@ -17,16 +17,19 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleDownload = async (url: string) => {
+  const handleDownload = async (fileName: string) => {
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Download failed');
-      
-      const blob = await response.blob();
+      const { data, error } = await supabase.storage
+        .from('results')
+        .download(fileName);
+
+      if (error) throw error;
+
+      const blob = data;
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = 'leap_results.xlsx';
+      link.download = fileName.split('/').pop() || 'leap_results.xlsx';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -37,6 +40,7 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
         description: "Your enriched data has been downloaded",
       });
     } catch (error) {
+      console.error('Download error:', error);
       toast({
         title: "Download Failed",
         description: "Failed to download the file. Please try again.",
