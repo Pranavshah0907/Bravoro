@@ -131,7 +131,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       console.log('Search created with ID:', search.id);
 
       // Step 3: Send data to N8N webhook
-      const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/upload-excel';
+      const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/bulk-upload';
       
       const webhookResponse = await fetch(n8nWebhookUrl, {
         method: 'POST',
