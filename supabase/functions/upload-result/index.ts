@@ -20,6 +20,9 @@ serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const searchId = formData.get('search_id') as string;
+    const apolloCredits = parseInt(formData.get('apollo_credits') as string || '0');
+    const cleon1Credits = parseInt(formData.get('cleon1_credits') as string || '0');
+    const lushaCredits = parseInt(formData.get('lusha_credits') as string || '0');
 
     if (!file || !searchId) {
       return new Response(
@@ -47,6 +50,20 @@ serve(async (req) => {
       );
     }
 
+    // Get user_id from search record
+    const { data: searchRecord } = await supabaseClient
+      .from('searches')
+      .select('user_id')
+      .eq('id', searchId)
+      .single();
+
+    if (!searchRecord) {
+      return new Response(
+        JSON.stringify({ error: 'Search not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Update search status
     const { error: updateError } = await supabaseClient
       .from('searches')
@@ -63,6 +80,24 @@ serve(async (req) => {
         JSON.stringify({ error: updateError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Store credit usage if any credits were used
+    if (apolloCredits > 0 || cleon1Credits > 0 || lushaCredits > 0) {
+      const { error: creditError } = await supabaseClient
+        .from('credit_usage')
+        .insert({
+          user_id: searchRecord.user_id,
+          search_id: searchId,
+          apollo_credits: apolloCredits,
+          cleon1_credits: cleon1Credits,
+          lusha_credits: lushaCredits,
+        });
+
+      if (creditError) {
+        console.error('Credit tracking error:', creditError);
+        // Don't fail the whole request if credit tracking fails
+      }
     }
 
     return new Response(
