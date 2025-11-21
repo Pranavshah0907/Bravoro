@@ -114,22 +114,19 @@ const Results = () => {
     navigate("/auth");
   };
 
-  const handleDownload = async (fileUrl: string) => {
+  const handleDownload = async (fileName: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-
-      const response = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('results')
-        .download(fileUrl.replace('/results/', ''));
+        .download(fileName);
 
-      if (response.error) throw response.error;
+      if (error) throw error;
 
-      const blob = response.data;
+      const blob = data;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = fileUrl.split('/').pop() || 'result.xlsx';
+      link.download = fileName.split('/').pop() || 'result.xlsx';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
