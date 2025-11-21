@@ -20,9 +20,9 @@ serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const searchId = formData.get('search_id') as string;
-    const apolloCredits = parseInt(formData.get('apollo_credits') as string || '0');
-    const cleon1Credits = parseInt(formData.get('cleon1_credits') as string || '0');
-    const lushaCredits = parseInt(formData.get('lusha_credits') as string || '0');
+    const apolloCredits = parseInt(formData.get('apollo_credits') as string || '0') || 0;
+    const cleon1Credits = parseInt(formData.get('cleon1_credits') as string || '0') || 0;
+    const lushaCredits = parseInt(formData.get('lusha_credits') as string || '0') || 0;
 
     if (!file || !searchId) {
       return new Response(
