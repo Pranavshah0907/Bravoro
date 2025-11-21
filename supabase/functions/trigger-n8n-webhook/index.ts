@@ -22,24 +22,36 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get user_id and email from the search record
-    const { data: searchRecord } = await supabase
+    const { data: searchRecord, error: searchError } = await supabase
       .from('searches')
       .select('user_id')
       .eq('id', searchId)
-      .single();
+      .maybeSingle();
+
+    console.log('Search record:', searchRecord, 'Error:', searchError);
 
     let userEmail = '';
     if (searchRecord?.user_id) {
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('email')
         .eq('id', searchRecord.user_id)
-        .single();
+        .maybeSingle();
       
+      console.log('Profile data:', profileData, 'Error:', profileError);
       userEmail = profileData?.email || '';
     }
 
+    console.log('User email to send:', userEmail);
+
     const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/incoming_request';
+
+    const payloadToSend = {
+      ...searchData,
+      user_email: userEmail,
+    };
+
+    console.log('Payload being sent to n8n:', JSON.stringify(payloadToSend));
 
     const response = await fetch(n8nWebhookUrl, {
       method: 'POST',
@@ -47,10 +59,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'type_of_entry': entryType || 'manual_entry',
       },
-      body: JSON.stringify({
-        ...searchData,
-        user_email: userEmail,
-      }),
+      body: JSON.stringify(payloadToSend),
     });
 
     if (!response.ok) {
