@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Download, RefreshCw, Trash2 } from "lucide-react";
+import { LogOut, Download, RefreshCw, Trash2, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -32,6 +32,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import leapLogo from "@/assets/leap-logo.png";
 import leapFont from "@/assets/leap-font.png";
 
@@ -55,6 +64,10 @@ const Results = () => {
   const [searches, setSearches] = useState<Search[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   useEffect(() => {
     checkAuth();
@@ -157,20 +170,23 @@ const Results = () => {
     }
   };
 
-  const handleDelete = async (searchId: string) => {
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+
     try {
       const { error } = await supabase
         .from("searches")
         .delete()
-        .eq("id", searchId);
+        .in("id", Array.from(selectedIds));
 
       if (error) throw error;
 
       toast({
-        title: "Search Deleted",
-        description: "Search entry has been removed",
+        title: "Searches Deleted",
+        description: `${selectedIds.size} search ${selectedIds.size === 1 ? 'entry' : 'entries'} removed`,
       });
 
+      setSelectedIds(new Set());
       if (user) {
         fetchSearches(user.id);
       }
@@ -178,10 +194,28 @@ const Results = () => {
       console.error("Delete error:", error);
       toast({
         title: "Delete Failed",
-        description: "Failed to delete the search entry",
+        description: "Failed to delete search entries",
         variant: "destructive",
       });
     }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredSearches.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredSearches.map(s => s.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
   };
 
   const getStatusBadge = (status: string) => {
@@ -200,8 +234,24 @@ const Results = () => {
   };
 
   const filteredSearches = searches.filter(search => {
-    if (filter === "all") return true;
-    return search.status === filter;
+    // Status filter
+    if (filter !== "all" && search.status !== filter) return false;
+    
+    // Type filter
+    if (typeFilter !== "all" && search.search_type !== typeFilter) return false;
+    
+    // Date range filter
+    if (dateFrom || dateTo) {
+      const searchDate = new Date(search.created_at);
+      if (dateFrom && searchDate < dateFrom) return false;
+      if (dateTo) {
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (searchDate > endOfDay) return false;
+      }
+    }
+    
+    return true;
   });
 
   return (
@@ -234,19 +284,68 @@ const Results = () => {
               <h1 className="text-3xl font-bold">Search Results</h1>
               <p className="text-muted-foreground mt-1">Track your enrichment requests</p>
             </div>
-            <div className="flex items-center gap-4">
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Entry type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="bulk">Bulk</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "PP") : "From date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className="pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "PP") : "To date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className="pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="error">Error</SelectItem>
                 </SelectContent>
               </Select>
+
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDateFrom(undefined);
+                    setDateTo(undefined);
+                  }}
+                >
+                  Clear Dates
+                </Button>
+              )}
+              
               <Button
                 variant="outline"
                 size="sm"
@@ -259,10 +358,49 @@ const Results = () => {
             </div>
           </div>
 
+          {selectedIds.size > 0 && (
+            <div className="mb-4 p-4 bg-muted/50 rounded-lg flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {selectedIds.size} {selectedIds.size === 1 ? 'entry' : 'entries'} selected
+              </span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selectedIds.size} Search {selectedIds.size === 1 ? 'Entry' : 'Entries'}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the selected search {selectedIds.size === 1 ? 'entry' : 'entries'}. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleBulkDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+
           <div className="bg-card rounded-lg border border-border/50 shadow-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={filteredSearches.length > 0 && selectedIds.size === filteredSearches.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-[50px]">#</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Details</TableHead>
@@ -287,6 +425,12 @@ const Results = () => {
                 ) : (
                   filteredSearches.map((search, index) => (
                     <TableRow key={search.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(search.id)}
+                          onCheckedChange={() => toggleSelect(search.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>
                         <Badge variant={search.search_type === "bulk" ? "default" : "secondary"}>
@@ -305,48 +449,19 @@ const Results = () => {
                       <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
                       <TableCell>{getStatusBadge(search.status)}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {search.status === "completed" && search.result_url ? (
-                            <Button
-                              size="sm"
-                              onClick={() => handleDownload(search.result_url!)}
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </Button>
-                          ) : search.status === "error" && search.error_message ? (
-                            <span className="text-sm text-destructive">{search.error_message}</span>
-                          ) : null}
-                          
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Search Entry?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete this search entry. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(search.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                        {search.status === "completed" && search.result_url ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handleDownload(search.result_url!)}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        ) : search.status === "error" && search.error_message ? (
+                          <span className="text-sm text-destructive">{search.error_message}</span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
