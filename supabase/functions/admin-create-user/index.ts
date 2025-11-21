@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     console.log('Creating user with email:', email);
 
     // Create the new user
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    let { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: tempPassword,
       email_confirm: true,
@@ -61,6 +61,54 @@ Deno.serve(async (req) => {
         full_name: fullName,
       },
     });
+
+    // Handle case where user exists but is soft-deleted
+    if (authError && authError.message?.includes('already been registered')) {
+      console.log('User email exists, attempting to find and permanently delete soft-deleted user');
+      
+      try {
+        // List all users (including deleted ones) to find the soft-deleted user
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (listError) {
+          console.error('Error listing users:', listError);
+          throw authError; // Throw original error if we can't list users
+        }
+
+        // Find the user with this email (even if deleted)
+        const existingUser = users?.find(u => u.email === email);
+        
+        if (existingUser) {
+          console.log('Found existing user, deleting permanently:', existingUser.id);
+          
+          // Permanently delete the user
+          const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+          
+          if (deleteError) {
+            console.error('Error permanently deleting user:', deleteError);
+            throw authError; // Throw original error if deletion fails
+          }
+
+          console.log('User permanently deleted, retrying creation');
+          
+          // Retry user creation
+          const retry = await supabaseAdmin.auth.admin.createUser({
+            email: email,
+            password: tempPassword,
+            email_confirm: true,
+            user_metadata: {
+              full_name: fullName,
+            },
+          });
+
+          authData = retry.data;
+          authError = retry.error;
+        }
+      } catch (retryError) {
+        console.error('Error during retry logic:', retryError);
+        throw authError; // Throw original error if retry logic fails
+      }
+    }
 
     if (authError) {
       console.error('Error creating user:', authError);
