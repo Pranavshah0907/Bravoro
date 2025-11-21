@@ -114,19 +114,30 @@ const Results = () => {
     navigate("/auth");
   };
 
-  const handleDownload = async (fileName: string) => {
+  const handleDownload = async (path: string) => {
     try {
+      // If result_url is a full URL (legacy/manual results), just open it
+      if (path.startsWith("http://") || path.startsWith("https://")) {
+        window.open(path, "_blank");
+        toast({
+          title: "Download Started",
+          description: "Your file has been opened in a new tab",
+        });
+        return;
+      }
+
+      // Otherwise, treat it as a file name in the `results` storage bucket
       const { data, error } = await supabase.storage
-        .from('results')
-        .download(fileName);
+        .from("results")
+        .download(path);
 
       if (error) throw error;
 
       const blob = data;
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = fileName.split('/').pop() || 'result.xlsx';
+      link.download = path.split("/").pop() || "result.xlsx";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -137,7 +148,7 @@ const Results = () => {
         description: "Your file is being downloaded",
       });
     } catch (error) {
-      console.error('Download error:', error);
+      console.error("Download error:", error);
       toast({
         title: "Download Failed",
         description: "Failed to download the file",
