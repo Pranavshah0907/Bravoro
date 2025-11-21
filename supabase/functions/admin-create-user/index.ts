@@ -146,12 +146,19 @@ Deno.serve(async (req) => {
         console.log('n8n webhook response:', webhookResult);
 
         if (!webhookResult.success) {
-          // Email failed but user was created
+          console.error('n8n reported failure, rolling back user creation');
+
+          // Roll back created user so the email can be reused on retry
+          if (authData.user) {
+            await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+            await supabaseAdmin.from('profiles').delete().eq('id', authData.user.id);
+          }
+
           return new Response(
             JSON.stringify({ 
               success: false, 
               error: webhookResult.error || 'Failed to send welcome email',
-              userCreated: true,
+              userCreated: false,
             }),
             { 
               status: 400,
@@ -170,13 +177,19 @@ Deno.serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (webhookError) {
-        console.error('Error calling n8n webhook:', webhookError);
-        // User was created but email failed
+        console.error('Error calling n8n webhook, rolling back user creation:', webhookError);
+
+        // Roll back created user on any unexpected error so email can be retried cleanly
+        if (authData.user) {
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+          await supabaseAdmin.from('profiles').delete().eq('id', authData.user.id);
+        }
+
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'User created but failed to send welcome email: ' + (webhookError instanceof Error ? webhookError.message : 'Unknown error'),
-            userCreated: true,
+            error: 'User creation rolled back because welcome email failed: ' + (webhookError instanceof Error ? webhookError.message : 'Unknown error'),
+            userCreated: false,
           }),
           { 
             status: 400,
