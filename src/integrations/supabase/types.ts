@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_usage: {
+        Row: {
+          apollo_credits: number
+          cleon1_credits: number
+          created_at: string
+          id: string
+          lusha_credits: number
+          search_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apollo_credits?: number
+          cleon1_credits?: number
+          created_at?: string
+          id?: string
+          lusha_credits?: number
+          search_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apollo_credits?: number
+          cleon1_credits?: number
+          created_at?: string
+          id?: string
+          lusha_credits?: number
+          search_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_usage_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           completed_at: string | null
