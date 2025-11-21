@@ -85,65 +85,89 @@ const UsageAnalytics = () => {
   };
 
   const getBarChartData = () => {
-    if (creditData.length === 0) return [];
-
     const now = new Date();
-    let groupedData: { [key: string]: { apollo: number; cleon1: number; lusha: number; date: Date } } = {};
-
-    creditData.forEach((item) => {
-      const date = new Date(item.created_at);
-      let key: string;
-      let sortDate: Date;
-
+    const limit = timePeriod === "daily" ? 5 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
+    
+    // Generate the last N periods with zeros
+    const periods: { date: string; Apollo: number; Cleon1: number; Lusha: number; sortDate: Date }[] = [];
+    
+    for (let i = limit - 1; i >= 0; i--) {
+      let periodDate: Date;
+      let dateLabel: string;
+      
       switch (timePeriod) {
         case "daily":
-          key = format(date, "MMM d");
-          sortDate = startOfDay(date);
+          periodDate = subDays(now, i);
+          dateLabel = format(periodDate, "MMM d");
           break;
         case "weekly":
-          const weekStart = startOfWeek(date);
-          key = format(weekStart, "MMM d");
-          sortDate = weekStart;
+          periodDate = subWeeks(now, i);
+          const weekStart = startOfWeek(periodDate);
+          dateLabel = format(weekStart, "MMM d");
+          periodDate = weekStart;
           break;
         case "monthly":
-          key = format(date, "MMM yyyy");
-          sortDate = startOfMonth(date);
+          periodDate = subMonths(now, i);
+          dateLabel = format(periodDate, "MMM yyyy");
+          periodDate = startOfMonth(periodDate);
           break;
         case "quarterly":
-          const quarter = Math.floor(date.getMonth() / 3) + 1;
-          key = `Q${quarter} ${date.getFullYear()}`;
-          sortDate = new Date(date.getFullYear(), Math.floor(date.getMonth() / 3) * 3, 1);
+          periodDate = subMonths(now, i * 3);
+          const quarter = Math.floor(periodDate.getMonth() / 3) + 1;
+          dateLabel = `Q${quarter} ${periodDate.getFullYear()}`;
+          periodDate = new Date(periodDate.getFullYear(), Math.floor(periodDate.getMonth() / 3) * 3, 1);
           break;
         default:
-          key = format(date, "MMM d");
-          sortDate = startOfDay(date);
+          periodDate = subDays(now, i);
+          dateLabel = format(periodDate, "MMM d");
       }
-
-      if (!groupedData[key]) {
-        groupedData[key] = { apollo: 0, cleon1: 0, lusha: 0, date: sortDate };
-      }
-
-      groupedData[key].apollo += item.apollo_credits;
-      groupedData[key].cleon1 += item.cleon1_credits;
-      groupedData[key].lusha += item.lusha_credits;
+      
+      periods.push({
+        date: dateLabel,
+        Apollo: 0,
+        Cleon1: 0,
+        Lusha: 0,
+        sortDate: periodDate,
+      });
+    }
+    
+    // Fill in actual data
+    creditData.forEach((item) => {
+      const date = new Date(item.created_at);
+      
+      periods.forEach((period) => {
+        let matches = false;
+        
+        switch (timePeriod) {
+          case "daily":
+            matches = format(date, "MMM d") === period.date && 
+                     date.getFullYear() === period.sortDate.getFullYear();
+            break;
+          case "weekly":
+            const itemWeekStart = startOfWeek(date);
+            matches = format(itemWeekStart, "MMM d") === period.date &&
+                     itemWeekStart.getFullYear() === period.sortDate.getFullYear();
+            break;
+          case "monthly":
+            matches = format(date, "MMM yyyy") === period.date;
+            break;
+          case "quarterly":
+            const itemQuarter = Math.floor(date.getMonth() / 3) + 1;
+            const periodQuarter = Math.floor(period.sortDate.getMonth() / 3) + 1;
+            matches = itemQuarter === periodQuarter && 
+                     date.getFullYear() === period.sortDate.getFullYear();
+            break;
+        }
+        
+        if (matches) {
+          period.Apollo += item.apollo_credits;
+          period.Cleon1 += item.cleon1_credits;
+          period.Lusha += item.lusha_credits;
+        }
+      });
     });
 
-    // Convert to array and sort by date
-    let result = Object.entries(groupedData)
-      .map(([dateLabel, data]) => ({
-        date: dateLabel,
-        Apollo: data.apollo,
-        Cleon1: data.cleon1,
-        Lusha: data.lusha,
-        sortDate: data.date,
-      }))
-      .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
-
-    // Limit results based on time period
-    const limit = timePeriod === "daily" ? 5 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
-    result = result.slice(0, limit).reverse();
-
-    return result.map(({ date, Apollo, Cleon1, Lusha }) => ({
+    return periods.map(({ date, Apollo, Cleon1, Lusha }) => ({
       date,
       Apollo,
       Cleon1,
