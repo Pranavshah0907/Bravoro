@@ -116,17 +116,6 @@ const Results = () => {
 
   const handleDownload = async (path: string) => {
     try {
-      // If result_url is a full URL (legacy/manual results), just open it
-      if (path.startsWith("http://") || path.startsWith("https://")) {
-        window.open(path, "_blank");
-        toast({
-          title: "Download Started",
-          description: "Your file has been opened in a new tab",
-        });
-        return;
-      }
-
-      // Otherwise, treat it as a file name in the `results` storage bucket
       const { data, error } = await supabase.storage
         .from("results")
         .download(path);
