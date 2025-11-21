@@ -88,32 +88,39 @@ const UsageAnalytics = () => {
     if (creditData.length === 0) return [];
 
     const now = new Date();
-    let groupedData: { [key: string]: { apollo: number; cleon1: number; lusha: number } } = {};
+    let groupedData: { [key: string]: { apollo: number; cleon1: number; lusha: number; date: Date } } = {};
 
     creditData.forEach((item) => {
       const date = new Date(item.created_at);
       let key: string;
+      let sortDate: Date;
 
       switch (timePeriod) {
         case "daily":
           key = format(date, "MMM d");
+          sortDate = startOfDay(date);
           break;
         case "weekly":
-          key = `Week of ${format(startOfWeek(date), "MMM d")}`;
+          const weekStart = startOfWeek(date);
+          key = format(weekStart, "MMM d");
+          sortDate = weekStart;
           break;
         case "monthly":
           key = format(date, "MMM yyyy");
+          sortDate = startOfMonth(date);
           break;
         case "quarterly":
           const quarter = Math.floor(date.getMonth() / 3) + 1;
           key = `Q${quarter} ${date.getFullYear()}`;
+          sortDate = new Date(date.getFullYear(), Math.floor(date.getMonth() / 3) * 3, 1);
           break;
         default:
           key = format(date, "MMM d");
+          sortDate = startOfDay(date);
       }
 
       if (!groupedData[key]) {
-        groupedData[key] = { apollo: 0, cleon1: 0, lusha: 0 };
+        groupedData[key] = { apollo: 0, cleon1: 0, lusha: 0, date: sortDate };
       }
 
       groupedData[key].apollo += item.apollo_credits;
@@ -121,11 +128,26 @@ const UsageAnalytics = () => {
       groupedData[key].lusha += item.lusha_credits;
     });
 
-    return Object.entries(groupedData).map(([date, credits]) => ({
+    // Convert to array and sort by date
+    let result = Object.entries(groupedData)
+      .map(([dateLabel, data]) => ({
+        date: dateLabel,
+        Apollo: data.apollo,
+        Cleon1: data.cleon1,
+        Lusha: data.lusha,
+        sortDate: data.date,
+      }))
+      .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
+
+    // Limit results based on time period
+    const limit = timePeriod === "daily" ? 5 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
+    result = result.slice(0, limit).reverse();
+
+    return result.map(({ date, Apollo, Cleon1, Lusha }) => ({
       date,
-      Apollo: credits.apollo,
-      Cleon1: credits.cleon1,
-      Lusha: credits.lusha,
+      Apollo,
+      Cleon1,
+      Lusha,
     }));
   };
 
@@ -154,22 +176,22 @@ const UsageAnalytics = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Pie Chart Card */}
-          <Card>
+          <Card className="lg:col-span-4">
             <CardHeader>
-              <CardTitle>Total Credits by Service</CardTitle>
+              <CardTitle>Total Credits</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-8">
-                <ResponsiveContainer width="60%" height={300}>
+              <div className="space-y-6">
+                <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius={50}
+                      outerRadius={80}
                       fill="#8884d8"
                       paddingAngle={5}
                       dataKey="value"
@@ -181,18 +203,21 @@ const UsageAnalytics = () => {
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Apollo</p>
-                    <p className="text-2xl font-bold text-foreground">{totals.apollo}</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.apollo }} />
+                    <p className="text-xs text-muted-foreground mb-1">Apollo</p>
+                    <p className="text-xl font-bold text-foreground">{totals.apollo}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Cleon1</p>
-                    <p className="text-2xl font-bold text-foreground">{totals.cleon1}</p>
+                  <div className="text-center">
+                    <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.cleon1 }} />
+                    <p className="text-xs text-muted-foreground mb-1">Cleon1</p>
+                    <p className="text-xl font-bold text-foreground">{totals.cleon1}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Lusha</p>
-                    <p className="text-2xl font-bold text-foreground">{totals.lusha}</p>
+                  <div className="text-center">
+                    <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.lusha }} />
+                    <p className="text-xs text-muted-foreground mb-1">Lusha</p>
+                    <p className="text-xl font-bold text-foreground">{totals.lusha}</p>
                   </div>
                 </div>
               </div>
@@ -200,7 +225,7 @@ const UsageAnalytics = () => {
           </Card>
 
           {/* Bar Chart Card */}
-          <Card>
+          <Card className="lg:col-span-8">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Usage Over Time</CardTitle>
               <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
@@ -221,32 +246,36 @@ const UsageAnalytics = () => {
                   No usage data available yet
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={barData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <ResponsiveContainer width="100%" height={340}>
+                  <BarChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                     <XAxis 
                       dataKey="date" 
                       stroke="hsl(var(--muted-foreground))"
-                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
+                      tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
+                      tickLine={{ stroke: "hsl(var(--border))" }}
                     />
                     <YAxis 
                       stroke="hsl(var(--muted-foreground))"
-                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                      tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
+                      tickLine={{ stroke: "hsl(var(--border))" }}
                     />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: "hsl(var(--card))",
+                        backgroundColor: "hsl(var(--popover))",
                         border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px"
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
                       }}
+                      cursor={{ fill: "hsl(var(--accent))", opacity: 0.1 }}
                     />
-                    <Legend />
-                    <Bar dataKey="Apollo" fill={COLORS.apollo} />
-                    <Bar dataKey="Cleon1" fill={COLORS.cleon1} />
-                    <Bar dataKey="Lusha" fill={COLORS.lusha} />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: "20px" }}
+                      iconType="circle"
+                    />
+                    <Bar dataKey="Apollo" stackId="a" fill={COLORS.apollo} radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="Cleon1" stackId="a" fill={COLORS.cleon1} radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="Lusha" stackId="a" fill={COLORS.lusha} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
