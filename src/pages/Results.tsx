@@ -277,21 +277,38 @@ const Results = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5">
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
+      {/* Animated background elements */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s" }} />
+
+      <header className="border-b border-border/50 glass-effect sticky top-0 z-50 animate-slide-up">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src={leapLogo} alt="LEAP Logo" className="h-12 w-12" />
+            <div className="relative">
+              <img src={leapLogo} alt="LEAP Logo" className="h-12 w-12 transition-transform hover:scale-110" />
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl" />
+            </div>
             <div>
               <img src={leapFont} alt="LEAP" className="h-8" />
-              <p className="text-sm text-muted-foreground mt-1 tracking-wide">Lead Enrichment & Automation Platform</p>
+              <p className="text-xs text-muted-foreground mt-1 tracking-wide">Lead Enrichment & Automation</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/dashboard")}
+              className="hover-lift hover:text-primary transition-all"
+            >
               Back to Dashboard
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="hover:text-destructive transition-all"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </Button>
@@ -299,14 +316,16 @@ const Results = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8 animate-fade-in">
             <div>
-              <h1 className="text-3xl font-bold">Search Results</h1>
-              <p className="text-muted-foreground mt-1">Track your enrichment requests</p>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+                Search Results
+              </h1>
+              <p className="text-muted-foreground mt-2 text-lg">Track your enrichment requests and download results</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap animate-fade-in" style={{ animationDelay: "0.1s" }}>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Entry type" />
@@ -373,6 +392,7 @@ const Results = () => {
                 size="sm"
                 onClick={() => user && fetchSearches(user.id)}
                 disabled={loading}
+                className="hover-lift transition-all"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -381,7 +401,7 @@ const Results = () => {
           </div>
 
           {selectedIds.size > 0 && (
-            <div className="mb-4 p-4 bg-muted/50 rounded-lg flex items-center justify-between">
+            <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-destructive/10 rounded-lg border border-destructive/20 flex items-center justify-between animate-scale-in shadow-medium">
               <span className="text-sm font-medium">
                 {selectedIds.size} {selectedIds.size === 1 ? 'entry' : 'entries'} selected
               </span>
@@ -413,22 +433,23 @@ const Results = () => {
             </div>
           )}
 
-          <div className="bg-card rounded-lg border border-border/50 shadow-lg overflow-hidden">
+          <div className="bg-card/95 backdrop-blur-sm rounded-lg border border-border/50 shadow-strong hover-lift overflow-hidden animate-fade-in" style={{ animationDelay: "0.2s" }}>
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/30">
                   <TableHead className="w-[50px]">
                     <Checkbox
                       checked={filteredSearches.length > 0 && selectedIds.size === filteredSearches.length}
                       onCheckedChange={toggleSelectAll}
+                      className="border-primary/50"
                     />
                   </TableHead>
-                  <TableHead className="w-[50px]">#</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[50px] font-semibold">#</TableHead>
+                  <TableHead className="font-semibold">Type</TableHead>
+                  <TableHead className="font-semibold">Details</TableHead>
+                  <TableHead className="font-semibold">Created At</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="text-right font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -446,16 +467,28 @@ const Results = () => {
                   </TableRow>
                 ) : (
                   filteredSearches.map((search, index) => (
-                    <TableRow key={search.id}>
+                    <TableRow 
+                      key={search.id}
+                      className="hover:bg-muted/20 transition-colors"
+                      style={{ 
+                        animation: "fade-in 0.5s ease-out forwards",
+                        animationDelay: `${index * 0.05}s`,
+                        opacity: 0
+                      }}
+                    >
                       <TableCell>
                         <Checkbox
                           checked={selectedIds.has(search.id)}
                           onCheckedChange={() => toggleSelect(search.id)}
+                          className="border-primary/50"
                         />
                       </TableCell>
                       <TableCell className="font-medium">{index + 1}</TableCell>
                       <TableCell>
-                        <Badge variant={search.search_type === "bulk" ? "default" : "secondary"}>
+                        <Badge 
+                          variant={search.search_type === "bulk" ? "default" : "secondary"}
+                          className={search.search_type === "bulk" ? "bg-gradient-to-r from-primary to-secondary" : ""}
+                        >
                           {search.search_type === "bulk" ? "Bulk Upload" : "Manual Entry"}
                         </Badge>
                       </TableCell>
@@ -476,6 +509,7 @@ const Results = () => {
                             <Button
                               size="sm"
                               onClick={() => handleDownload(search.result_url!)}
+                              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow transition-all"
                             >
                               <Download className="h-4 w-4 mr-2" />
                               Download

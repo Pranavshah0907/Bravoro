@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2 } from "lucide-react";
+import { Download, Upload, Loader2, FileSpreadsheet } from "lucide-react";
 import * as XLSX from 'xlsx';
 
 interface ExcelUploadProps {
@@ -174,66 +174,77 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   };
 
   return (
-    <Card className="border-border/50 shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl">Bulk Upload</CardTitle>
-        <CardDescription>
+    <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl flex items-center gap-2">
+          <FileSpreadsheet className="h-5 w-5 text-primary" />
+          Bulk Upload
+        </CardTitle>
+        <CardDescription className="text-base">
           Download the template, fill it with your data, and upload it back
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
+        <Button
+          onClick={handleDownloadTemplate}
+          variant="outline"
+          className="w-full h-12 hover-lift hover:bg-primary/5 hover:border-primary/50 transition-all"
+          size="lg"
+        >
+          <Download className="mr-2 h-5 w-5 text-primary" />
+          Download Excel Template
+        </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-card px-3 py-1 text-muted-foreground rounded-full">Then upload your file</span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="excel-file" className="text-foreground font-medium">Upload Filled Template</Label>
+            <Input
+              id="excel-file"
+              type="file"
+              accept=".xlsx,.xlsm,.csv"
+              onChange={handleFileChange}
+              disabled={loading}
+              className="cursor-pointer h-11 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all"
+            />
+          </div>
+
+          {selectedFile && (
+            <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 animate-scale-in">
+              <p className="text-sm text-foreground flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4 text-primary" />
+                Selected: <span className="font-semibold">{selectedFile.name}</span>
+              </p>
+            </div>
+          )}
+
           <Button
-            onClick={handleDownloadTemplate}
-            variant="outline"
-            className="w-full"
+            type="submit"
+            disabled={!selectedFile || loading}
+            className="w-full h-12 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow text-base font-medium transition-all"
             size="lg"
           >
-            <Download className="mr-2 h-5 w-5" />
-            Download Excel Template
-          </Button>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="excel-file">Upload Filled Template</Label>
-              <Input
-                id="excel-file"
-                type="file"
-                accept=".xlsx,.xlsm,.csv"
-                onChange={handleFileChange}
-                disabled={loading}
-                className="cursor-pointer"
-              />
-            </div>
-
-            {selectedFile && (
-              <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
-                <p className="text-sm text-muted-foreground">
-                  Selected: <span className="text-foreground font-medium">{selectedFile.name}</span>
-                </p>
-              </div>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-5 w-5" />
+                Upload & Process
+              </>
             )}
-
-            <Button
-              type="submit"
-              disabled={!selectedFile || loading}
-              className="w-full"
-              size="lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-5 w-5" />
-                  Upload & Process
-                </>
-              )}
-            </Button>
-          </form>
-        </div>
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );
