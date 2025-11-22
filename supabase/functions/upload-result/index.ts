@@ -18,15 +18,49 @@ serve(async (req) => {
     );
 
     const formData = await req.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as File | null;
     const searchId = formData.get('search_id') as string;
+    const errorMessage = formData.get('error_message') as string | null;
     const apolloCredits = parseInt(formData.get('apollo_credits') as string || '0') || 0;
     const cleon1Credits = parseInt(formData.get('cleon1_credits') as string || '0') || 0;
     const lushaCredits = parseInt(formData.get('lusha_credits') as string || '0') || 0;
 
-    if (!file || !searchId) {
+    if (!searchId) {
       return new Response(
-        JSON.stringify({ error: 'Missing file or search_id' }),
+        JSON.stringify({ error: 'Missing search_id' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle error case (no file, just error message)
+    if (errorMessage && !file) {
+      const { error: updateError } = await supabaseClient
+        .from('searches')
+        .update({
+          status: 'error',
+          error_message: errorMessage,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', searchId);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, status: 'error' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle success case (file upload)
+    if (!file) {
+      return new Response(
+        JSON.stringify({ error: 'Missing file for successful completion' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
