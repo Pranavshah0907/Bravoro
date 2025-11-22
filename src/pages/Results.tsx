@@ -3,8 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Download, RefreshCw, Trash2, CalendarIcon } from "lucide-react";
+import { LogOut, Download, RefreshCw, Trash2, CalendarIcon, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -218,7 +224,7 @@ const Results = () => {
     setSelectedIds(newSelected);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, errorMessage?: string | null) => {
     switch (status) {
       case "pending":
         return <Badge variant="secondary">Pending</Badge>;
@@ -227,7 +233,23 @@ const Results = () => {
       case "completed":
         return <Badge variant="default" className="bg-green-600">Completed</Badge>;
       case "error":
-        return <Badge variant="destructive">Error</Badge>;
+        return (
+          <div className="flex items-center gap-2">
+            <Badge variant="destructive">Error</Badge>
+            {errorMessage && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-destructive cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">{errorMessage}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -447,7 +469,7 @@ const Results = () => {
                         )}
                       </TableCell>
                       <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
-                      <TableCell>{getStatusBadge(search.status)}</TableCell>
+                      <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
                       <TableCell className="text-right">
                         <div className="min-h-[40px] flex items-center justify-end">
                           {search.status === "completed" && search.result_url ? (
@@ -458,8 +480,6 @@ const Results = () => {
                               <Download className="h-4 w-4 mr-2" />
                               Download
                             </Button>
-                          ) : search.status === "error" && search.error_message ? (
-                            <span className="text-sm text-destructive">{search.error_message}</span>
                           ) : (
                             <span className="text-sm text-muted-foreground">-</span>
                           )}
