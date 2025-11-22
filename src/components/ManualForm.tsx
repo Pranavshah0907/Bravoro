@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Sparkles } from "lucide-react";
 import { ProcessingStatus } from "./ProcessingStatus";
 import { z } from "zod";
 
@@ -172,48 +172,56 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   }
 
   return (
-    <Card className="shadow-soft">
-      <CardHeader>
-        <CardTitle>Manual Lead Entry</CardTitle>
-        <CardDescription>
+    <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          Manual Lead Entry
+        </CardTitle>
+        <CardDescription className="text-base">
           Fill in the details below to submit a lead enrichment request
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="company">Company Name *</Label>
-            <Input
-              id="company"
-              type="text"
-              placeholder="Acme Corporation"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              required
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="company" className="text-foreground font-medium">Company Name *</Label>
+              <Input
+                id="company"
+                type="text"
+                placeholder="Acme Corporation"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+                className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="domain">Domain Name *</Label>
-            <Input
-              id="domain"
-              type="text"
-              placeholder="acme.com"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              required
-            />
+            <div className="space-y-2">
+              <Label htmlFor="domain" className="text-foreground font-medium">Domain Name *</Label>
+              <Input
+                id="domain"
+                type="text"
+                placeholder="acme.com"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                required
+                className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
           </div>
 
           <div className="space-y-3">
-            <Label>Functions * (Select all that apply)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 border rounded-lg bg-muted/20">
+            <Label className="text-foreground font-medium">Functions * (Select all that apply)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
               {LINKEDIN_FUNCTIONS.map((func) => (
-                <div key={func} className="flex items-center space-x-2">
+                <div key={func} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
                   <Checkbox
                     id={func}
                     checked={selectedFunctions.includes(func)}
                     onCheckedChange={() => handleFunctionToggle(func)}
+                    className="border-primary/50"
                   />
                   <Label htmlFor={func} className="font-normal cursor-pointer text-sm">
                     {func}
@@ -222,21 +230,22 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               ))}
             </div>
             {selectedFunctions.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Selected: {selectedFunctions.length} function(s)
+              <p className="text-sm text-primary font-medium">
+                ✓ Selected: {selectedFunctions.length} function(s)
               </p>
             )}
           </div>
 
           <div className="space-y-3">
-            <Label>Seniority Level * (Select all that apply)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3 border rounded-lg bg-muted/20">
+            <Label className="text-foreground font-medium">Seniority Level * (Select all that apply)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
               {SENIORITY_LEVELS.map((level) => (
-                <div key={level} className="flex items-center space-x-2">
+                <div key={level} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
                   <Checkbox
                     id={level}
                     checked={selectedSeniority.includes(level)}
                     onCheckedChange={() => handleSeniorityToggle(level)}
+                    className="border-primary/50"
                   />
                   <Label htmlFor={level} className="font-normal cursor-pointer text-sm">
                     {level}
@@ -245,54 +254,57 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               ))}
             </div>
             {selectedSeniority.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Selected: {selectedSeniority.length} seniority level(s)
+              <p className="text-sm text-primary font-medium">
+                ✓ Selected: {selectedSeniority.length} seniority level(s)
               </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="resultsPerFunction">Results Per Function *</Label>
-            <Input
-              id="resultsPerFunction"
-              type="number"
-              min="1"
-              placeholder="10"
-              value={resultsPerFunction}
-              onChange={(e) => setResultsPerFunction(parseInt(e.target.value) || 0)}
-              required
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="resultsPerFunction" className="text-foreground font-medium">Results Per Function *</Label>
+              <Input
+                id="resultsPerFunction"
+                type="number"
+                min="1"
+                placeholder="10"
+                value={resultsPerFunction}
+                onChange={(e) => setResultsPerFunction(parseInt(e.target.value) || 0)}
+                required
+                className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="geography">Geography *</Label>
-            <Select value={geography} onValueChange={setGeography} required>
-              <SelectTrigger id="geography">
-                <SelectValue placeholder="Select a country" />
-              </SelectTrigger>
-              <SelectContent>
-                {COUNTRIES.map((country) => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label htmlFor="geography" className="text-foreground font-medium">Geography *</Label>
+              <Select value={geography} onValueChange={setGeography} required>
+                <SelectTrigger id="geography" className="h-11">
+                  <SelectValue placeholder="Select a country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full h-12 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow text-base font-medium transition-all"
             disabled={!isFormValid() || loading}
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Submitting...
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
+                <Send className="mr-2 h-5 w-5" />
                 Submit Request
               </>
             )}

@@ -85,26 +85,39 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md shadow-strong border-border/50">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto flex flex-col items-center gap-3">
-            <img src={leapLogo} alt="LEAP Logo" className="h-16 w-16" />
-            <img src={leapFont} alt="LEAP" className="h-10" />
-            <p className="text-sm text-muted-foreground tracking-wide">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 animate-gradient-shift" 
+           style={{ backgroundSize: "200% 200%" }} />
+      
+      {/* Decorative elements */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/5 rounded-full blur-3xl" />
+
+      <Card className="w-full max-w-md relative z-10 shadow-strong border-border/50 hover-lift animate-scale-in backdrop-blur-sm bg-card/95">
+        <CardHeader className="text-center space-y-4 pb-6">
+          <div className="mx-auto flex flex-col items-center gap-4">
+            <div className="relative">
+              <img src={leapLogo} alt="LEAP Logo" className="h-20 w-20 animate-fade-in" />
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+            </div>
+            <img src={leapFont} alt="LEAP" className="h-12 animate-fade-in" style={{ animationDelay: "0.1s" }} />
+            <p className="text-sm text-muted-foreground tracking-wide animate-fade-in" style={{ animationDelay: "0.2s" }}>
               Lead Enrichment & Automation Platform
             </p>
           </div>
-          <div>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
-            <CardDescription>Sign in to access your account</CardDescription>
+          <div className="animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <CardTitle className="text-3xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Welcome Back
+            </CardTitle>
+            <CardDescription className="text-base mt-2">Sign in to access your account</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>
           <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
+              <Label htmlFor="email" className="flex items-center gap-2 text-foreground">
+                <Mail className="h-4 w-4 text-primary" />
                 Email Address
               </Label>
               <Input
@@ -114,13 +127,13 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="transition-all"
+                className="transition-all h-11 focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
+              <Label htmlFor="password" className="flex items-center gap-2 text-foreground">
+                <Lock className="h-4 w-4 text-primary" />
                 Password
               </Label>
               <Input
@@ -130,11 +143,15 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="transition-all"
+                className="transition-all h-11 focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow transition-all" 
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -154,14 +171,14 @@ const Auth = () => {
               <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+              <span className="bg-card px-3 py-1 text-muted-foreground rounded-full">Or continue with</span>
             </div>
           </div>
 
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full h-11 hover:bg-muted/50 transition-all hover-lift"
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
@@ -186,7 +203,7 @@ const Auth = () => {
             Continue with Google
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-center text-sm text-muted-foreground">
             Don't have an account? Contact your administrator
           </p>
         </CardContent>

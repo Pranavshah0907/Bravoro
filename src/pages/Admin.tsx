@@ -9,8 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Loader2, Shield, Users, Shuffle, Trash2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles } from "lucide-react";
 import { z } from "zod";
+import leapLogo from "@/assets/leap-logo.png";
+import leapFont from "@/assets/leap-font.png";
 
 const createUserSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -233,8 +235,11 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground animate-pulse">Loading admin panel...</p>
+        </div>
       </div>
     );
   }
@@ -244,41 +249,58 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/5">
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
+      {/* Animated background elements */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s" }} />
+
+      <header className="border-b border-border/50 glass-effect sticky top-0 z-50 animate-slide-up">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate("/dashboard")}
+                className="hover-lift"
+              >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
+                Dashboard
               </Button>
-              <div className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold">Admin Panel</h1>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Shield className="h-8 w-8 text-primary" />
+                  <div className="absolute inset-0 bg-primary/10 rounded-full blur-lg" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    Admin Panel
+                  </h1>
+                  <p className="text-xs text-muted-foreground">Manage users and permissions</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
+      <main className="container mx-auto px-4 py-12 max-w-6xl space-y-8 relative z-10">
         {/* Create User Card */}
-        <Card className="shadow-strong">
+        <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Sparkles className="h-5 w-5 text-primary" />
               Create New User
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base">
               Create user credentials. Users will be required to reset their password on first login.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleCreateUser} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
+                  <Label htmlFor="email" className="text-foreground font-medium">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -286,10 +308,11 @@ const Admin = () => {
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
                     required
+                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Label htmlFor="fullName" className="text-foreground font-medium">Full Name *</Label>
                   <Input
                     id="fullName"
                     type="text"
@@ -297,11 +320,12 @@ const Admin = () => {
                     value={newUserFullName}
                     onChange={(e) => setNewUserFullName(e.target.value)}
                     required
+                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tempPassword">Temporary Password *</Label>
+                <Label htmlFor="tempPassword" className="text-foreground font-medium">Temporary Password *</Label>
                 <div className="flex gap-2">
                   <Input
                     id="tempPassword"
@@ -310,23 +334,27 @@ const Admin = () => {
                     value={newUserTempPassword}
                     onChange={(e) => setNewUserTempPassword(e.target.value)}
                     required
-                    className="flex-1"
+                    className="flex-1 h-11 transition-all focus:ring-2 focus:ring-primary/20"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleGeneratePassword}
-                    className="shrink-0"
+                    className="shrink-0 h-11 hover-lift"
                   >
                     <Shuffle className="h-4 w-4 mr-2" />
                     Generate
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   User will be required to change this password on first login
                 </p>
               </div>
-              <Button type="submit" disabled={creatingUser} className="w-full md:w-auto">
+              <Button 
+                type="submit" 
+                disabled={creatingUser} 
+                className="w-full md:w-auto h-11 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow transition-all"
+              >
                 {creatingUser ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -344,61 +372,74 @@ const Admin = () => {
         </Card>
 
         {/* Users List */}
-        <Card className="shadow-strong">
+        <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Users className="h-5 w-5 text-primary" />
               All Users
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base">
               View and manage all registered users
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Full Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.email}</TableCell>
-                    <TableCell>{user.full_name || "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.requires_password_reset ? "outline" : "default"}>
-                        {user.requires_password_reset ? "Pending" : "Active"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id, user.email)}
-                        disabled={user.role === "admin"}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="rounded-lg border border-border/50 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="font-semibold">Email</TableHead>
+                    <TableHead className="font-semibold">Full Name</TableHead>
+                    <TableHead className="font-semibold">Role</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Created</TableHead>
+                    <TableHead className="text-right font-semibold">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user, index) => (
+                    <TableRow 
+                      key={user.id}
+                      className="hover:bg-muted/20 transition-colors"
+                      style={{ 
+                        animation: "fade-in 0.5s ease-out forwards",
+                        animationDelay: `${index * 0.05}s`,
+                        opacity: 0
+                      }}
+                    >
+                      <TableCell className="font-medium">{user.email}</TableCell>
+                      <TableCell>{user.full_name || "-"}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={user.role === "admin" ? "default" : "secondary"}
+                          className={user.role === "admin" ? "bg-gradient-to-r from-primary to-secondary" : ""}
+                        >
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.requires_password_reset ? "outline" : "default"}>
+                          {user.requires_password_reset ? "Pending" : "Active"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id, user.email)}
+                          disabled={user.role === "admin"}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </main>
