@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       console.log('Calling n8n webhook to send welcome email');
       
       try {
-        const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook-test/email-sender', {
+        const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook/email-sender', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
