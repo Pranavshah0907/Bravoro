@@ -44,7 +44,7 @@ serve(async (req) => {
 
     console.log('User email to send:', userEmail);
 
-    const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/incoming_request';
+    const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
 
     const payloadToSend = {
       ...searchData,
