@@ -122,14 +122,18 @@ Deno.serve(async (req) => {
         .update({ requires_password_reset: true })
         .eq('id', authData.user.id);
 
-      // Assign the specified role (default trigger will be overridden if different)
-      if (role === 'admin') {
-        await supabaseAdmin
-          .from('user_roles')
-          .upsert({ user_id: authData.user.id, role: 'admin' }, { onConflict: 'user_id,role' });
-      }
+      // Delete any existing role assignments (from trigger)
+      await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', authData.user.id);
 
-      console.log('User created successfully:', authData.user.id);
+      // Assign the specified role
+      await supabaseAdmin
+        .from('user_roles')
+        .insert({ user_id: authData.user.id, role: role });
+
+      console.log('User created successfully with role:', role, authData.user.id);
 
       // Send welcome email via n8n webhook
       const origin = req.headers.get('origin') || supabaseUrl;
