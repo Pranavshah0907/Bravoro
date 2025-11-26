@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles } from "lucide-react";
+import { ArrowLeft, UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles, RefreshCw } from "lucide-react";
 import { z } from "zod";
 import leapLogo from "@/assets/leap-logo.png";
 import leapFont from "@/assets/leap-font.png";
@@ -133,6 +133,36 @@ const Admin = () => {
       title: "Password Generated",
       description: "Strong password has been generated",
     });
+  };
+
+  const handleUpdateRole = async (userId: string, userEmail: string, currentRole: string) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    
+    if (!confirm(`Are you sure you want to change ${userEmail}'s role to ${newRole}?`)) {
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-update-role', {
+        body: { userId, newRole },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Role Updated",
+        description: `${userEmail} is now a ${newRole}`,
+      });
+
+      loadUsers();
+    } catch (error: any) {
+      toast({
+        title: "Failed to Update Role",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteUser = async (userId: string, userEmail: string) => {
@@ -430,12 +460,23 @@ const Admin = () => {
                       <TableCell className="font-medium">{user.email}</TableCell>
                       <TableCell>{user.full_name || "-"}</TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={user.role === "admin" ? "default" : "secondary"}
-                          className={user.role === "admin" ? "bg-gradient-to-r from-primary to-secondary" : ""}
-                        >
-                          {user.role}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={user.role === "admin" ? "default" : "secondary"}
+                            className={user.role === "admin" ? "bg-gradient-to-r from-primary to-secondary" : ""}
+                          >
+                            {user.role}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUpdateRole(user.id, user.email, user.role)}
+                            className="h-6 w-6 p-0 hover:bg-muted"
+                            title={`Change role to ${user.role === 'admin' ? 'user' : 'admin'}`}
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={user.requires_password_reset ? "outline" : "default"}>
