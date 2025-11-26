@@ -76,6 +76,7 @@ serve(async (req) => {
 
     const payloadToSend = {
       ...searchData,
+      search_id: searchId,
       user_email: userEmail,
     };
 
