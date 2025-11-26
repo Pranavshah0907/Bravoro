@@ -26,26 +26,45 @@ Deno.serve(async (req) => {
     // Verify the requesting user is an admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('No authorization header present');
       throw new Error('No authorization header');
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('Attempting to verify user token');
+    
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    if (userError) {
+      console.error('Error getting user from token:', userError);
+      throw new Error('Invalid authentication token');
     }
+    
+    if (!user) {
+      console.error('No user found for token');
+      throw new Error('Unauthorized: User not found');
+    }
+    
+    console.log('User verified:', user.id);
 
     // Check if user has admin role
-    const { data: roleData } = await supabaseAdmin
+    const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .single();
 
-    if (roleData?.role !== 'admin') {
-      throw new Error('User is not an admin');
+    if (roleError) {
+      console.error('Error fetching user role:', roleError);
+      throw new Error('Failed to verify admin status');
     }
+
+    if (!roleData || roleData.role !== 'admin') {
+      console.error('User is not an admin:', user.id, 'role:', roleData?.role);
+      throw new Error('Insufficient permissions: Admin role required');
+    }
+    
+    console.log('Admin verified:', user.id);
 
     // Get the request body
     const { userId } = await req.json();
