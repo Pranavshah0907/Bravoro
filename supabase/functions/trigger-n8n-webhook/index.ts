@@ -1,11 +1,28 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const requestSchema = z.object({
+  searchId: z.string().uuid({ message: "Invalid searchId: must be a valid UUID" }),
+  searchData: z.object({
+    company_name: z.string().optional(),
+    domain: z.string().optional(),
+    functions: z.array(z.string()).optional(),
+    geography: z.string().optional(),
+    seniority: z.array(z.string()).optional(),
+    results_per_function: z.number().int().positive().optional(),
+  }),
+  entryType: z.string().optional(),
+  apollo_credits: z.number().int().min(0).max(1000000).optional().default(0),
+  cleon1_credits: z.number().int().min(0).max(1000000).optional().default(0),
+  lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,7 +30,18 @@ serve(async (req) => {
   }
 
   try {
-    const { searchData, searchId, entryType, apollo_credits = 0, cleon1_credits = 0, lusha_credits = 0 } = await req.json();
+    const body = await req.json();
+    const validationResult = requestSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.issues);
+      return new Response(
+        JSON.stringify({ error: 'Invalid input', details: validationResult.error.issues }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { searchData, searchId, entryType, apollo_credits, cleon1_credits, lusha_credits } = validationResult.data;
     console.log('Triggering N8N webhook with data:', searchData);
 
     // Initialize Supabase client

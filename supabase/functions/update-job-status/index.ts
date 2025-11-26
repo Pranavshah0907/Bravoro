@@ -1,11 +1,21 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const requestSchema = z.object({
+  job_id: z.string().uuid({ message: "Invalid job_id: must be a valid UUID" }),
+  status: z.enum(['pending', 'processing', 'completed', 'error'], {
+    errorMap: () => ({ message: "Status must be one of: pending, processing, completed, error" }),
+  }),
+  result_file_path: z.string().max(500).optional(),
+  error_message: z.string().max(1000).optional(),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,16 +23,19 @@ serve(async (req) => {
   }
 
   try {
-    const { job_id, status, result_file_path, error_message } = await req.json();
+    const body = await req.json();
+    const validationResult = requestSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.issues);
+      return new Response(
+        JSON.stringify({ error: 'Invalid input', details: validationResult.error.issues }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { job_id, status, result_file_path, error_message } = validationResult.data;
     console.log('Updating job status:', { job_id, status, result_file_path });
-
-    if (!job_id) {
-      throw new Error('job_id is required');
-    }
-
-    if (!status) {
-      throw new Error('status is required');
-    }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
