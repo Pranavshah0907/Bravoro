@@ -71,6 +71,16 @@ Deno.serve(async (req) => {
 
     console.log('Deleting user:', userId);
 
+    // Sign out the user from all sessions before deletion
+    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(userId);
+    
+    if (signOutError) {
+      console.error('Error signing out user:', signOutError);
+      // Continue with deletion even if sign out fails
+    } else {
+      console.log('User signed out successfully:', userId);
+    }
+
     // Delete the user
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
