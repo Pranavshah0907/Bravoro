@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const uuidSchema = z.string().uuid({ message: "Invalid UUID format" });
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,16 +24,21 @@ serve(async (req) => {
     const file = formData.get('file') as File | null;
     const searchId = formData.get('search_id') as string;
     const errorMessage = formData.get('error_message') as string | null;
-    const apolloCredits = parseInt(formData.get('apollo_credits') as string || '0') || 0;
-    const cleon1Credits = parseInt(formData.get('cleon1_credits') as string || '0') || 0;
-    const lushaCredits = parseInt(formData.get('lusha_credits') as string || '0') || 0;
-
-    if (!searchId) {
+    
+    // Validate search_id is a valid UUID
+    const searchIdValidation = uuidSchema.safeParse(searchId);
+    if (!searchIdValidation.success) {
+      console.error('Invalid search_id:', searchIdValidation.error.issues);
       return new Response(
-        JSON.stringify({ error: 'Missing search_id' }),
+        JSON.stringify({ error: 'Invalid search_id: must be a valid UUID', details: searchIdValidation.error.issues }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Parse and validate credit values with bounds (0-1000000)
+    const apolloCredits = Math.max(0, Math.min(1000000, parseInt(formData.get('apollo_credits') as string || '0') || 0));
+    const cleon1Credits = Math.max(0, Math.min(1000000, parseInt(formData.get('cleon1_credits') as string || '0') || 0));
+    const lushaCredits = Math.max(0, Math.min(1000000, parseInt(formData.get('lusha_credits') as string || '0') || 0));
 
     // Handle error case (no file, just error message)
     if (errorMessage && !file) {
