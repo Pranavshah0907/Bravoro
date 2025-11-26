@@ -18,6 +18,7 @@ const createUserSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   fullName: z.string().trim().min(2, "Full name must be at least 2 characters"),
   tempPassword: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["admin", "user"]),
 });
 
 interface UserWithRole {
@@ -41,6 +42,7 @@ const Admin = () => {
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserFullName, setNewUserFullName] = useState("");
   const [newUserTempPassword, setNewUserTempPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
 
   useEffect(() => {
     checkAdminAccess();
@@ -170,6 +172,7 @@ const Admin = () => {
         email: newUserEmail,
         fullName: newUserFullName,
         tempPassword: newUserTempPassword,
+        role: newUserRole,
       });
 
       setCreatingUser(true);
@@ -180,6 +183,7 @@ const Admin = () => {
           email: newUserEmail.trim(),
           fullName: newUserFullName.trim(),
           tempPassword: newUserTempPassword,
+          role: newUserRole,
         },
       });
 
@@ -204,6 +208,7 @@ const Admin = () => {
             setNewUserEmail("");
             setNewUserFullName("");
             setNewUserTempPassword("");
+            setNewUserRole("user");
             loadUsers();
             return;
           }
@@ -221,6 +226,7 @@ const Admin = () => {
       setNewUserEmail("");
       setNewUserFullName("");
       setNewUserTempPassword("");
+      setNewUserRole("user");
       loadUsers();
     } catch (error: any) {
       toast({
@@ -348,6 +354,21 @@ const Admin = () => {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   User will be required to change this password on first login
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role" className="text-foreground font-medium">User Role *</Label>
+                <select
+                  id="role"
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value as "admin" | "user")}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <p className="text-sm text-muted-foreground">
+                  Admins have full access to the admin panel and can manage users
                 </p>
               </div>
               <Button 
