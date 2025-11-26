@@ -40,7 +40,7 @@ const LINKEDIN_FUNCTIONS = [
 const formSchema = z.object({
   companyName: z.string().trim().min(1, "Company name is required"),
   domain: z.string().trim().min(1, "Domain name is required"),
-  functions: z.array(z.string()).min(1, "At least one function must be selected"),
+  functions: z.array(z.string()),
   seniority: z.array(z.string()).min(1, "At least one seniority level must be selected"),
   geography: z.string().min(1, "Geography is required"),
   resultsPerFunction: z.number().min(1, "Results per function must be at least 1"),
@@ -75,7 +75,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   };
 
   const isFormValid = () => {
-    return companyName.trim() && domain.trim() && selectedFunctions.length > 0 && selectedSeniority.length > 0 && geography && resultsPerFunction > 0;
+    return companyName.trim() && domain.trim() && selectedSeniority.length > 0 && geography && resultsPerFunction > 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,7 +213,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
           </div>
 
           <div className="space-y-3">
-            <Label className="text-foreground font-medium">Functions * (Select all that apply)</Label>
+            <Label className="text-foreground font-medium">Functions (Select all that apply)</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
               {LINKEDIN_FUNCTIONS.map((func) => (
                 <div key={func} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
