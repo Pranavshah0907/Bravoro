@@ -42,7 +42,7 @@ const formSchema = z.object({
   domain: z.string().trim().min(1, "Domain name is required"),
   functions: z.array(z.string()),
   seniority: z.array(z.string()).min(1, "At least one seniority level must be selected"),
-  geography: z.string().min(1, "Geography is required"),
+  geography: z.string(),
   resultsPerFunction: z.number().min(1, "Results per function must be at least 1"),
 });
 
@@ -75,7 +75,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   };
 
   const isFormValid = () => {
-    return companyName.trim() && domain.trim() && selectedSeniority.length > 0 && geography && resultsPerFunction > 0;
+    return companyName.trim() && domain.trim() && selectedSeniority.length > 0 && resultsPerFunction > 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -276,8 +276,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="geography" className="text-foreground font-medium">Geography *</Label>
-              <Select value={geography} onValueChange={setGeography} required>
+              <Label htmlFor="geography" className="text-foreground font-medium">Country</Label>
+              <Select value={geography} onValueChange={setGeography}>
                 <SelectTrigger id="geography" className="h-11">
                   <SelectValue placeholder="Select a country" />
                 </SelectTrigger>
