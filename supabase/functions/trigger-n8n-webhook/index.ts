@@ -44,7 +44,7 @@ serve(async (req) => {
 
     console.log('User email to send:', userEmail);
 
-    const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook-test/incoming_request';
+    const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
 
     const payloadToSend = {
       ...searchData,
@@ -94,7 +94,7 @@ serve(async (req) => {
         .eq('id', searchId);
     } else if (result.status === 'completed' || result.status === 'success') {
       // Construct download URL from file_id
-      const downloadUrl = `https://n8n.srv1081444.hstgr.cloud/webhook-test/download?fileId=${result.file_id}`;
+      const downloadUrl = `https://n8n.srv1081444.hstgr.cloud/webhook/download?fileId=${result.file_id}`;
       
       await supabase
         .from('searches')
