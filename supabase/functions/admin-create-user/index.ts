@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     }
 
     // Get the request body
-    const { email, fullName, tempPassword } = await req.json();
+    const { email, fullName, tempPassword, role = 'user' } = await req.json();
 
     console.log('Creating user with email:', email);
 
@@ -121,6 +121,13 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({ requires_password_reset: true })
         .eq('id', authData.user.id);
+
+      // Assign the specified role (default trigger will be overridden if different)
+      if (role === 'admin') {
+        await supabaseAdmin
+          .from('user_roles')
+          .upsert({ user_id: authData.user.id, role: 'admin' }, { onConflict: 'user_id,role' });
+      }
 
       console.log('User created successfully:', authData.user.id);
 
