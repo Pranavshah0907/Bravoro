@@ -2,123 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* LEAP Company Color Palette Design System
+   Ocean Blue: #58dddd - Primary brand color
+   Cardinal Blue: #277587 - Secondary/Accent
+   Caretta Green: #009da5 - Buttons/Actions
+   Dark Galaxy: #0d222e - Dark backgrounds
+   Blue Grass: #e4efef - Light surfaces
+   Bright Pearl: #f5f8fa - Background
 */
 
 @layer base {
   :root {
-    --background: 220 25% 97%;
-    --foreground: 220 15% 10%;
+    --background: 195 33% 97%;
+    --foreground: 202 55% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 10%;
+    --card-foreground: 202 55% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 10%;
+    --popover-foreground: 202 55% 12%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 217 91% 75%;
+    /* Ocean Blue - Primary */
+    --primary: 180 66% 61%;
+    --primary-foreground: 202 55% 12%;
+    --primary-glow: 180 66% 75%;
 
-    --secondary: 270 60% 65%;
+    /* Cardinal Blue - Secondary */
+    --secondary: 191 55% 37%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 95%;
-    --muted-foreground: 220 10% 45%;
+    /* Blue Grass - Muted */
+    --muted: 180 20% 92%;
+    --muted-foreground: 180 2% 44%;
 
-    --accent: 340 85% 60%;
+    /* Caretta Green - Accent (buttons/actions) */
+    --accent: 183 100% 32%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 92%;
-    --ring: 217 91% 60%;
+    --border: 177 16% 85%;
+    --input: 180 20% 92%;
+    --ring: 180 66% 61%;
 
     --radius: 0.875rem;
     
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(270 60% 65%));
-    --gradient-secondary: linear-gradient(135deg, hsl(340 85% 60%), hsl(270 60% 65%));
-    --gradient-hero: linear-gradient(180deg, hsl(217 91% 60% / 0.03), hsl(270 60% 65% / 0.05));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 25% 99%));
-    --shadow-soft: 0 2px 20px hsl(217 91% 60% / 0.08);
-    --shadow-medium: 0 8px 30px hsl(217 91% 60% / 0.12);
-    --shadow-strong: 0 20px 50px hsl(217 91% 60% / 0.15);
-    --shadow-glow: 0 0 40px hsl(217 91% 75% / 0.3);
+    /* Gradients using company colors */
+    --gradient-primary: linear-gradient(135deg, hsl(180 66% 61%), hsl(183 100% 32%));
+    --gradient-secondary: linear-gradient(135deg, hsl(191 55% 37%), hsl(183 100% 32%));
+    --gradient-hero: linear-gradient(180deg, hsl(180 66% 61% / 0.05), hsl(183 100% 32% / 0.08));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(180 20% 97%));
+    
+    /* Shadows with brand color tints */
+    --shadow-soft: 0 2px 20px hsl(191 55% 37% / 0.08);
+    --shadow-medium: 0 8px 30px hsl(191 55% 37% / 0.12);
+    --shadow-strong: 0 20px 50px hsl(191 55% 37% / 0.15);
+    --shadow-glow: 0 0 40px hsl(180 66% 75% / 0.3);
+    
+    /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    --chart-1: 217 91% 60%;
-    --chart-2: 270 60% 65%;
-    --chart-3: 340 85% 60%;
-    --chart-4: 160 60% 50%;
-    --chart-5: 40 90% 60%;
+    /* Chart colors */
+    --chart-1: 180 66% 61%;
+    --chart-2: 191 55% 37%;
+    --chart-3: 183 100% 32%;
+    --chart-4: 176 63% 45%;
+    --chart-5: 183 100% 21%;
 
-    --sidebar-background: 0 0% 99%;
-    --sidebar-foreground: 220 15% 20%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 96%;
-    --sidebar-accent-foreground: 220 15% 20%;
-    --sidebar-border: 220 15% 92%;
-    --sidebar-ring: 217 91% 60%;
+    /* Sidebar */
+    --sidebar-background: 195 33% 99%;
+    --sidebar-foreground: 202 55% 15%;
+    --sidebar-primary: 180 66% 61%;
+    --sidebar-primary-foreground: 202 55% 12%;
+    --sidebar-accent: 180 20% 96%;
+    --sidebar-accent-foreground: 202 55% 15%;
+    --sidebar-border: 177 16% 90%;
+    --sidebar-ring: 180 66% 61%;
   }
 
   .dark {
-    --background: 220 25% 8%;
-    --foreground: 220 20% 96%;
+    /* Dark Galaxy background */
+    --background: 202 55% 8%;
+    --foreground: 180 20% 96%;
 
-    --card: 220 22% 11%;
-    --card-foreground: 220 20% 96%;
+    --card: 202 45% 11%;
+    --card-foreground: 180 20% 96%;
 
-    --popover: 220 22% 11%;
-    --popover-foreground: 220 20% 96%;
+    --popover: 202 45% 11%;
+    --popover-foreground: 180 20% 96%;
 
-    --primary: 217 91% 65%;
-    --primary-foreground: 220 25% 8%;
-    --primary-glow: 217 91% 80%;
+    /* Ocean Blue - Primary (slightly brighter for dark mode) */
+    --primary: 180 66% 65%;
+    --primary-foreground: 202 55% 8%;
+    --primary-glow: 180 66% 80%;
 
-    --secondary: 270 60% 70%;
-    --secondary-foreground: 220 25% 8%;
+    /* Cardinal Blue - Secondary */
+    --secondary: 191 55% 45%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 18% 16%;
-    --muted-foreground: 220 15% 60%;
+    /* Muted */
+    --muted: 202 35% 16%;
+    --muted-foreground: 180 15% 60%;
 
-    --accent: 340 85% 65%;
-    --accent-foreground: 220 25% 8%;
+    /* Caretta Green - Accent */
+    --accent: 183 100% 38%;
+    --accent-foreground: 202 55% 8%;
 
     --destructive: 0 84% 65%;
-    --destructive-foreground: 220 25% 8%;
+    --destructive-foreground: 202 55% 8%;
 
-    --border: 220 18% 18%;
-    --input: 220 18% 16%;
-    --ring: 217 91% 65%;
+    --border: 202 35% 18%;
+    --input: 202 35% 16%;
+    --ring: 180 66% 65%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 65%), hsl(270 60% 70%));
-    --gradient-secondary: linear-gradient(135deg, hsl(340 85% 65%), hsl(270 60% 70%));
-    --gradient-hero: linear-gradient(180deg, hsl(217 91% 65% / 0.05), hsl(270 60% 70% / 0.08));
-    --gradient-card: linear-gradient(145deg, hsl(220 22% 11%), hsl(220 22% 13%));
-    --shadow-soft: 0 2px 20px hsl(217 91% 65% / 0.15);
-    --shadow-medium: 0 8px 30px hsl(217 91% 65% / 0.2);
-    --shadow-strong: 0 20px 50px hsl(217 91% 65% / 0.25);
-    --shadow-glow: 0 0 40px hsl(217 91% 80% / 0.2);
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(180 66% 65%), hsl(183 100% 38%));
+    --gradient-secondary: linear-gradient(135deg, hsl(191 55% 45%), hsl(183 100% 38%));
+    --gradient-hero: linear-gradient(180deg, hsl(180 66% 65% / 0.08), hsl(183 100% 38% / 0.12));
+    --gradient-card: linear-gradient(145deg, hsl(202 45% 11%), hsl(202 45% 14%));
+    
+    /* Dark mode shadows */
+    --shadow-soft: 0 2px 20px hsl(180 66% 65% / 0.15);
+    --shadow-medium: 0 8px 30px hsl(180 66% 65% / 0.2);
+    --shadow-strong: 0 20px 50px hsl(180 66% 65% / 0.25);
+    --shadow-glow: 0 0 40px hsl(180 66% 80% / 0.25);
 
-    --chart-1: 217 91% 65%;
-    --chart-2: 270 60% 70%;
-    --chart-3: 340 85% 65%;
-    --chart-4: 160 60% 55%;
-    --chart-5: 40 90% 65%;
+    /* Chart colors dark */
+    --chart-1: 180 66% 65%;
+    --chart-2: 191 55% 45%;
+    --chart-3: 183 100% 38%;
+    --chart-4: 176 63% 50%;
+    --chart-5: 183 80% 30%;
     
-    --sidebar-background: 220 22% 10%;
-    --sidebar-foreground: 220 20% 90%;
-    --sidebar-primary: 217 91% 65%;
-    --sidebar-primary-foreground: 220 25% 8%;
-    --sidebar-accent: 220 18% 15%;
-    --sidebar-accent-foreground: 220 20% 90%;
-    --sidebar-border: 220 18% 16%;
-    --sidebar-ring: 217 91% 65%;
+    /* Sidebar dark */
+    --sidebar-background: 202 45% 10%;
+    --sidebar-foreground: 180 20% 92%;
+    --sidebar-primary: 180 66% 65%;
+    --sidebar-primary-foreground: 202 55% 8%;
+    --sidebar-accent: 202 35% 15%;
+    --sidebar-accent-foreground: 180 20% 92%;
+    --sidebar-border: 202 35% 16%;
+    --sidebar-ring: 180 66% 65%;
   }
 }
 
@@ -138,24 +164,24 @@ All colors MUST be HSL.
 
 @layer utilities {
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
+    animation: fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .animate-slide-up {
-    animation: slide-up 0.6s ease-out forwards;
+    animation: slide-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .animate-scale-in {
-    animation: scale-in 0.4s ease-out forwards;
+    animation: scale-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .hover-lift {
-    transition: var(--transition-smooth);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-medium);
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-strong);
   }
 
   .hover-glow:hover {
@@ -163,16 +189,33 @@ All colors MUST be HSL.
   }
 
   .glass-effect {
-    background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(10px);
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(12px);
     border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .btn-gradient {
+    background: var(--gradient-primary);
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .btn-gradient:hover {
+    filter: brightness(1.1);
+    box-shadow: var(--shadow-glow);
   }
 }
 
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -183,7 +226,7 @@ All colors MUST be HSL.
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
@@ -194,7 +237,7 @@ All colors MUST be HSL.
 @keyframes scale-in {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
@@ -208,5 +251,23 @@ All colors MUST be HSL.
   }
   50% {
     background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(180 66% 61% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(180 66% 61% / 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
   }
 }

@@ -107,14 +107,14 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
       {/* Animated background elements */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s" }} />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
 
       <header className="border-b border-border/50 glass-effect sticky top-0 z-50 animate-slide-up">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <img src={leapLogo} alt="LEAP Logo" className="h-12 w-12 transition-transform hover:scale-110" />
+              <img src={leapLogo} alt="LEAP Logo" className="h-12 w-12 transition-transform duration-300 hover:scale-110" />
               <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl" />
             </div>
             <div>
@@ -127,7 +127,7 @@ const Dashboard = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/analytics")}
-              className="hover-lift hover:text-primary transition-all"
+              className="hover-lift transition-all"
             >
               <BarChart3 className="mr-2 h-4 w-4" />
               Analytics
@@ -136,7 +136,7 @@ const Dashboard = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/results")}
-              className="hover-lift hover:text-primary transition-all"
+              className="hover-lift transition-all"
             >
               <FileText className="mr-2 h-4 w-4" />
               Results
@@ -146,7 +146,7 @@ const Dashboard = () => {
                 variant="secondary" 
                 size="sm" 
                 onClick={() => navigate("/admin")}
-                className="hover-lift bg-gradient-to-r from-secondary/10 to-accent/10 hover:from-secondary/20 hover:to-accent/20 transition-all"
+                className="hover-lift transition-all"
               >
                 <Shield className="mr-2 h-4 w-4" />
                 Admin
@@ -183,13 +183,13 @@ const Dashboard = () => {
           <TabsList className="grid w-full grid-cols-2 mb-8 h-12 p-1 bg-muted/50 backdrop-blur-sm">
             <TabsTrigger 
               value="manual" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground transition-all"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-primary-foreground transition-all duration-300"
             >
               Manual Entry
             </TabsTrigger>
             <TabsTrigger 
               value="bulk"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground transition-all"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-primary-foreground transition-all duration-300"
             >
               Bulk Upload
             </TabsTrigger>

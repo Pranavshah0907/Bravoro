@@ -279,8 +279,8 @@ const Results = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
       {/* Animated background elements */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s" }} />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
 
       <header className="border-b border-border/50 glass-effect sticky top-0 z-50 animate-slide-up">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -299,7 +299,7 @@ const Results = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/dashboard")}
-              className="hover-lift hover:text-primary transition-all"
+              className="hover-lift transition-all duration-300"
             >
               Back to Dashboard
             </Button>
