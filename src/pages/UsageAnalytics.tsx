@@ -180,21 +180,25 @@ const UsageAnalytics = () => {
   const totals = getTotalCredits();
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative p-8">
+      {/* Animated background elements */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+      
+      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
+        <div className="flex items-center justify-between animate-fade-in">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hover-lift">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Usage Analytics</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Usage Analytics</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Last Update: {format(lastUpdate, "MMM d yyyy 'at' hh:mm a")}
               </p>
             </div>
           </div>
-          <Button onClick={fetchCreditData} disabled={loading} variant="outline" size="sm">
+          <Button onClick={fetchCreditData} disabled={loading} variant="outline" size="sm" className="hover-lift transition-all duration-300">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -202,9 +206,9 @@ const UsageAnalytics = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Pie Chart Card */}
-          <Card className="lg:col-span-4">
+          <Card className="lg:col-span-4 shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <CardHeader>
-              <CardTitle>Total Credits</CardTitle>
+              <CardTitle className="text-xl">Total Credits</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -249,14 +253,14 @@ const UsageAnalytics = () => {
           </Card>
 
           {/* Bar Chart Card */}
-          <Card className="lg:col-span-8">
+          <Card className="lg:col-span-8 shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: "0.2s" }}>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Usage Over Time</CardTitle>
+              <CardTitle className="text-xl">Usage Over Time</CardTitle>
               <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border-border">
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>

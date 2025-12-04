@@ -187,7 +187,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
     <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5 text-primary" />
+          <FileSpreadsheet className="h-5 w-5 text-accent" />
           Bulk Upload
         </CardTitle>
         <CardDescription className="text-base">
@@ -198,10 +198,10 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
         {/* Template Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Microsoft Excel Template */}
-          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-green-500/5 to-green-600/10 hover:border-green-500/30 transition-all group">
+          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-accent/5 to-accent/10 hover:border-accent/30 transition-all duration-300 group">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-                <FileSpreadsheet className="h-5 w-5 text-green-600" />
+              <div className="p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                <FileSpreadsheet className="h-5 w-5 text-accent" />
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Microsoft Excel</h3>
@@ -211,18 +211,18 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
             <Button
               onClick={handleDownloadTemplate}
               variant="outline"
-              className="w-full h-10 border-green-500/30 hover:bg-green-500/10 hover:border-green-500/50 transition-all"
+              className="w-full h-10 border-accent/30 hover:bg-accent/10 hover:border-accent/50 hover:text-accent transition-all"
             >
-              <Download className="mr-2 h-4 w-4 text-green-600" />
+              <Download className="mr-2 h-4 w-4 text-accent" />
               Download Template
             </Button>
           </div>
 
           {/* Google Sheets Template */}
-          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-blue-500/5 to-blue-600/10 hover:border-blue-500/30 transition-all group">
+          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-secondary/5 to-secondary/10 hover:border-secondary/30 transition-all duration-300 group">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-                <svg className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+              <div className="p-2 rounded-lg bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
+                <svg className="h-5 w-5 text-secondary" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 11V9H11V5H9V9H5V11H9V19H11V11H19Z" />
                   <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM5 19V5H19V19H5Z" />
                 </svg>
@@ -235,9 +235,9 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
             <Button
               onClick={handleGoogleSheetCopy}
               variant="outline"
-              className="w-full h-10 border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-500/50 transition-all"
+              className="w-full h-10 border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 hover:text-secondary transition-all"
             >
-              <ExternalLink className="mr-2 h-4 w-4 text-blue-600" />
+              <ExternalLink className="mr-2 h-4 w-4 text-secondary" />
               Make a Copy
             </Button>
           </div>
@@ -255,43 +255,47 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="excel-file" className="text-foreground font-medium">Upload Filled Template</Label>
-            <Input
-              id="excel-file"
-              type="file"
-              accept=".xlsx,.xlsm,.csv"
-              onChange={handleFileChange}
-              disabled={loading}
-              className="cursor-pointer h-11 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all"
-            />
+            <div className="flex justify-center">
+              <Input
+                id="excel-file"
+                type="file"
+                accept=".xlsx,.xlsm,.csv"
+                onChange={handleFileChange}
+                disabled={loading}
+                className="cursor-pointer h-11 max-w-md file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all"
+              />
+            </div>
           </div>
 
           {selectedFile && (
-            <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 animate-scale-in">
-              <p className="text-sm text-foreground flex items-center gap-2">
+            <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 animate-scale-in">
+              <p className="text-sm text-foreground flex items-center justify-center gap-2">
                 <FileSpreadsheet className="h-4 w-4 text-primary" />
                 Selected: <span className="font-semibold">{selectedFile.name}</span>
               </p>
             </div>
           )}
 
-          <Button
-            type="submit"
-            disabled={!selectedFile || loading}
-            className="w-full h-12 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow text-base font-medium transition-all"
-            size="lg"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-5 w-5" />
-                Upload & Process
-              </>
-            )}
-          </Button>
+          <div className="flex justify-center">
+            <Button
+              type="submit"
+              disabled={!selectedFile || loading}
+              className="w-full max-w-md h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow text-base font-medium transition-all text-primary-foreground"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-5 w-5" />
+                  Upload & Process
+                </>
+              )}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

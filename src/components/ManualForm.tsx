@@ -204,7 +204,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 required
-                className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
 
@@ -217,21 +217,21 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 required
-                className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
           </div>
 
           <div className="space-y-3">
             <Label className="text-foreground font-medium">Functions (Select all that apply)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors duration-300">
               {LINKEDIN_FUNCTIONS.map((func) => (
-                <div key={func} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
+                <div key={func} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors duration-200">
                   <Checkbox
                     id={func}
                     checked={selectedFunctions.includes(func)}
                     onCheckedChange={() => handleFunctionToggle(func)}
-                    className="border-primary/50"
+                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   <Label htmlFor={func} className="font-normal cursor-pointer text-sm">
                     {func}
@@ -240,7 +240,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               ))}
             </div>
             {selectedFunctions.length > 0 && (
-              <p className="text-sm text-primary font-medium">
+              <p className="text-sm text-accent font-medium">
                 ✓ Selected: {selectedFunctions.length} function(s)
               </p>
             )}
@@ -252,23 +252,23 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               <button
                 type="button"
                 onClick={handleSelectAllSeniorities}
-                className={`text-sm px-3 py-1 rounded-md transition-all ${
+                className={`text-sm px-3 py-1 rounded-md transition-all duration-300 ${
                   allSenioritiesSelected
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-accent text-accent-foreground'
                     : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {allSenioritiesSelected ? '✓ All Selected' : 'Select All'}
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors duration-300">
               {SENIORITY_LEVELS.map((level) => (
-                <div key={level} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
+                <div key={level} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors duration-200">
                   <Checkbox
                     id={level}
                     checked={selectedSeniority.includes(level)}
                     onCheckedChange={() => handleSeniorityToggle(level)}
-                    className="border-primary/50"
+                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   <Label htmlFor={level} className="font-normal cursor-pointer text-sm">
                     {level}
@@ -277,7 +277,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               ))}
             </div>
             {selectedSeniority.length > 0 && (
-              <p className="text-sm text-primary font-medium">
+              <p className="text-sm text-accent font-medium">
                 ✓ Selected: {selectedSeniority.length} seniority level(s)
               </p>
             )}
@@ -294,17 +294,17 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 value={resultsPerFunction}
                 onChange={(e) => setResultsPerFunction(parseInt(e.target.value) || 0)}
                 required
-                className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="geography" className="text-foreground font-medium">Country</Label>
               <Select value={geography} onValueChange={setGeography}>
-                <SelectTrigger id="geography" className="h-11">
+                <SelectTrigger id="geography" className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20">
                   <SelectValue placeholder="Select a country" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border-border">
                   {COUNTRIES.map((country) => (
                     <SelectItem key={country} value={country}>
                       {country}
@@ -317,7 +317,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
           <Button
             type="submit"
-            className="w-full h-12 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow text-base font-medium transition-all"
+            className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow text-base font-medium transition-all text-primary-foreground"
             disabled={!isFormValid() || loading}
           >
             {loading ? (
