@@ -5,12 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2, FileSpreadsheet } from "lucide-react";
+import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink } from "lucide-react";
 import * as XLSX from 'xlsx';
 
 interface ExcelUploadProps {
   userId: string;
 }
+
+const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1QyNHmZ6whtOGs8qs8IeRqhqPGmqjKlfpFT0qEAH7PFM/copy";
 
 export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const { toast } = useToast();
@@ -43,6 +45,14 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleGoogleSheetCopy = () => {
+    window.open(GOOGLE_SHEET_COPY_URL, "_blank", "noopener,noreferrer");
+    toast({
+      title: "Google Sheets Opened",
+      description: "Make a copy, fill it with your data, then download and upload here",
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,19 +191,57 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
           Bulk Upload
         </CardTitle>
         <CardDescription className="text-base">
-          Download the template, fill it with your data, and upload it back
+          Choose a template format, fill it with your data, and upload it back
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Button
-          onClick={handleDownloadTemplate}
-          variant="outline"
-          className="w-full h-12 hover-lift hover:bg-primary/5 hover:border-primary/50 transition-all"
-          size="lg"
-        >
-          <Download className="mr-2 h-5 w-5 text-primary" />
-          Download Excel Template
-        </Button>
+        {/* Template Options */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Microsoft Excel Template */}
+          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-green-500/5 to-green-600/10 hover:border-green-500/30 transition-all group">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                <FileSpreadsheet className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Microsoft Excel</h3>
+                <p className="text-xs text-muted-foreground">Download .xlsm template</p>
+              </div>
+            </div>
+            <Button
+              onClick={handleDownloadTemplate}
+              variant="outline"
+              className="w-full h-10 border-green-500/30 hover:bg-green-500/10 hover:border-green-500/50 transition-all"
+            >
+              <Download className="mr-2 h-4 w-4 text-green-600" />
+              Download Template
+            </Button>
+          </div>
+
+          {/* Google Sheets Template */}
+          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-blue-500/5 to-blue-600/10 hover:border-blue-500/30 transition-all group">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                <svg className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 11V9H11V5H9V9H5V11H9V19H11V11H19Z" />
+                  <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM5 19V5H19V19H5Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Google Sheets</h3>
+                <p className="text-xs text-muted-foreground">Copy to your Drive</p>
+              </div>
+            </div>
+            <Button
+              onClick={handleGoogleSheetCopy}
+              variant="outline"
+              className="w-full h-10 border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-500/50 transition-all"
+            >
+              <ExternalLink className="mr-2 h-4 w-4 text-blue-600" />
+              Make a Copy
+            </Button>
+          </div>
+        </div>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
