@@ -8,7 +8,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const requestSchema = z.object({
+// Schema for manual entry
+const manualEntrySchema = z.object({
   searchId: z.string().uuid({ message: "Invalid searchId: must be a valid UUID" }),
   searchData: z.object({
     company_name: z.string().optional(),
@@ -18,11 +19,27 @@ const requestSchema = z.object({
     seniority: z.array(z.string()).optional(),
     results_per_function: z.number().int().positive().optional(),
   }),
-  entryType: z.string().optional(),
+  entryType: z.literal('manual_entry').optional(),
   apollo_credits: z.number().int().min(0).max(1000000).optional().default(0),
   cleon1_credits: z.number().int().min(0).max(1000000).optional().default(0),
   lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
 });
+
+// Schema for bulk upload - accepts any data structure from Excel
+const bulkUploadSchema = z.object({
+  searchId: z.string().uuid({ message: "Invalid searchId: must be a valid UUID" }),
+  searchData: z.object({
+    search_id: z.string().uuid().optional(),
+    data: z.record(z.array(z.record(z.unknown()))).optional(), // Excel sheets as object with arrays of records
+  }).passthrough(), // Allow additional fields
+  entryType: z.literal('bulk_upload'),
+  apollo_credits: z.number().int().min(0).max(1000000).optional().default(0),
+  cleon1_credits: z.number().int().min(0).max(1000000).optional().default(0),
+  lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
+});
+
+// Combined schema that accepts either format
+const requestSchema = z.union([bulkUploadSchema, manualEntrySchema]);
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -31,6 +48,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log('Received request body:', JSON.stringify(body));
+    
     const validationResult = requestSchema.safeParse(body);
     
     if (!validationResult.success) {
@@ -42,7 +61,8 @@ serve(async (req) => {
     }
 
     const { searchData, searchId, entryType, apollo_credits, cleon1_credits, lusha_credits } = validationResult.data;
-    console.log('Triggering N8N webhook with data:', searchData);
+    console.log('Entry type:', entryType);
+    console.log('Search data keys:', Object.keys(searchData));
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -74,11 +94,24 @@ serve(async (req) => {
 
     const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
 
-    const payloadToSend = {
-      ...searchData,
-      search_id: searchId,
-      user_email: userEmail,
-    };
+    // Build payload based on entry type
+    let payloadToSend: Record<string, unknown>;
+    
+    if (entryType === 'bulk_upload') {
+      // For bulk upload, include the Excel data
+      payloadToSend = {
+        search_id: searchId,
+        user_email: userEmail,
+        data: (searchData as { data?: unknown }).data, // The parsed Excel content
+      };
+    } else {
+      // For manual entry, spread the search data fields
+      payloadToSend = {
+        ...searchData,
+        search_id: searchId,
+        user_email: userEmail,
+      };
+    }
 
     console.log('Payload being sent to n8n:', JSON.stringify(payloadToSend));
 
