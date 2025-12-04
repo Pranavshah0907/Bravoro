@@ -74,6 +74,16 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
     );
   };
 
+  const handleSelectAllSeniorities = () => {
+    if (selectedSeniority.length === SENIORITY_LEVELS.length) {
+      setSelectedSeniority([]);
+    } else {
+      setSelectedSeniority([...SENIORITY_LEVELS]);
+    }
+  };
+
+  const allSenioritiesSelected = selectedSeniority.length === SENIORITY_LEVELS.length;
+
   const isFormValid = () => {
     return companyName.trim() && domain.trim() && selectedSeniority.length > 0 && resultsPerFunction > 0;
   };
@@ -237,7 +247,20 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
           </div>
 
           <div className="space-y-3">
-            <Label className="text-foreground font-medium">Seniority Level * (Select all that apply)</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-foreground font-medium">Seniority Level * (Select all that apply)</Label>
+              <button
+                type="button"
+                onClick={handleSelectAllSeniorities}
+                className={`text-sm px-3 py-1 rounded-md transition-all ${
+                  allSenioritiesSelected
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {allSenioritiesSelected ? '✓ All Selected' : 'Select All'}
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors">
               {SENIORITY_LEVELS.map((level) => (
                 <div key={level} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
