@@ -115,6 +115,44 @@ export type Database = {
         }
         Relationships: []
       }
+      search_results: {
+        Row: {
+          company_name: string
+          contact_data: Json
+          created_at: string
+          domain: string | null
+          id: string
+          search_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          contact_data?: Json
+          created_at?: string
+          domain?: string | null
+          id?: string
+          search_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          contact_data?: Json
+          created_at?: string
+          domain?: string | null
+          id?: string
+          search_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_results_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       searches: {
         Row: {
           company_name: string | null
