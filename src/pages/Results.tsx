@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Download, RefreshCw, Trash2, CalendarIcon, Info } from "lucide-react";
+import { LogOut, Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Tooltip,
@@ -45,8 +45,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import * as XLSX from "xlsx";
 import leapLogo from "@/assets/leap-logo.png";
 import leapFont from "@/assets/leap-font.png";
 
@@ -63,6 +73,28 @@ interface Search {
   domain: string | null;
 }
 
+interface Contact {
+  First_Name: string;
+  Last_Name: string;
+  Domain: string;
+  Organization: string;
+  Title: string;
+  Email: string;
+  LinkedIn: string;
+  Phone_Number_1: string;
+  Phone_Number_2: string;
+}
+
+interface SearchResult {
+  id: string;
+  search_id: string;
+  company_name: string;
+  domain: string | null;
+  contact_data: Contact[];
+}
+
+const CONTACTS_PER_PAGE = 10;
+
 const Results = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -74,6 +106,11 @@ const Results = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [searchResults, setSearchResults] = useState<Record<string, SearchResult[]>>({});
+  const [loadingResults, setLoadingResults] = useState<Set<string>>(new Set());
+  const [activeCompanyTab, setActiveCompanyTab] = useState<Record<string, string>>({});
+  const [currentPage, setCurrentPage] = useState<Record<string, number>>({});
 
   useEffect(() => {
     checkAuth();
@@ -94,7 +131,7 @@ const Results = () => {
     if (user) {
       const interval = setInterval(() => {
         fetchSearches(user.id);
-      }, 10000); // Auto-refresh every 10 seconds
+      }, 10000);
 
       return () => clearInterval(interval);
     }
@@ -133,6 +170,58 @@ const Results = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSearchResults = async (searchId: string) => {
+    if (searchResults[searchId]) return;
+
+    setLoadingResults(prev => new Set(prev).add(searchId));
+    try {
+      const { data, error } = await supabase
+        .from("search_results")
+        .select("*")
+        .eq("search_id", searchId);
+
+      if (error) throw error;
+
+      const results = (data || []).map(item => ({
+        ...item,
+        contact_data: Array.isArray(item.contact_data) ? item.contact_data as unknown as Contact[] : []
+      }));
+
+      setSearchResults(prev => ({ ...prev, [searchId]: results }));
+      
+      if (results.length > 0) {
+        setActiveCompanyTab(prev => ({ ...prev, [searchId]: results[0].company_name }));
+        setCurrentPage(prev => ({ ...prev, [`${searchId}-${results[0].company_name}`]: 1 }));
+      }
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch contact results",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingResults(prev => {
+        const next = new Set(prev);
+        next.delete(searchId);
+        return next;
+      });
+    }
+  };
+
+  const toggleRowExpansion = async (searchId: string, status: string) => {
+    if (status !== "completed") return;
+
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(searchId)) {
+      newExpanded.delete(searchId);
+    } else {
+      newExpanded.add(searchId);
+      await fetchSearchResults(searchId);
+    }
+    setExpandedRows(newExpanded);
   };
 
   const handleSignOut = async () => {
@@ -174,6 +263,38 @@ const Results = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleExportToExcel = (searchId: string) => {
+    const results = searchResults[searchId];
+    if (!results || results.length === 0) return;
+
+    const allContacts: any[] = [];
+    results.forEach(result => {
+      result.contact_data.forEach(contact => {
+        allContacts.push({
+          Company: result.company_name,
+          Domain: result.domain || contact.Domain,
+          First_Name: contact.First_Name,
+          Last_Name: contact.Last_Name,
+          Title: contact.Title,
+          Email: contact.Email,
+          LinkedIn: contact.LinkedIn,
+          Phone_1: contact.Phone_Number_1,
+          Phone_2: contact.Phone_Number_2,
+        });
+      });
+    });
+
+    const ws = XLSX.utils.json_to_sheet(allContacts);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Contacts");
+    XLSX.writeFile(wb, `search_results_${searchId.slice(0, 8)}.xlsx`);
+
+    toast({
+      title: "Export Complete",
+      description: "Results exported to Excel",
+    });
   };
 
   const handleBulkDelete = async () => {
@@ -256,13 +377,9 @@ const Results = () => {
   };
 
   const filteredSearches = searches.filter(search => {
-    // Status filter
     if (filter !== "all" && search.status !== filter) return false;
-    
-    // Type filter
     if (typeFilter !== "all" && search.search_type !== typeFilter) return false;
     
-    // Date range filter
     if (dateFrom || dateTo) {
       const searchDate = new Date(search.created_at);
       if (dateFrom && searchDate < dateFrom) return false;
@@ -276,9 +393,194 @@ const Results = () => {
     return true;
   });
 
+  const getPageKey = (searchId: string, companyName: string) => `${searchId}-${companyName}`;
+
+  const getPaginatedContacts = (searchId: string, companyName: string, contacts: Contact[]) => {
+    const pageKey = getPageKey(searchId, companyName);
+    const page = currentPage[pageKey] || 1;
+    const start = (page - 1) * CONTACTS_PER_PAGE;
+    return contacts.slice(start, start + CONTACTS_PER_PAGE);
+  };
+
+  const getTotalPages = (contacts: Contact[]) => Math.ceil(contacts.length / CONTACTS_PER_PAGE);
+
+  const handlePageChange = (searchId: string, companyName: string, page: number) => {
+    const pageKey = getPageKey(searchId, companyName);
+    setCurrentPage(prev => ({ ...prev, [pageKey]: page }));
+  };
+
+  const renderExpandedContent = (search: Search) => {
+    const results = searchResults[search.id];
+    const isLoading = loadingResults.has(search.id);
+
+    if (isLoading) {
+      return (
+        <div className="p-6 text-center text-muted-foreground">
+          Loading contacts...
+        </div>
+      );
+    }
+
+    if (!results || results.length === 0) {
+      return (
+        <div className="p-6 text-center text-muted-foreground">
+          No contacts found for this search.
+        </div>
+      );
+    }
+
+    const activeCompany = activeCompanyTab[search.id] || results[0].company_name;
+    const activeResult = results.find(r => r.company_name === activeCompany);
+    const contacts = activeResult?.contact_data || [];
+    const paginatedContacts = getPaginatedContacts(search.id, activeCompany, contacts);
+    const totalPages = getTotalPages(contacts);
+    const pageKey = getPageKey(search.id, activeCompany);
+    const currentPageNum = currentPage[pageKey] || 1;
+
+    return (
+      <div className="p-4 bg-muted/20 border-t border-border/50">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-sm font-semibold text-foreground">Contact Results</h4>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleExportToExcel(search.id)}
+            className="hover-lift"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Excel
+          </Button>
+        </div>
+
+        {results.length > 1 ? (
+          <Tabs
+            value={activeCompany}
+            onValueChange={(value) => {
+              setActiveCompanyTab(prev => ({ ...prev, [search.id]: value }));
+              const newPageKey = getPageKey(search.id, value);
+              if (!currentPage[newPageKey]) {
+                setCurrentPage(prev => ({ ...prev, [newPageKey]: 1 }));
+              }
+            }}
+          >
+            <TabsList className="mb-4 flex-wrap h-auto gap-1">
+              {results.map(result => (
+                <TabsTrigger key={result.company_name} value={result.company_name} className="text-xs">
+                  {result.company_name} ({result.contact_data.length})
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {results.map(result => (
+              <TabsContent key={result.company_name} value={result.company_name}>
+                {renderContactsTable(search.id, result.company_name, result.contact_data)}
+              </TabsContent>
+            ))}
+          </Tabs>
+        ) : (
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">
+              {results[0].company_name} ({contacts.length} contacts)
+            </p>
+            {renderContactsTable(search.id, results[0].company_name, contacts)}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <Pagination className="mt-4">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => handlePageChange(search.id, activeCompany, Math.max(1, currentPageNum - 1))}
+                  className={currentPageNum === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPageNum <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPageNum >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPageNum - 2 + i;
+                }
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      onClick={() => handlePageChange(search.id, activeCompany, pageNum)}
+                      isActive={currentPageNum === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => handlePageChange(search.id, activeCompany, Math.min(totalPages, currentPageNum + 1))}
+                  className={currentPageNum === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
+      </div>
+    );
+  };
+
+  const renderContactsTable = (searchId: string, companyName: string, contacts: Contact[]) => {
+    const paginatedContacts = getPaginatedContacts(searchId, companyName, contacts);
+
+    if (paginatedContacts.length === 0) {
+      return <p className="text-sm text-muted-foreground">No contacts available.</p>;
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30">
+              <TableHead className="text-xs">Name</TableHead>
+              <TableHead className="text-xs">Title</TableHead>
+              <TableHead className="text-xs">Email</TableHead>
+              <TableHead className="text-xs">Phone</TableHead>
+              <TableHead className="text-xs">LinkedIn</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedContacts.map((contact, idx) => (
+              <TableRow key={idx} className="hover:bg-muted/10">
+                <TableCell className="text-xs">
+                  {contact.First_Name} {contact.Last_Name}
+                </TableCell>
+                <TableCell className="text-xs">{contact.Title || "-"}</TableCell>
+                <TableCell className="text-xs">
+                  {contact.Email ? (
+                    <a href={`mailto:${contact.Email}`} className="text-primary hover:underline">
+                      {contact.Email}
+                    </a>
+                  ) : "-"}
+                </TableCell>
+                <TableCell className="text-xs">{contact.Phone_Number_1 || "-"}</TableCell>
+                <TableCell className="text-xs">
+                  {contact.LinkedIn ? (
+                    <a href={contact.LinkedIn} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      View
+                    </a>
+                  ) : "-"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
-      {/* Animated background elements */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
 
@@ -444,6 +746,7 @@ const Results = () => {
                       className="border-primary/50"
                     />
                   </TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                   <TableHead className="w-[50px] font-semibold">#</TableHead>
                   <TableHead className="font-semibold">Type</TableHead>
                   <TableHead className="font-semibold">Details</TableHead>
@@ -455,71 +758,98 @@ const Results = () => {
               <TableBody>
                 {loading && searches.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filteredSearches.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No searches found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredSearches.map((search, index) => (
-                    <TableRow 
-                      key={search.id}
-                      className="hover:bg-muted/20 transition-colors"
-                      style={{ 
-                        animation: "fade-in 0.5s ease-out forwards",
-                        animationDelay: `${index * 0.05}s`,
-                        opacity: 0
-                      }}
-                    >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(search.id)}
-                          onCheckedChange={() => toggleSelect(search.id)}
-                          className="border-primary/50"
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={search.search_type === "bulk" ? "default" : "secondary"}
-                          className={search.search_type === "bulk" ? "bg-gradient-to-r from-primary to-secondary" : ""}
-                        >
-                          {search.search_type === "bulk" ? "Bulk Upload" : "Manual Entry"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {search.search_type === "bulk" && search.excel_file_name ? (
-                          <span className="text-sm">{search.excel_file_name}</span>
-                        ) : search.company_name ? (
-                          <span className="text-sm">{search.company_name}</span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
-                      <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="min-h-[40px] flex items-center justify-end">
-                          {search.status === "completed" && search.result_url ? (
+                    <>
+                      <TableRow 
+                        key={search.id}
+                        className="hover:bg-muted/20 transition-colors"
+                        style={{ 
+                          animation: "fade-in 0.5s ease-out forwards",
+                          animationDelay: `${index * 0.05}s`,
+                          opacity: 0
+                        }}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(search.id)}
+                            onCheckedChange={() => toggleSelect(search.id)}
+                            className="border-primary/50"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {search.status === "completed" ? (
                             <Button
+                              variant="ghost"
                               size="sm"
-                              onClick={() => handleDownload(search.result_url!)}
-                              className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow transition-all"
+                              className="p-1 h-auto"
+                              onClick={() => toggleRowExpansion(search.id, search.status)}
                             >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
+                              {expandedRows.has(search.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
                             </Button>
+                          ) : (
+                            <span className="w-6 inline-block" />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={search.search_type === "bulk" ? "default" : "secondary"}
+                            className={search.search_type === "bulk" ? "bg-gradient-to-r from-primary to-secondary" : ""}
+                          >
+                            {search.search_type === "bulk" ? "Bulk Upload" : "Manual Entry"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {search.search_type === "bulk" && search.excel_file_name ? (
+                            <span className="text-sm">{search.excel_file_name}</span>
+                          ) : search.company_name ? (
+                            <span className="text-sm">{search.company_name}</span>
                           ) : (
                             <span className="text-sm text-muted-foreground">-</span>
                           )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
+                        <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="min-h-[40px] flex items-center justify-end">
+                            {search.status === "completed" && search.result_url ? (
+                              <Button
+                                size="sm"
+                                onClick={() => handleDownload(search.result_url!)}
+                                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow transition-all"
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {expandedRows.has(search.id) && (
+                        <TableRow key={`${search.id}-expanded`}>
+                          <TableCell colSpan={8} className="p-0">
+                            {renderExpandedContent(search)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))
                 )}
               </TableBody>
