@@ -12,7 +12,7 @@ interface ExcelUploadProps {
   userId: string;
 }
 
-const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1QyNHmZ6whtOGs8qs8IeRqhqPGmqjKlfpFT0qEAH7PFM/copy";
+const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1RzADGJX8kzBRVk4M1RHFD3oIjcCwJNYhYj4_veuyvFw/copy";
 
 export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const { toast } = useToast();
