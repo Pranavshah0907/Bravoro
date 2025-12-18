@@ -29,10 +29,10 @@ const GoogleSheetsGuide = () => {
         {/* Title Section */}
         <div className="mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            User Guide: Google Sheet based Enrichment & Selection Tool
+            Google Master Sheet Guide
           </h1>
           <p className="text-lg text-muted-foreground">
-            Complete documentation for using the Google Master Sheet for creating bulk Enrichment input.
+            Complete documentation for using the Google Master Sheet for creating bulk enrichment input.
           </p>
         </div>
 
@@ -41,12 +41,14 @@ const GoogleSheetsGuide = () => {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">On this page</h2>
           <ul className="space-y-2">
             {[
+              { id: "getting-started", label: "Getting Started" },
               { id: "introduction", label: "Introduction" },
               { id: "requirements", label: "Data Requirements" },
               { id: "interface", label: "Interface Overview" },
               { id: "workflow", label: "Step-by-Step Workflow" },
               { id: "rules", label: "Important Usage Rules" },
               { id: "troubleshooting", label: "Troubleshooting" },
+              { id: "final-step", label: "Final Step: Submit Your File" },
             ].map((item) => (
               <li key={item.id}>
                 <a
@@ -62,10 +64,38 @@ const GoogleSheetsGuide = () => {
 
         {/* Content Sections */}
         <div className="space-y-12">
+          {/* Getting Started */}
+          <section id="getting-started" className="scroll-mt-20">
+            <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
+              1. Getting Started
+            </h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              To begin using the Google Master Sheet, you need to create your own copy:
+            </p>
+            <ol className="space-y-3 text-muted-foreground list-decimal list-inside mb-4">
+              <li>Click on the <strong className="text-foreground">"Create a Copy"</strong> button on the dashboard.</li>
+              <li>A new browser tab will open with Google Sheets.</li>
+              <li>Click <strong className="text-foreground">"Make a copy"</strong> in the dialog that appears.</li>
+              <li>The spreadsheet will be saved to your personal Google Drive.</li>
+              <li>You can now edit and use the sheet freely.</li>
+            </ol>
+            <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+              <div className="flex gap-3">
+                <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-foreground">Note</p>
+                  <p className="text-muted-foreground text-sm">
+                    You must be signed into your Google account to create a copy of the sheet.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Introduction */}
           <section id="introduction" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
-              1. Introduction
+              2. Introduction
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               This document serves as a tutorial for using the <strong className="text-foreground">Google Master Sheet</strong>. 
@@ -89,7 +119,7 @@ const GoogleSheetsGuide = () => {
           {/* Data Requirements */}
           <section id="requirements" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
-              2. Data Requirements (Compulsory Fields)
+              3. Data Requirements (Compulsory Fields)
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               For the enrichment process to be successful, the following columns are <strong className="text-foreground">MANDATORY</strong> and 
@@ -122,7 +152,7 @@ const GoogleSheetsGuide = () => {
           {/* Interface Overview */}
           <section id="interface" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
-              3. The Interface Overview
+              4. The Interface Overview
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-6">
               The Main Sheet (<code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-sm">Main_Data</code>) is 
@@ -166,7 +196,7 @@ const GoogleSheetsGuide = () => {
           {/* Step-by-Step Workflow */}
           <section id="workflow" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
-              4. Step-by-Step Workflow
+              5. Step-by-Step Workflow
             </h2>
             
             <div className="space-y-8">
@@ -217,7 +247,7 @@ const GoogleSheetsGuide = () => {
           {/* Important Usage Rules */}
           <section id="rules" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
-              5. Important Usage Rules
+              6. Important Usage Rules
             </h2>
             
             <div className="space-y-4">
@@ -272,7 +302,7 @@ const GoogleSheetsGuide = () => {
           {/* Troubleshooting */}
           <section id="troubleshooting" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
-              6. Troubleshooting
+              7. Troubleshooting
             </h2>
             
             <div className="space-y-6">
@@ -292,6 +322,34 @@ const GoogleSheetsGuide = () => {
                   <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-xs"> DB_Seniorities</code> sheets manually. 
                   Always work from the <code className="px-1.5 py-0.5 rounded bg-muted text-foreground text-xs">Main_Data</code> sheet.
                 </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Final Step */}
+          <section id="final-step" className="scroll-mt-20">
+            <h2 className="text-2xl font-semibold text-foreground mb-4 pb-2 border-b border-border">
+              8. Final Step: Submit Your File
+            </h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              Once you have completed filling out the Google Master Sheet with all your company data and selections, follow these steps to submit:
+            </p>
+            <ol className="space-y-3 text-muted-foreground list-decimal list-inside mb-4">
+              <li>In Google Sheets, go to <strong className="text-foreground">File → Download → Microsoft Excel (.xlsx)</strong>.</li>
+              <li>Save the downloaded file to your computer.</li>
+              <li>Return to the dashboard and navigate to the <strong className="text-foreground">Bulk Upload</strong> section.</li>
+              <li>Click the upload area or drag and drop your downloaded Excel file.</li>
+              <li>Click <strong className="text-foreground">"Submit for Enrichment"</strong> to start the process.</li>
+            </ol>
+            <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+              <div className="flex gap-3">
+                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-foreground">You're all set!</p>
+                  <p className="text-muted-foreground text-sm">
+                    After submission, you can track the progress of your enrichment request on the dashboard.
+                  </p>
+                </div>
               </div>
             </div>
           </section>
