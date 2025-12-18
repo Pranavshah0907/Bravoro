@@ -196,12 +196,11 @@
     background: hsl(var(--accent));
   }
 
-  /* Number input spinner styling for dark theme */
+  /* Hide number input spinners */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
-    opacity: 1;
-    background: transparent;
-    cursor: pointer;
+    -webkit-appearance: none;
+    margin: 0;
   }
 
   input[type="number"] {
