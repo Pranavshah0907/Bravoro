@@ -231,7 +231,7 @@
   }
 
   .hover-lift:active {
-    transform: translateY(0) scale(0.98);
+    transform: translateY(-2px);
   }
 
   .hover-glow:hover {
