@@ -200,10 +200,9 @@
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     opacity: 1;
-    background: hsl(var(--muted));
-    border-left: 1px solid hsl(var(--border));
+    background: transparent;
     cursor: pointer;
-    filter: invert(1) hue-rotate(180deg);
+    filter: invert(0.6) sepia(1) saturate(5) hue-rotate(175deg);
   }
 
   input[type="number"] {
