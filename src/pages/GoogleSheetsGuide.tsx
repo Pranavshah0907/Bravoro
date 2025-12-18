@@ -29,10 +29,10 @@ const GoogleSheetsGuide = () => {
         {/* Title Section */}
         <div className="mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            User Guide: Data Enrichment & Selection Tool
+            User Guide: Google Sheet based Enrichment & Selection Tool
           </h1>
           <p className="text-lg text-muted-foreground">
-            Complete documentation for using the Enrichment Master Sheet
+            Complete documentation for using the Google Master Sheet for creating bulk Enrichment input.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ const GoogleSheetsGuide = () => {
               1. Introduction
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              This document serves as a tutorial for using the <strong className="text-foreground">Enrichment Master Sheet</strong>. 
+              This document serves as a tutorial for using the <strong className="text-foreground">Google Master Sheet</strong>. 
               This tool is designed to facilitate the bulk enrichment of company data. It utilizes a "Mirror Database" system 
               to allow for <strong className="text-foreground">multi-selection</strong> of Job Titles and Seniorities without 
               the need for complex scripts or pop-up windows that trigger security warnings.
