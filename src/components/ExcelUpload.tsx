@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink } from "lucide-react";
+import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen } from "lucide-react";
 import * as XLSX from 'xlsx';
 
 interface ExcelUploadProps {
@@ -227,10 +228,17 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
                   <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM5 19V5H19V19H5Z" />
                 </svg>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-semibold text-foreground">Google Sheets</h3>
                 <p className="text-xs text-muted-foreground">Copy to your Drive</p>
               </div>
+              <Link 
+                to="/google-sheets-guide" 
+                className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Tutorial
+              </Link>
             </div>
             <Button
               onClick={handleGoogleSheetCopy}
