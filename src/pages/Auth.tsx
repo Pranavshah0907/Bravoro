@@ -8,8 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogIn, Loader2, Mail, Lock } from "lucide-react";
 import { z } from "zod";
-import leapLogo from "@/assets/leap-logo.png";
-import leapFont from "@/assets/leap-font.png";
+import emploioLogo from "@/assets/emploio-logo.svg";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -24,7 +23,6 @@ const Auth = () => {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
-    // Check if already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate("/dashboard");
@@ -63,60 +61,38 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Google Sign In Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-background to-accent/8" />
-      
-      {/* Decorative elements */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary/3 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-8 relative overflow-hidden section-gradient">
+      {/* Subtle decorative shapes */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-3xl" />
 
-      <Card className="w-full max-w-md relative z-10 shadow-strong border-border/50 hover-lift animate-scale-in backdrop-blur-sm bg-card/95">
-        <CardHeader className="text-center space-y-4 pb-6">
-          <div className="mx-auto flex flex-col items-center gap-4">
-            <div className="relative">
-              <img src={leapLogo} alt="LEAP Logo" className="h-20 w-20 animate-fade-in" />
-              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" style={{ animation: "pulse-glow 3s ease-in-out infinite" }} />
+      <Card className="w-full max-w-md relative z-10 shadow-strong border-border/40 animate-scale-in bg-card">
+        <CardHeader className="text-center space-y-6 pb-2">
+          <div className="mx-auto flex flex-col items-center gap-6">
+            {/* Logo container with dark background for white SVG */}
+            <div className="bg-[#0d222e] rounded-2xl p-6 shadow-medium">
+              <img 
+                src={emploioLogo} 
+                alt="emploio" 
+                className="h-10 md:h-12 w-auto animate-fade-in" 
+              />
             </div>
-            <img src={leapFont} alt="LEAP" className="h-12 animate-fade-in" style={{ animationDelay: "0.1s" }} />
-            <p className="text-sm text-muted-foreground tracking-wide animate-fade-in" style={{ animationDelay: "0.2s" }}>
-              Lead Enrichment & Automation Platform
-            </p>
           </div>
-          <div className="animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <CardTitle className="text-3xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          <div className="space-y-2">
+            <CardTitle className="text-2xl md:text-3xl font-bold text-foreground">
               Welcome Back
             </CardTitle>
-            <CardDescription className="text-base mt-2">Sign in to access your account</CardDescription>
+            <CardDescription className="text-base text-muted-foreground">
+              Sign in to access your account
+            </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-          <form onSubmit={handleSignIn} className="space-y-4">
+        
+        <CardContent className="space-y-6 pt-4">
+          <form onSubmit={handleSignIn} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2 text-foreground">
+              <Label htmlFor="email" className="flex items-center gap-2 text-foreground font-medium">
                 <Mail className="h-4 w-4 text-primary" />
                 Email Address
               </Label>
@@ -127,12 +103,12 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="transition-all duration-300 h-11 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="h-12 bg-muted/30 border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2 text-foreground">
+              <Label htmlFor="password" className="flex items-center gap-2 text-foreground font-medium">
                 <Lock className="h-4 w-4 text-primary" />
                 Password
               </Label>
@@ -143,39 +119,41 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="transition-all duration-300 h-11 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="h-12 bg-muted/30 border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
 
             <Button 
               type="submit" 
-              className="w-full h-11 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow transition-all text-primary-foreground" 
+              className="w-full h-12 btn-gradient text-primary-foreground font-semibold text-base" 
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Signing In...
                 </>
               ) : (
                 <>
-                  <LogIn className="mr-2 h-4 w-4" />
+                  <LogIn className="mr-2 h-5 w-5" />
                   Sign In
                 </>
               )}
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            Don't have an account?{" "}
-            <a href="/contact" className="text-primary hover:text-accent hover:underline font-medium transition-colors">
-              Contact us by filling this form
-            </a>{" "}
-            or write to{" "}
-            <a href="mailto:support@leapplatform.com" className="text-primary hover:text-accent hover:underline transition-colors">
-              support@leapplatform.com
-            </a>
-          </p>
+          <div className="pt-2 border-t border-border/30">
+            <p className="text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <a href="/contact" className="text-primary hover:text-secondary font-medium transition-colors underline-offset-4 hover:underline">
+                Contact us
+              </a>{" "}
+              or email{" "}
+              <a href="mailto:support@emploio.com" className="text-primary hover:text-secondary font-medium transition-colors underline-offset-4 hover:underline">
+                support@emploio.com
+              </a>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
