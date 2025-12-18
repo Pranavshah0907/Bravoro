@@ -203,6 +203,7 @@
     background: hsl(var(--muted));
     border-left: 1px solid hsl(var(--border));
     cursor: pointer;
+    filter: invert(1) hue-rotate(180deg);
   }
 
   input[type="number"] {
