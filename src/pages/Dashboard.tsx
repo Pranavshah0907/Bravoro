@@ -174,16 +174,16 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="manual" className="w-full animate-slide-up">
-          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-12 p-1 bg-muted/40 rounded-xl border border-border/30">
+          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-12 p-1 bg-muted/60 rounded-xl border border-border/50">
             <TabsTrigger 
               value="manual" 
-              className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
+              className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
             >
               Manual Entry
             </TabsTrigger>
             <TabsTrigger 
               value="bulk"
-              className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
+              className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
             >
               Bulk Upload
             </TabsTrigger>
