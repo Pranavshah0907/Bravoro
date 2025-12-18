@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight } from "lucide-react";
+import { LogOut, Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Tooltip,
@@ -57,8 +57,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import leapLogo from "@/assets/leap-logo.png";
-import leapFont from "@/assets/leap-font.png";
+import emploioLogo from "@/assets/emploio-logo.svg";
 
 interface Search {
   id: string;
@@ -348,23 +347,23 @@ const Results = () => {
   const getStatusBadge = (status: string, errorMessage?: string | null) => {
     switch (status) {
       case "pending":
-        return <Badge variant="secondary">Pending</Badge>;
+        return <Badge variant="secondary" className="bg-muted text-muted-foreground font-medium">Pending</Badge>;
       case "processing":
-        return <Badge variant="default">Processing</Badge>;
+        return <Badge variant="default" className="bg-secondary text-secondary-foreground font-medium">Processing</Badge>;
       case "completed":
-        return <Badge variant="default" className="bg-green-600">Completed</Badge>;
+        return <Badge className="bg-primary text-primary-foreground font-medium">Completed</Badge>;
       case "error":
         return (
           <div className="flex items-center gap-2">
-            <Badge variant="destructive">Error</Badge>
+            <Badge variant="destructive" className="font-medium">Error</Badge>
             {errorMessage && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-4 w-4 text-destructive cursor-help" />
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">{errorMessage}</p>
+                  <TooltipContent className="bg-card border-border shadow-medium">
+                    <p className="max-w-xs text-sm">{errorMessage}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -372,7 +371,7 @@ const Results = () => {
           </div>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="font-medium">{status}</Badge>;
     }
   };
 
@@ -415,7 +414,8 @@ const Results = () => {
 
     if (isLoading) {
       return (
-        <div className="p-6 text-center text-muted-foreground">
+        <div className="p-8 text-center text-muted-foreground">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto mb-2" />
           Loading contacts...
         </div>
       );
@@ -423,7 +423,7 @@ const Results = () => {
 
     if (!results || results.length === 0) {
       return (
-        <div className="p-6 text-center text-muted-foreground">
+        <div className="p-8 text-center text-muted-foreground">
           No contacts found for this search.
         </div>
       );
@@ -438,14 +438,14 @@ const Results = () => {
     const currentPageNum = currentPage[pageKey] || 1;
 
     return (
-      <div className="p-4 bg-muted/20 border-t border-border/50">
-        <div className="flex justify-between items-center mb-4">
+      <div className="p-4 md:p-6 bg-muted/20 border-t border-border/30">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h4 className="text-sm font-semibold text-foreground">Contact Results</h4>
           <Button
             size="sm"
             variant="outline"
             onClick={() => handleExportToExcel(search.id)}
-            className="hover-lift"
+            className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
           >
             <Download className="h-4 w-4 mr-2" />
             Export Excel
@@ -463,10 +463,14 @@ const Results = () => {
               }
             }}
           >
-            <TabsList className="mb-4 flex-wrap h-auto gap-1">
+            <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/30 p-1 rounded-lg">
               {results.map(result => (
-                <TabsTrigger key={result.company_name} value={result.company_name} className="text-xs">
-                  {result.company_name} ({result.contact_data.length})
+                <TabsTrigger 
+                  key={result.company_name} 
+                  value={result.company_name} 
+                  className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
+                >
+                  {result.company_name} <span className="ml-1 text-muted-foreground">({result.contact_data.length})</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -478,8 +482,8 @@ const Results = () => {
           </Tabs>
         ) : (
           <div>
-            <p className="text-sm text-muted-foreground mb-2">
-              {results[0].company_name} ({contacts.length} contacts)
+            <p className="text-sm text-muted-foreground mb-3">
+              <span className="font-medium text-foreground">{results[0].company_name}</span> · {contacts.length} contacts
             </p>
             {renderContactsTable(search.id, results[0].company_name, contacts)}
           </div>
@@ -491,7 +495,10 @@ const Results = () => {
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => handlePageChange(search.id, activeCompany, Math.max(1, currentPageNum - 1))}
-                  className={currentPageNum === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50",
+                    currentPageNum === 1 && "pointer-events-none opacity-50"
+                  )}
                 />
               </PaginationItem>
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -520,7 +527,10 @@ const Results = () => {
               <PaginationItem>
                 <PaginationNext
                   onClick={() => handlePageChange(search.id, activeCompany, Math.min(totalPages, currentPageNum + 1))}
-                  className={currentPageNum === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50",
+                    currentPageNum === totalPages && "pointer-events-none opacity-50"
+                  )}
                 />
               </PaginationItem>
             </PaginationContent>
@@ -538,35 +548,35 @@ const Results = () => {
     }
 
     return (
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-border/30 bg-card">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30">
-              <TableHead className="text-xs">Name</TableHead>
-              <TableHead className="text-xs">Title</TableHead>
-              <TableHead className="text-xs">Email</TableHead>
-              <TableHead className="text-xs">Phone</TableHead>
-              <TableHead className="text-xs">LinkedIn</TableHead>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="text-xs font-semibold text-foreground">Name</TableHead>
+              <TableHead className="text-xs font-semibold text-foreground">Title</TableHead>
+              <TableHead className="text-xs font-semibold text-foreground">Email</TableHead>
+              <TableHead className="text-xs font-semibold text-foreground">Phone</TableHead>
+              <TableHead className="text-xs font-semibold text-foreground">LinkedIn</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedContacts.map((contact, idx) => (
-              <TableRow key={idx} className="hover:bg-muted/10">
-                <TableCell className="text-xs">
+              <TableRow key={idx} className="hover:bg-muted/10 transition-colors">
+                <TableCell className="text-sm font-medium">
                   {contact.First_Name} {contact.Last_Name}
                 </TableCell>
-                <TableCell className="text-xs">{contact.Title || "-"}</TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="text-sm text-muted-foreground">{contact.Title || "-"}</TableCell>
+                <TableCell className="text-sm">
                   {contact.Email ? (
-                    <a href={`mailto:${contact.Email}`} className="text-primary hover:underline">
+                    <a href={`mailto:${contact.Email}`} className="text-primary hover:text-secondary transition-colors">
                       {contact.Email}
                     </a>
                   ) : "-"}
                 </TableCell>
-                <TableCell className="text-xs">{contact.Phone_Number_1 || "-"}</TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="text-sm text-muted-foreground">{contact.Phone_Number_1 || "-"}</TableCell>
+                <TableCell className="text-sm">
                   {contact.LinkedIn ? (
-                    <a href={contact.LinkedIn} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    <a href={contact.LinkedIn} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-secondary transition-colors">
                       View
                     </a>
                   ) : "-"}
@@ -580,20 +590,13 @@ const Results = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
-
-      <header className="border-b border-border/50 glass-effect sticky top-0 z-50 animate-slide-up">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen section-gradient">
+      {/* Header */}
+      <header className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <img src={leapLogo} alt="LEAP Logo" className="h-12 w-12 transition-transform hover:scale-110" />
-              <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl" />
-            </div>
-            <div>
-              <img src={leapFont} alt="LEAP" className="h-8" />
-              <p className="text-xs text-muted-foreground mt-1 tracking-wide">Lead Enrichment & Automation</p>
+            <div className="bg-[#0d222e] rounded-xl p-3">
+              <img src={emploioLogo} alt="emploio" className="h-6 md:h-7 w-auto" />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -601,38 +604,43 @@ const Results = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/dashboard")}
-              className="hover-lift transition-all duration-300"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
             >
-              Back to Dashboard
+              <ArrowLeft className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Dashboard</span>
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleSignOut}
-              className="hover:text-destructive transition-all"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              <LogOut className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Sign Out</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12 relative z-10">
+      {/* Main Content */}
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8 animate-fade-in">
+          {/* Page Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8 animate-fade-in">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 Search Results
               </h1>
-              <p className="text-muted-foreground mt-2 text-lg">Track your enrichment requests and download results</p>
+              <p className="text-muted-foreground mt-1">Track your enrichment requests and download results</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap animate-fade-in" style={{ animationDelay: "0.1s" }}>
+            
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2 animate-fade-in">
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[130px] bg-card border-border/50 h-9">
                   <SelectValue placeholder="Entry type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-card border-border shadow-medium">
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="bulk">Bulk</SelectItem>
                   <SelectItem value="manual">Manual</SelectItem>
@@ -641,33 +649,33 @@ const Results = () => {
               
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                  <Button variant="outline" size="sm" className={cn("w-[130px] justify-start text-left font-normal bg-card border-border/50 h-9", !dateFrom && "text-muted-foreground")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {dateFrom ? format(dateFrom, "PP") : "From date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-card border-border shadow-medium" align="start">
                   <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className="pointer-events-auto" />
                 </PopoverContent>
               </Popover>
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className={cn("w-[140px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                  <Button variant="outline" size="sm" className={cn("w-[130px] justify-start text-left font-normal bg-card border-border/50 h-9", !dateTo && "text-muted-foreground")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {dateTo ? format(dateTo, "PP") : "To date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-card border-border shadow-medium" align="start">
                   <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className="pointer-events-auto" />
                 </PopoverContent>
               </Popover>
 
               <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[130px] bg-card border-border/50 h-9">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-card border-border shadow-medium">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
@@ -684,8 +692,9 @@ const Results = () => {
                     setDateFrom(undefined);
                     setDateTo(undefined);
                   }}
+                  className="h-9 text-muted-foreground hover:text-foreground"
                 >
-                  Clear Dates
+                  Clear
                 </Button>
               )}
               
@@ -694,17 +703,17 @@ const Results = () => {
                 size="sm"
                 onClick={() => user && fetchSearches(user.id)}
                 disabled={loading}
-                className="hover-lift transition-all"
+                className="hover-lift h-9 bg-card border-border/50"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
+                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               </Button>
             </div>
           </div>
 
+          {/* Bulk Delete Banner */}
           {selectedIds.size > 0 && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-destructive/10 rounded-lg border border-destructive/20 flex items-center justify-between animate-scale-in shadow-medium">
-              <span className="text-sm font-medium">
+            <div className="mb-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20 flex items-center justify-between animate-scale-in">
+              <span className="text-sm font-medium text-foreground">
                 {selectedIds.size} {selectedIds.size === 1 ? 'entry' : 'entries'} selected
               </span>
               <AlertDialog>
@@ -714,7 +723,7 @@ const Results = () => {
                     Delete Selected
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-card border-border">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete {selectedIds.size} Search {selectedIds.size === 1 ? 'Entry' : 'Entries'}?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -722,7 +731,7 @@ const Results = () => {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="border-border/50">Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleBulkDelete}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -735,125 +744,130 @@ const Results = () => {
             </div>
           )}
 
-          <div className="bg-card/95 backdrop-blur-sm rounded-lg border border-border/50 shadow-strong hover-lift overflow-hidden animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="w-[50px]">
-                    <Checkbox
-                      checked={filteredSearches.length > 0 && selectedIds.size === filteredSearches.length}
-                      onCheckedChange={toggleSelectAll}
-                      className="border-primary/50"
-                    />
-                  </TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                  <TableHead className="w-[50px] font-semibold">#</TableHead>
-                  <TableHead className="font-semibold">Type</TableHead>
-                  <TableHead className="font-semibold">Details</TableHead>
-                  <TableHead className="font-semibold">Created At</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="text-right font-semibold">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading && searches.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Loading...
-                    </TableCell>
+          {/* Results Table */}
+          <div className="bg-card rounded-xl border border-border/40 shadow-soft overflow-hidden animate-fade-in">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/30">
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={filteredSearches.length > 0 && selectedIds.size === filteredSearches.length}
+                        onCheckedChange={toggleSelectAll}
+                        className="border-border"
+                      />
+                    </TableHead>
+                    <TableHead className="w-[40px]"></TableHead>
+                    <TableHead className="w-[40px] font-semibold text-foreground">#</TableHead>
+                    <TableHead className="font-semibold text-foreground">Type</TableHead>
+                    <TableHead className="font-semibold text-foreground">Details</TableHead>
+                    <TableHead className="font-semibold text-foreground">Created</TableHead>
+                    <TableHead className="font-semibold text-foreground">Status</TableHead>
+                    <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                   </TableRow>
-                ) : filteredSearches.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No searches found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredSearches.map((search, index) => (
-                    <>
-                      <TableRow 
-                        key={search.id}
-                        className="hover:bg-muted/20 transition-colors"
-                        style={{ 
-                          animation: "fade-in 0.5s ease-out forwards",
-                          animationDelay: `${index * 0.05}s`,
-                          opacity: 0
-                        }}
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedIds.has(search.id)}
-                            onCheckedChange={() => toggleSelect(search.id)}
-                            className="border-primary/50"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {search.status === "completed" ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-1 h-auto"
-                              onClick={() => toggleRowExpansion(search.id, search.status)}
-                            >
-                              {expandedRows.has(search.id) ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
+                </TableHeader>
+                <TableBody>
+                  {loading && searches.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto mb-2" />
+                        Loading...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredSearches.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                        No searches found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredSearches.map((search, index) => (
+                      <>
+                        <TableRow 
+                          key={search.id}
+                          className={cn(
+                            "hover:bg-muted/10 transition-colors border-b border-border/20",
+                            expandedRows.has(search.id) && "bg-muted/10"
+                          )}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedIds.has(search.id)}
+                              onCheckedChange={() => toggleSelect(search.id)}
+                              className="border-border"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {search.status === "completed" ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-7 w-7 hover:bg-muted/50"
+                                onClick={() => toggleRowExpansion(search.id, search.status)}
+                              >
+                                {expandedRows.has(search.id) ? (
+                                  <ChevronDown className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            ) : (
+                              <span className="w-7 inline-block" />
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={search.search_type === "bulk" ? "default" : "secondary"}
+                              className={cn(
+                                "font-medium",
+                                search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"
                               )}
-                            </Button>
-                          ) : (
-                            <span className="w-6 inline-block" />
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={search.search_type === "bulk" ? "default" : "secondary"}
-                            className={search.search_type === "bulk" ? "bg-gradient-to-r from-primary to-secondary" : ""}
-                          >
-                            {search.search_type === "bulk" ? "Bulk Upload" : "Manual Entry"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {search.search_type === "bulk" && search.excel_file_name ? (
-                            <span className="text-sm">{search.excel_file_name}</span>
-                          ) : search.company_name ? (
-                            <span className="text-sm">{search.company_name}</span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{new Date(search.created_at).toLocaleString()}</TableCell>
-                        <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="min-h-[40px] flex items-center justify-end">
+                            >
+                              {search.search_type === "bulk" ? "Bulk" : "Manual"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {search.search_type === "bulk" && search.excel_file_name ? (
+                              <span className="text-sm">{search.excel_file_name}</span>
+                            ) : search.company_name ? (
+                              <span className="text-sm">{search.company_name}</span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {new Date(search.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
+                          <TableCell className="text-right">
                             {search.status === "completed" && search.result_url ? (
                               <Button
                                 size="sm"
                                 onClick={() => handleDownload(search.result_url!)}
-                                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary hover-glow transition-all"
+                                className="btn-gradient text-primary-foreground h-8"
                               >
-                                <Download className="h-4 w-4 mr-2" />
+                                <Download className="h-4 w-4 mr-1" />
                                 Download
                               </Button>
                             ) : (
                               <span className="text-sm text-muted-foreground">-</span>
                             )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {expandedRows.has(search.id) && (
-                        <TableRow key={`${search.id}-expanded`}>
-                          <TableCell colSpan={8} className="p-0">
-                            {renderExpandedContent(search)}
                           </TableCell>
                         </TableRow>
-                      )}
-                    </>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                        {expandedRows.has(search.id) && (
+                          <TableRow key={`${search.id}-expanded`}>
+                            <TableCell colSpan={8} className="p-0">
+                              {renderExpandedContent(search)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       </main>

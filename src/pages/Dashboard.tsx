@@ -3,14 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield, FileText, BarChart3, Sparkles } from "lucide-react";
+import { LogOut, Shield, FileText, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ManualForm } from "@/components/ManualForm";
 import { ExcelUpload } from "@/components/ExcelUpload";
 import { PasswordReset } from "@/components/PasswordReset";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import leapLogo from "@/assets/leap-logo.png";
-import leapFont from "@/assets/leap-font.png";
+import emploioLogo from "@/assets/emploio-logo.svg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -47,7 +46,6 @@ const Dashboard = () => {
   };
 
   const checkProfile = async (userId: string) => {
-    // Check if password reset is required
     const { data: profile } = await supabase
       .from("profiles")
       .select("requires_password_reset")
@@ -60,7 +58,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Check if user is admin
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -83,10 +80,10 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+      <div className="min-h-screen flex items-center justify-center section-gradient">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground animate-pulse">Loading your workspace...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-3 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -105,91 +102,81 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
-      {/* Animated background elements */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
-
-      <header className="border-b border-border/50 glass-effect sticky top-0 z-50 animate-slide-up">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen section-gradient">
+      {/* Header */}
+      <header className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <img src={leapLogo} alt="LEAP Logo" className="h-12 w-12 transition-transform duration-300 hover:scale-110" />
-              <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl" />
-            </div>
-            <div>
-              <img src={leapFont} alt="LEAP" className="h-8" />
-              <p className="text-xs text-muted-foreground mt-1 tracking-wide">Lead Enrichment & Automation</p>
+            <div className="bg-[#0d222e] rounded-xl p-3">
+              <img src={emploioLogo} alt="emploio" className="h-6 md:h-7 w-auto" />
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          
+          <nav className="flex items-center gap-1 md:gap-2">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/analytics")}
-              className="hover-lift transition-all"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
             >
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Analytics
+              <BarChart3 className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Analytics</span>
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/results")}
-              className="hover-lift transition-all"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
             >
-              <FileText className="mr-2 h-4 w-4" />
-              Results
+              <FileText className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Results</span>
             </Button>
             {isAdmin && (
               <Button 
-                variant="secondary" 
+                variant="ghost" 
                 size="sm" 
                 onClick={() => navigate("/admin")}
-                className="hover-lift transition-all"
+                className="text-primary hover:text-primary hover:bg-primary/10 transition-all"
               >
-                <Shield className="mr-2 h-4 w-4" />
-                Admin
+                <Shield className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Admin</span>
               </Button>
             )}
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleSignOut}
-              className="hover:text-destructive transition-all"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              <LogOut className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Sign Out</span>
             </Button>
-          </div>
+          </nav>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-5xl relative z-10">
-        <div className="mb-10 text-center animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            <Sparkles className="h-4 w-4" />
-            <span>AI-Powered Lead Generation</span>
-          </div>
-          <h2 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-            Welcome back!
-          </h2>
-          <p className="text-muted-foreground text-lg">
+      {/* Main Content */}
+      <main className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-4xl">
+        <div className="mb-8 md:mb-10 text-center animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+            Welcome back
+          </h1>
+          <p className="text-muted-foreground text-base md:text-lg">
             Choose your preferred method to submit lead enrichment requests
           </p>
         </div>
 
         <Tabs defaultValue="manual" className="w-full animate-slide-up">
-          <TabsList className="grid w-full grid-cols-2 mb-8 h-12 p-1 bg-muted/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-12 p-1 bg-muted/40 rounded-xl">
             <TabsTrigger 
               value="manual" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-primary-foreground transition-all duration-300"
+              className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
             >
               Manual Entry
             </TabsTrigger>
             <TabsTrigger 
               value="bulk"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-primary-foreground transition-all duration-300"
+              className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
             >
               Bulk Upload
             </TabsTrigger>
