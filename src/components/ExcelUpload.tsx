@@ -184,7 +184,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   };
 
   return (
-    <Card className="shadow-strong hover-lift border border-border backdrop-blur-sm elevated-card">
+    <Card className="shadow-strong hover-lift border border-border backdrop-blur-sm">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5 text-accent" />
