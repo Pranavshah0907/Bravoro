@@ -11,8 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles } from "lucide-react";
 import { z } from "zod";
-import leapLogo from "@/assets/leap-logo.png";
-import leapFont from "@/assets/leap-font.png";
+import emploioLogo from "@/assets/emploio-logo.svg";
 
 const createUserSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -58,7 +57,6 @@ const Admin = () => {
 
     setUser(session.user);
 
-    // Check if user is admin
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -87,7 +85,6 @@ const Admin = () => {
 
     if (!profilesData) return;
 
-    // Get roles for all users
     const usersWithRoles = await Promise.all(
       profilesData.map(async (profile) => {
         const { data: roleData } = await supabase
@@ -111,18 +108,15 @@ const Admin = () => {
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
     let password = "";
     
-    // Ensure at least one of each type
     password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
     password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
     password += "0123456789"[Math.floor(Math.random() * 10)];
     password += "!@#$%^&*"[Math.floor(Math.random() * 8)];
     
-    // Fill the rest randomly
     for (let i = password.length; i < length; i++) {
       password += charset[Math.floor(Math.random() * charset.length)];
     }
     
-    // Shuffle the password
     return password.split('').sort(() => Math.random() - 0.5).join('');
   };
 
@@ -141,7 +135,6 @@ const Admin = () => {
     }
 
     try {
-      // Call edge function to delete user
       const { data, error } = await supabase.functions.invoke('admin-delete-user', {
         body: { userId },
       });
@@ -177,7 +170,6 @@ const Admin = () => {
 
       setCreatingUser(true);
 
-      // Call edge function to create user
       const { data, error: createError } = await supabase.functions.invoke('admin-create-user', {
         body: {
           email: newUserEmail.trim(),
@@ -191,14 +183,11 @@ const Admin = () => {
         throw new Error(createError.message || "Failed to create user");
       }
 
-      // Handle specific error responses from edge function
       if (!data?.success) {
         if (data?.error) {
-          // Check for specific error types
           if (data.error.includes("already been registered")) {
             throw new Error("This email address is already registered. Please use a different email or contact support if you believe this is an error.");
           } else if (data.error.includes("welcome email")) {
-            // User created but email failed
             toast({
               title: "User Created with Warning",
               description: `User ${newUserEmail} was created but the welcome email failed to send. ${data.error}`,
@@ -217,7 +206,6 @@ const Admin = () => {
         throw new Error("Failed to create user");
       }
 
-      // Success - user created and email sent
       toast({
         title: "User Created Successfully",
         description: data.message || `User ${newUserEmail} has been created and welcome email sent`,
@@ -241,8 +229,11 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
-        <div className="flex flex-col items-center gap-4">
+      <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" />
+        
+        <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
           <p className="text-muted-foreground animate-pulse">Loading admin panel...</p>
         </div>
@@ -255,12 +246,12 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative">
-      {/* Animated background elements */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
 
-      <header className="border-b border-border/50 glass-effect sticky top-0 z-50 animate-slide-up">
+      <header className="border-b border-border/40 glass-effect sticky top-0 z-50 animate-slide-up">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -268,7 +259,7 @@ const Admin = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate("/dashboard")}
-                className="hover-lift"
+                className="hover-lift text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Dashboard
@@ -276,29 +267,30 @@ const Admin = () => {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Shield className="h-8 w-8 text-primary" />
-                  <div className="absolute inset-0 bg-primary/10 rounded-full blur-lg" />
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold gradient-text">
                     Admin Panel
                   </h1>
                   <p className="text-xs text-muted-foreground">Manage users and permissions</p>
                 </div>
               </div>
             </div>
+            <img src={emploioLogo} alt="emploio" className="h-6 w-auto hidden md:block" />
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12 max-w-6xl space-y-8 relative z-10">
         {/* Create User Card */}
-        <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in">
+        <Card className="shadow-strong hover-lift border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl">
+            <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
               <Sparkles className="h-5 w-5 text-primary" />
               Create New User
             </CardTitle>
-            <CardDescription className="text-base">
+            <CardDescription className="text-base text-muted-foreground">
               Create user credentials. Users will be required to reset their password on first login.
             </CardDescription>
           </CardHeader>
@@ -314,7 +306,7 @@ const Admin = () => {
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
                     required
-                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                    className="h-11 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div className="space-y-2">
@@ -326,7 +318,7 @@ const Admin = () => {
                     value={newUserFullName}
                     onChange={(e) => setNewUserFullName(e.target.value)}
                     required
-                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                    className="h-11 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
@@ -340,13 +332,13 @@ const Admin = () => {
                     value={newUserTempPassword}
                     onChange={(e) => setNewUserTempPassword(e.target.value)}
                     required
-                    className="flex-1 h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 h-11 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleGeneratePassword}
-                    className="shrink-0 h-11 hover-lift"
+                    className="shrink-0 h-11 hover-lift border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   >
                     <Shuffle className="h-4 w-4 mr-2" />
                     Generate
@@ -362,7 +354,7 @@ const Admin = () => {
                   id="role"
                   value={newUserRole}
                   onChange={(e) => setNewUserRole(e.target.value as "admin" | "user")}
-                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-11 w-full rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-sm text-foreground ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
@@ -374,7 +366,7 @@ const Admin = () => {
               <Button 
                 type="submit" 
                 disabled={creatingUser} 
-                className="w-full md:w-auto h-11 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow transition-all text-primary-foreground"
+                className="w-full md:w-auto h-11 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow transition-all text-primary-foreground font-medium"
               >
                 {creatingUser ? (
                   <>
@@ -393,52 +385,55 @@ const Admin = () => {
         </Card>
 
         {/* Users List */}
-        <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <Card className="shadow-strong hover-lift border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl">
+            <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
               <Users className="h-5 w-5 text-primary" />
               All Users
             </CardTitle>
-            <CardDescription className="text-base">
+            <CardDescription className="text-base text-muted-foreground">
               View and manage all registered users
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-border/50 overflow-hidden">
+            <div className="rounded-lg border border-border/40 overflow-hidden bg-muted/10">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    <TableHead className="font-semibold">Email</TableHead>
-                    <TableHead className="font-semibold">Full Name</TableHead>
-                    <TableHead className="font-semibold">Role</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Created</TableHead>
-                    <TableHead className="text-right font-semibold">Actions</TableHead>
+                  <TableRow className="bg-muted/30 border-border/30 hover:bg-muted/40">
+                    <TableHead className="font-semibold text-foreground">Email</TableHead>
+                    <TableHead className="font-semibold text-foreground">Full Name</TableHead>
+                    <TableHead className="font-semibold text-foreground">Role</TableHead>
+                    <TableHead className="font-semibold text-foreground">Status</TableHead>
+                    <TableHead className="font-semibold text-foreground">Created</TableHead>
+                    <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {users.map((user, index) => (
                     <TableRow 
                       key={user.id}
-                      className="hover:bg-muted/20 transition-colors"
+                      className="hover:bg-muted/20 transition-colors border-border/30"
                       style={{ 
                         animation: "fade-in 0.5s ease-out forwards",
                         animationDelay: `${index * 0.05}s`,
                         opacity: 0
                       }}
                     >
-                      <TableCell className="font-medium">{user.email}</TableCell>
-                      <TableCell>{user.full_name || "-"}</TableCell>
+                      <TableCell className="font-medium text-foreground">{user.email}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.full_name || "-"}</TableCell>
                       <TableCell>
                         <Badge 
                           variant={user.role === "admin" ? "default" : "secondary"}
-                          className={user.role === "admin" ? "bg-gradient-to-r from-primary to-secondary" : ""}
+                          className={user.role === "admin" ? "bg-gradient-to-r from-primary to-accent text-primary-foreground" : "bg-muted text-muted-foreground"}
                         >
                           {user.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.requires_password_reset ? "outline" : "default"}>
+                        <Badge 
+                          variant={user.requires_password_reset ? "outline" : "default"}
+                          className={user.requires_password_reset ? "border-border/50 text-muted-foreground" : "bg-primary/20 text-primary border-primary/30"}
+                        >
                           {user.requires_password_reset ? "Pending" : "Active"}
                         </Badge>
                       </TableCell>
@@ -451,7 +446,7 @@ const Admin = () => {
                           size="sm"
                           onClick={() => handleDeleteUser(user.id, user.email)}
                           disabled={user.role === "admin"}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 disabled:opacity-30"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

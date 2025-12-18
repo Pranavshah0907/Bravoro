@@ -438,7 +438,7 @@ const Results = () => {
     const currentPageNum = currentPage[pageKey] || 1;
 
     return (
-      <div className="p-4 md:p-6 bg-muted/20 border-t border-border/30">
+      <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h4 className="text-sm font-semibold text-foreground">Contact Results</h4>
           <Button
@@ -548,7 +548,7 @@ const Results = () => {
     }
 
     return (
-      <div className="overflow-x-auto rounded-lg border border-border/30 bg-card">
+      <div className="overflow-x-auto rounded-lg border border-border/40 bg-card/80">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -590,14 +590,16 @@ const Results = () => {
   };
 
   return (
-    <div className="min-h-screen section-gradient">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+
       {/* Header */}
-      <header className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-border/40 glass-effect sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-[#0d222e] rounded-xl p-3">
-              <img src={emploioLogo} alt="emploio" className="h-6 md:h-7 w-auto" />
-            </div>
+            <img src={emploioLogo} alt="emploio" className="h-7 md:h-8 w-auto" />
           </div>
           <div className="flex items-center gap-2">
             <Button 
@@ -623,7 +625,7 @@ const Results = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 md:px-6 py-6 md:py-10">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-10 relative z-10">
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8 animate-fade-in">

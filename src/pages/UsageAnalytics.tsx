@@ -8,6 +8,7 @@ import { RefreshCw, ArrowLeft } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { toast } from "sonner";
 import { format, subDays, startOfDay, endOfDay, subWeeks, subMonths, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
+import emploioLogo from "@/assets/emploio-logo.svg";
 
 type TimePeriod = "daily" | "weekly" | "monthly" | "quarterly";
 
@@ -88,7 +89,6 @@ const UsageAnalytics = () => {
     const now = new Date();
     const limit = timePeriod === "daily" ? 5 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
     
-    // Generate the last N periods with zeros
     const periods: { date: string; Apollo: number; Cleon1: number; Lusha: number; sortDate: Date }[] = [];
     
     for (let i = limit - 1; i >= 0; i--) {
@@ -131,7 +131,6 @@ const UsageAnalytics = () => {
       });
     }
     
-    // Fill in actual data
     creditData.forEach((item) => {
       const date = new Date(item.created_at);
       
@@ -180,35 +179,38 @@ const UsageAnalytics = () => {
   const totals = getTotalCredits();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-primary/5 relative p-8">
-      {/* Animated background elements */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+    <div className="min-h-screen bg-background relative overflow-hidden p-4 md:p-8">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
       
       <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-        <div className="flex items-center justify-between animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hover-lift">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hover-lift text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Usage Analytics</h1>
+              <h1 className="text-2xl md:text-3xl font-bold gradient-text">Usage Analytics</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Last Update: {format(lastUpdate, "MMM d yyyy 'at' hh:mm a")}
               </p>
             </div>
           </div>
-          <Button onClick={fetchCreditData} disabled={loading} variant="outline" size="sm" className="hover-lift transition-all duration-300">
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button onClick={fetchCreditData} disabled={loading} variant="outline" size="sm" className="hover-lift transition-all border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50">
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <img src={emploioLogo} alt="emploio" className="h-6 w-auto hidden md:block" />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Pie Chart Card */}
-          <Card className="lg:col-span-4 shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          <Card className="lg:col-span-4 shadow-strong hover-lift border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <CardHeader>
-              <CardTitle className="text-xl">Total Credits</CardTitle>
+              <CardTitle className="text-xl text-foreground">Total Credits</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -228,7 +230,14 @@ const UsageAnalytics = () => {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        color: "hsl(var(--foreground))"
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="grid grid-cols-3 gap-4">
@@ -253,14 +262,14 @@ const UsageAnalytics = () => {
           </Card>
 
           {/* Bar Chart Card */}
-          <Card className="lg:col-span-8 shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <Card className="lg:col-span-8 shadow-strong hover-lift border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in" style={{ animationDelay: "0.2s" }}>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl">Usage Over Time</CardTitle>
+              <CardTitle className="text-xl text-foreground">Usage Over Time</CardTitle>
               <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 bg-muted/30 border-border/50 text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
+                <SelectContent className="bg-popover border-border text-foreground">
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
@@ -293,7 +302,8 @@ const UsageAnalytics = () => {
                         backgroundColor: "hsl(var(--popover))",
                         border: "1px solid hsl(var(--border))",
                         borderRadius: "8px",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        color: "hsl(var(--foreground))"
                       }}
                       cursor={{ fill: "hsl(var(--accent))", opacity: 0.1 }}
                     />
