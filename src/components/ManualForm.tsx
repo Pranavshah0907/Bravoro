@@ -182,7 +182,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   }
 
   return (
-    <Card className="shadow-strong hover-lift border-border/50 backdrop-blur-sm bg-card/95">
+    <Card className="shadow-strong hover-lift border border-border backdrop-blur-sm elevated-card">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
@@ -224,7 +224,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
           <div className="space-y-3">
             <Label className="text-foreground font-medium">Functions (Select all that apply)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border border-border rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors duration-300">
               {LINKEDIN_FUNCTIONS.map((func) => (
                 <div key={func} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors duration-200">
                   <Checkbox
@@ -261,7 +261,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 {allSenioritiesSelected ? '✓ All Selected' : 'Select All'}
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border rounded-lg bg-muted/10 hover:bg-muted/20 transition-colors duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border border-border rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors duration-300">
               {SENIORITY_LEVELS.map((level) => (
                 <div key={level} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors duration-200">
                   <Checkbox
