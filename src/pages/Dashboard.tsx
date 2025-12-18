@@ -80,8 +80,12 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center section-gradient">
-        <div className="flex flex-col items-center gap-4">
+      <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" />
+        
+        <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="animate-spin rounded-full h-10 w-10 border-3 border-primary border-t-transparent" />
           <p className="text-muted-foreground text-sm">Loading your workspace...</p>
         </div>
@@ -102,14 +106,17 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen section-gradient">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-secondary/5 rounded-full blur-3xl" />
+
       {/* Header */}
-      <header className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-border/40 glass-effect sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-[#0d222e] rounded-xl p-3">
-              <img src={emploioLogo} alt="emploio" className="h-6 md:h-7 w-auto" />
-            </div>
+            <img src={emploioLogo} alt="emploio" className="h-7 md:h-8 w-auto" />
           </div>
           
           <nav className="flex items-center gap-1 md:gap-2">
@@ -156,7 +163,7 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-4xl">
+      <main className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-4xl relative z-10">
         <div className="mb-8 md:mb-10 text-center animate-fade-in">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             Welcome back
@@ -167,7 +174,7 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="manual" className="w-full animate-slide-up">
-          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-12 p-1 bg-muted/40 rounded-xl">
+          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-12 p-1 bg-muted/40 rounded-xl border border-border/30">
             <TabsTrigger 
               value="manual" 
               className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"

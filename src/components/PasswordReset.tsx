@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Lock, CheckCircle2 } from "lucide-react";
 import { z } from "zod";
+import emploioLogo from "@/assets/emploio-logo.svg";
 
 const passwordSchema = z
   .string()
@@ -31,7 +32,6 @@ export const PasswordReset = ({ userId, onComplete }: PasswordResetProps) => {
     e.preventDefault();
 
     try {
-      // Validate password
       passwordSchema.parse(newPassword);
 
       if (newPassword !== confirmPassword) {
@@ -40,14 +40,12 @@ export const PasswordReset = ({ userId, onComplete }: PasswordResetProps) => {
 
       setLoading(true);
 
-      // Update password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (updateError) throw updateError;
 
-      // Mark password reset as complete
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ requires_password_reset: false })
@@ -81,49 +79,58 @@ export const PasswordReset = ({ userId, onComplete }: PasswordResetProps) => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-accent/5 p-4">
-      <Card className="w-full max-w-md shadow-strong">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+      
+      <Card className="w-full max-w-md shadow-strong border-border/40 bg-card/90 backdrop-blur-xl relative z-10">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+          <div className="mx-auto mb-4">
+            <img src={emploioLogo} alt="emploio" className="h-10 w-auto" />
+          </div>
+          <div className="mx-auto mb-4 w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
             <Lock className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl text-foreground">Reset Your Password</CardTitle>
+          <CardDescription className="text-muted-foreground">
             For security, please change your password before continuing
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordReset} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+              <Label htmlFor="newPassword" className="text-foreground">New Password</Label>
               <Input
                 id="newPassword"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
+                className="bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                className="bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             {/* Password Requirements */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium mb-2">Password Requirements:</p>
+            <div className="bg-muted/30 rounded-lg p-4 space-y-2 border border-border/30">
+              <p className="text-sm font-medium mb-2 text-foreground">Password Requirements:</p>
               {passwordRequirements.map((req, idx) => (
                 <div key={idx} className="flex items-center gap-2 text-sm">
                   <CheckCircle2
                     className={`h-4 w-4 ${
-                      req.met ? "text-green-500" : "text-muted-foreground"
+                      req.met ? "text-primary" : "text-muted-foreground"
                     }`}
                   />
                   <span className={req.met ? "text-foreground" : "text-muted-foreground"}>
@@ -133,7 +140,11 @@ export const PasswordReset = ({ userId, onComplete }: PasswordResetProps) => {
               ))}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-primary to-caretta hover:opacity-90 text-primary-foreground font-medium shadow-glow" 
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

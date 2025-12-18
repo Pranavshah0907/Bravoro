@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* emploio Color Palette Design System
+/* emploio Color Palette Design System - Dark Theme Default
    Primary Colors:
    - Ocean Blue (Primary): #009da5 → hsl(183, 100%, 32%)
    - Cardinal Blue (Accent/Highlight): #58dddd → hsl(180, 66%, 61%)
@@ -23,6 +23,76 @@
 
 @layer base {
   :root {
+    /* Dark Galaxy background #0d222e - Now default */
+    --background: 202 55% 12%;
+    /* Neutral 3 - Light text on dark */
+    --foreground: 180 22% 92%;
+
+    --card: 202 45% 14%;
+    --card-foreground: 180 22% 92%;
+
+    --popover: 202 45% 14%;
+    --popover-foreground: 180 22% 92%;
+
+    /* Ocean Blue - Primary (brighter for dark mode) */
+    --primary: 183 100% 38%;
+    --primary-foreground: 202 55% 12%;
+
+    /* Blue Grass - Secondary */
+    --secondary: 191 55% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted */
+    --muted: 202 35% 18%;
+    --muted-foreground: 176 16% 70%;
+
+    /* Cardinal Blue - Accent */
+    --accent: 180 66% 55%;
+    --accent-foreground: 202 55% 12%;
+
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 202 55% 12%;
+
+    --border: 202 35% 22%;
+    --input: 202 35% 18%;
+    --ring: 183 100% 38%;
+
+    --radius: 0.75rem;
+    
+    /* Caretta Green for dark mode */
+    --caretta: 183 100% 28%;
+    
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(183 100% 38%), hsl(180 66% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(191 55% 42%), hsl(183 100% 38%));
+    --gradient-hero: linear-gradient(180deg, hsl(202 55% 12%), hsl(202 45% 16%));
+    --gradient-card: linear-gradient(145deg, hsl(202 45% 14%), hsl(202 45% 17%));
+    
+    /* Dark mode shadows */
+    --shadow-soft: 0 2px 20px hsl(180 66% 55% / 0.08);
+    --shadow-medium: 0 8px 32px hsl(180 66% 55% / 0.12);
+    --shadow-strong: 0 16px 48px hsl(180 66% 55% / 0.16);
+    --shadow-glow: 0 0 32px hsl(180 66% 55% / 0.3);
+
+    /* Chart colors dark */
+    --chart-1: 183 100% 42%;
+    --chart-2: 191 55% 48%;
+    --chart-3: 180 66% 60%;
+    --chart-4: 183 100% 30%;
+    --chart-5: 176 63% 55%;
+    
+    /* Sidebar dark */
+    --sidebar-background: 202 45% 10%;
+    --sidebar-foreground: 180 22% 92%;
+    --sidebar-primary: 183 100% 38%;
+    --sidebar-primary-foreground: 202 55% 12%;
+    --sidebar-accent: 202 35% 16%;
+    --sidebar-accent-foreground: 180 22% 92%;
+    --sidebar-border: 202 35% 20%;
+    --sidebar-ring: 183 100% 38%;
+  }
+
+  .light {
     /* Bright Pearl Background */
     --background: 210 33% 97%;
     /* Neutral 7 - Dark text */
@@ -56,8 +126,6 @@
     --border: 176 16% 81%;
     --input: 176 63% 89%;
     --ring: 183 100% 32%;
-
-    --radius: 0.75rem;
     
     /* Caretta Green for special accents */
     --caretta: 183 100% 21%;
@@ -73,10 +141,6 @@
     --shadow-medium: 0 8px 32px hsl(191 55% 34% / 0.1);
     --shadow-strong: 0 16px 48px hsl(191 55% 34% / 0.12);
     --shadow-glow: 0 0 32px hsl(180 66% 61% / 0.25);
-    
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     /* Chart colors */
     --chart-1: 183 100% 32%;
@@ -94,74 +158,6 @@
     --sidebar-accent-foreground: 196 5% 25%;
     --sidebar-border: 176 16% 88%;
     --sidebar-ring: 183 100% 32%;
-  }
-
-  .dark {
-    /* Dark Galaxy background #0d222e */
-    --background: 202 55% 12%;
-    /* Neutral 3 - Light text on dark */
-    --foreground: 180 22% 92%;
-
-    --card: 202 45% 14%;
-    --card-foreground: 180 22% 92%;
-
-    --popover: 202 45% 14%;
-    --popover-foreground: 180 22% 92%;
-
-    /* Ocean Blue - Primary (brighter for dark mode) */
-    --primary: 183 100% 38%;
-    --primary-foreground: 202 55% 12%;
-
-    /* Blue Grass - Secondary */
-    --secondary: 191 55% 42%;
-    --secondary-foreground: 0 0% 100%;
-
-    /* Muted */
-    --muted: 202 35% 18%;
-    --muted-foreground: 176 16% 70%;
-
-    /* Cardinal Blue - Accent */
-    --accent: 180 66% 55%;
-    --accent-foreground: 202 55% 12%;
-
-    --destructive: 0 84% 65%;
-    --destructive-foreground: 202 55% 12%;
-
-    --border: 202 35% 22%;
-    --input: 202 35% 18%;
-    --ring: 183 100% 38%;
-    
-    /* Caretta Green for dark mode */
-    --caretta: 183 100% 28%;
-    
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(183 100% 38%), hsl(180 66% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(191 55% 42%), hsl(183 100% 38%));
-    --gradient-hero: linear-gradient(180deg, hsl(202 55% 12%), hsl(202 45% 16%));
-    --gradient-card: linear-gradient(145deg, hsl(202 45% 14%), hsl(202 45% 17%));
-    
-    /* Dark mode shadows */
-    --shadow-soft: 0 2px 20px hsl(180 66% 55% / 0.08);
-    --shadow-medium: 0 8px 32px hsl(180 66% 55% / 0.12);
-    --shadow-strong: 0 16px 48px hsl(180 66% 55% / 0.16);
-    --shadow-glow: 0 0 32px hsl(180 66% 55% / 0.3);
-
-    /* Chart colors dark */
-    --chart-1: 183 100% 42%;
-    --chart-2: 191 55% 48%;
-    --chart-3: 180 66% 60%;
-    --chart-4: 183 100% 30%;
-    --chart-5: 176 63% 55%;
-    
-    /* Sidebar dark */
-    --sidebar-background: 202 45% 10%;
-    --sidebar-foreground: 180 22% 92%;
-    --sidebar-primary: 183 100% 38%;
-    --sidebar-primary-foreground: 202 55% 12%;
-    --sidebar-accent: 202 35% 16%;
-    --sidebar-accent-foreground: 180 22% 92%;
-    --sidebar-border: 202 35% 20%;
-    --sidebar-ring: 183 100% 38%;
   }
 }
 
@@ -236,6 +232,12 @@
   
   .section-gradient {
     background: var(--gradient-hero);
+  }
+
+  .dark-card {
+    background: hsl(202 45% 14% / 0.8);
+    backdrop-filter: blur(16px);
+    border: 1px solid hsl(202 35% 22% / 0.5);
   }
 }
 
