@@ -429,6 +429,91 @@ const Results = () => {
       );
     }
 
+    // For bulk_people_enrichment, show flat list without company tabs
+    if (search.search_type === "bulk_people_enrichment") {
+      // Combine all contacts from all results into a flat list
+      const allContacts = results.flatMap(r => r.contact_data);
+      const paginatedContacts = getPaginatedContacts(search.id, 'all', allContacts);
+      const totalPages = getTotalPages(allContacts);
+      const pageKey = getPageKey(search.id, 'all');
+      const currentPageNum = currentPage[pageKey] || 1;
+
+      // Initialize page if needed
+      if (!currentPage[pageKey]) {
+        setCurrentPage(prev => ({ ...prev, [pageKey]: 1 }));
+      }
+
+      return (
+        <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h4 className="text-sm font-semibold text-foreground">
+              Enriched Contacts <span className="text-muted-foreground font-normal">({allContacts.length} total)</span>
+            </h4>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleExportToExcel(search.id)}
+              className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Excel
+            </Button>
+          </div>
+
+          {renderContactsTable(search.id, 'all', allContacts)}
+
+          {totalPages > 1 && (
+            <Pagination className="mt-4">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePageChange(search.id, 'all', Math.max(1, currentPageNum - 1))}
+                    className={cn(
+                      "cursor-pointer hover:bg-muted/50",
+                      currentPageNum === 1 && "pointer-events-none opacity-50"
+                    )}
+                  />
+                </PaginationItem>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPageNum <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPageNum >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPageNum - 2 + i;
+                  }
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(search.id, 'all', pageNum)}
+                        isActive={currentPageNum === pageNum}
+                        className="cursor-pointer"
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageChange(search.id, 'all', Math.min(totalPages, currentPageNum + 1))}
+                    className={cn(
+                      "cursor-pointer hover:bg-muted/50",
+                      currentPageNum === totalPages && "pointer-events-none opacity-50"
+                    )}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
+      );
+    }
+
+    // Original logic for manual entry and bulk upload with company tabs
     const activeCompany = activeCompanyTab[search.id] || results[0].company_name;
     const activeResult = results.find(r => r.company_name === activeCompany);
     const contacts = activeResult?.contact_data || [];
@@ -639,13 +724,14 @@ const Results = () => {
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2 animate-fade-in">
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[130px] bg-card border-border/50 h-9">
+                <SelectTrigger className="w-[150px] bg-card border-border/50 h-9">
                   <SelectValue placeholder="Entry type" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border shadow-medium">
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="bulk">Bulk</SelectItem>
-                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="bulk">Bulk Upload</SelectItem>
+                  <SelectItem value="manual">Manual Entry</SelectItem>
+                  <SelectItem value="bulk_people_enrichment">People Enrichment</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -820,17 +906,19 @@ const Results = () => {
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
                           <TableCell>
                             <Badge 
-                              variant={search.search_type === "bulk" ? "default" : "secondary"}
+                              variant={search.search_type === "bulk" ? "default" : search.search_type === "bulk_people_enrichment" ? "outline" : "secondary"}
                               className={cn(
                                 "font-medium",
-                                search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"
+                                search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" : 
+                                search.search_type === "bulk_people_enrichment" ? "border-accent text-accent" :
+                                "bg-muted text-muted-foreground"
                               )}
                             >
-                              {search.search_type === "bulk" ? "Bulk" : "Manual"}
+                              {search.search_type === "bulk" ? "Bulk" : search.search_type === "bulk_people_enrichment" ? "People Enrich" : "Manual"}
                             </Badge>
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate">
-                            {search.search_type === "bulk" && search.excel_file_name ? (
+                            {(search.search_type === "bulk" || search.search_type === "bulk_people_enrichment") && search.excel_file_name ? (
                               <span className="text-sm">{search.excel_file_name}</span>
                             ) : search.company_name ? (
                               <span className="text-sm">{search.company_name}</span>

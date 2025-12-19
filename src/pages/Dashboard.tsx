@@ -7,6 +7,7 @@ import { LogOut, Shield, FileText, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ManualForm } from "@/components/ManualForm";
 import { ExcelUpload } from "@/components/ExcelUpload";
+import { BulkPeopleEnrichment } from "@/components/BulkPeopleEnrichment";
 import { PasswordReset } from "@/components/PasswordReset";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import emploioLogo from "@/assets/emploio-logo.svg";
@@ -174,18 +175,24 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="manual" className="w-full animate-slide-up">
-          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-12 p-1 bg-muted/60 rounded-xl border border-border/50">
+          <TabsList className="grid w-full grid-cols-3 mb-6 md:mb-8 h-12 p-1 bg-muted/60 rounded-xl border border-border/50">
             <TabsTrigger 
               value="manual" 
-              className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
+              className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all text-xs md:text-sm"
             >
               Manual Entry
             </TabsTrigger>
             <TabsTrigger 
               value="bulk"
-              className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all"
+              className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all text-xs md:text-sm"
             >
               Bulk Upload
+            </TabsTrigger>
+            <TabsTrigger 
+              value="people_enrichment"
+              className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all text-xs md:text-sm"
+            >
+              People Enrichment
             </TabsTrigger>
           </TabsList>
 
@@ -195,6 +202,10 @@ const Dashboard = () => {
 
           <TabsContent value="bulk" className="animate-fade-in">
             <ExcelUpload userId={user?.id || ""} />
+          </TabsContent>
+
+          <TabsContent value="people_enrichment" className="animate-fade-in">
+            <BulkPeopleEnrichment userId={user?.id || ""} />
           </TabsContent>
         </Tabs>
       </main>
