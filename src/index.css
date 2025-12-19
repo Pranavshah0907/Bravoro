@@ -74,12 +74,12 @@
     --shadow-strong: 0 16px 48px hsl(180 66% 55% / 0.16);
     --shadow-glow: 0 0 32px hsl(180 66% 55% / 0.3);
 
-    /* Chart colors dark */
-    --chart-1: 183 100% 42%;
-    --chart-2: 191 55% 48%;
-    --chart-3: 180 66% 60%;
-    --chart-4: 183 100% 30%;
-    --chart-5: 176 63% 55%;
+    /* Chart colors dark - distinct and accessible */
+    --chart-1: 183 100% 45%;    /* Primary teal - Apollo */
+    --chart-2: 270 65% 60%;     /* Purple - Cleon1 (distinct contrast) */
+    --chart-3: 45 95% 55%;      /* Amber/Gold - Lusha (warm accent) */
+    --chart-4: 340 75% 55%;     /* Rose/Pink - additional */
+    --chart-5: 145 65% 45%;     /* Emerald green - additional */
     
     /* Sidebar dark */
     --sidebar-background: 202 45% 10%;
@@ -142,12 +142,12 @@
     --shadow-strong: 0 16px 48px hsl(191 55% 34% / 0.12);
     --shadow-glow: 0 0 32px hsl(180 66% 61% / 0.25);
 
-    /* Chart colors */
-    --chart-1: 183 100% 32%;
-    --chart-2: 191 55% 34%;
-    --chart-3: 180 66% 61%;
-    --chart-4: 183 100% 21%;
-    --chart-5: 176 63% 50%;
+    /* Chart colors light - distinct and accessible */
+    --chart-1: 183 100% 32%;    /* Primary teal - Apollo */
+    --chart-2: 270 60% 50%;     /* Purple - Cleon1 (distinct contrast) */
+    --chart-3: 40 90% 45%;      /* Amber/Gold - Lusha (warm accent) */
+    --chart-4: 340 70% 50%;     /* Rose/Pink - additional */
+    --chart-5: 145 60% 38%;     /* Emerald green - additional */
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
