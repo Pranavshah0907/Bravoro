@@ -38,8 +38,21 @@ const bulkUploadSchema = z.object({
   lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
 });
 
-// Combined schema that accepts either format
-const requestSchema = z.union([bulkUploadSchema, manualEntrySchema]);
+// Schema for bulk people enrichment - similar to bulk upload
+const bulkPeopleEnrichmentSchema = z.object({
+  searchId: z.string().uuid({ message: "Invalid searchId: must be a valid UUID" }),
+  searchData: z.object({
+    search_id: z.string().uuid().optional(),
+    data: z.record(z.array(z.record(z.unknown()))).optional(), // Excel sheets as object with arrays of records
+  }).passthrough(), // Allow additional fields
+  entryType: z.literal('bulk_people_enrichment'),
+  apollo_credits: z.number().int().min(0).max(1000000).optional().default(0),
+  cleon1_credits: z.number().int().min(0).max(1000000).optional().default(0),
+  lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
+});
+
+// Combined schema that accepts any format
+const requestSchema = z.union([bulkUploadSchema, bulkPeopleEnrichmentSchema, manualEntrySchema]);
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -92,13 +105,18 @@ serve(async (req) => {
 
     console.log('User email to send:', userEmail);
 
-    const n8nWebhookUrl = 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+    // Select webhook URL based on entry type
+    const n8nWebhookUrl = entryType === 'bulk_people_enrichment' 
+      ? 'https://n8n.srv1081444.hstgr.cloud/webhook-test/13e78941-0413-492a-996a-62cda067af16'
+      : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+
+    console.log('Using webhook URL:', n8nWebhookUrl);
 
     // Build payload based on entry type
     let payloadToSend: Record<string, unknown>;
     
-    if (entryType === 'bulk_upload') {
-      // For bulk upload, include the Excel data
+    if (entryType === 'bulk_upload' || entryType === 'bulk_people_enrichment') {
+      // For bulk upload and people enrichment, include the Excel data
       payloadToSend = {
         search_id: searchId,
         user_email: userEmail,
