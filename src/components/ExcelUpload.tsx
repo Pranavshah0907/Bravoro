@@ -270,7 +270,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
                 accept=".xlsx,.xlsm,.csv"
                 onChange={handleFileChange}
                 disabled={loading}
-                className="cursor-pointer h-11 max-w-md file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all"
+                className="cursor-pointer h-11 max-w-md file:mr-4 file:h-full file:py-0 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all flex items-center"
               />
             </div>
           </div>
