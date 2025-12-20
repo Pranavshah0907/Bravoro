@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +24,8 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = async () => {
     try {
@@ -62,27 +63,53 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     });
   };
 
+  const validateFile = (file: File): boolean => {
+    const validTypes = [
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel.sheet.macroEnabled.12",
+      "text/csv",
+    ];
+    
+    if (!validTypes.includes(file.type) && !file.name.endsWith(".csv") && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xlsm")) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload an Excel (.xlsx, .xlsm) or CSV file",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const validTypes = [
-        "application/vnd.ms-excel",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel.sheet.macroEnabled.12",
-        "text/csv",
-      ];
-      
-      if (!validTypes.includes(file.type) && !file.name.endsWith(".csv") && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xlsm")) {
-        toast({
-          title: "Invalid File Type",
-          description: "Please upload an Excel (.xlsx, .xlsm) or CSV file",
-          variant: "destructive",
-        });
-        return;
-      }
-
+    if (file && validateFile(file)) {
       setSelectedFile(file);
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && validateFile(file)) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleZoneClick = () => {
+    fileInputRef.current?.click();
   };
 
   const parseExcelToJSON = async (file: File): Promise<any> => {
@@ -330,27 +357,60 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="people-enrichment-file" className="text-foreground font-medium">Upload Filled Template</Label>
-            <div className="flex justify-center">
-              <Input
-                id="people-enrichment-file"
+            <Label className="text-foreground font-medium">Upload Filled Template</Label>
+            <div
+              onClick={handleZoneClick}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                relative cursor-pointer rounded-xl border-2 border-dashed p-8 transition-all duration-300
+                ${isDragging 
+                  ? 'border-primary bg-primary/10 scale-[1.02]' 
+                  : selectedFile 
+                    ? 'border-primary/50 bg-primary/5' 
+                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                }
+              `}
+            >
+              <input
+                ref={fileInputRef}
                 type="file"
                 accept=".xlsx,.xlsm,.csv"
                 onChange={handleFileChange}
                 disabled={loading}
-                className="cursor-pointer h-11 max-w-md file:mr-4 file:h-full file:py-0 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all flex items-center"
+                className="hidden"
               />
+              <div className="flex flex-col items-center justify-center gap-3 text-center">
+                {selectedFile ? (
+                  <>
+                    <div className="p-3 rounded-full bg-primary/10">
+                      <FileSpreadsheet className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">{selectedFile.name}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Click or drag to replace</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={`p-3 rounded-full transition-colors ${isDragging ? 'bg-primary/20' : 'bg-muted'}`}>
+                      <Upload className={`h-8 w-8 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">
+                        {isDragging ? 'Drop your file here' : 'Drag & drop your file here'}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        or <span className="text-primary font-medium">browse</span> to choose a file
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">Supports .xlsx, .xlsm, .csv</p>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-
-          {selectedFile && (
-            <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 animate-scale-in">
-              <p className="text-sm text-foreground flex items-center justify-center gap-2">
-                <FileSpreadsheet className="h-4 w-4 text-primary" />
-                Selected: <span className="font-semibold">{selectedFile.name}</span>
-              </p>
-            </div>
-          )}
 
           <div className="flex justify-center">
             <Button
