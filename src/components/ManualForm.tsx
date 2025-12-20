@@ -186,10 +186,10 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          Manual Lead Entry
+          Single Search
         </CardTitle>
         <CardDescription className="text-base">
-          Fill in the details below to submit a lead enrichment request
+          Search and enrich contacts from a single company
         </CardDescription>
       </CardHeader>
       <CardContent>

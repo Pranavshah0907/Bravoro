@@ -258,7 +258,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
           Bulk People Enrichment
         </CardTitle>
         <CardDescription className="text-base">
-          Upload a list of people to enrich their contact information
+          Enrich existing contact lists with updated information
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
