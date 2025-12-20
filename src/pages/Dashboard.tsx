@@ -175,36 +175,45 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="manual" className="w-full animate-slide-up">
-          <TabsList className="grid w-full grid-cols-3 mb-6 md:mb-8 h-12 p-1 bg-muted/60 rounded-xl border border-border/50">
+          <TabsList className="grid w-full grid-cols-3 mb-4 h-12 p-1 bg-muted/60 rounded-xl border border-border/50">
             <TabsTrigger 
               value="manual" 
               className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all text-xs md:text-sm"
             >
-              Manual Entry
+              Single Search
             </TabsTrigger>
             <TabsTrigger 
               value="bulk"
               className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all text-xs md:text-sm"
             >
-              Bulk Upload
+              Bulk Search
             </TabsTrigger>
             <TabsTrigger 
               value="people_enrichment"
               className="rounded-lg data-[state=active]:bg-primary/20 data-[state=active]:shadow-soft data-[state=active]:text-foreground text-muted-foreground font-medium transition-all text-xs md:text-sm"
             >
-              People Enrichment
+              Bulk People Enrichment
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="manual" className="animate-fade-in">
+            <p className="text-center text-muted-foreground text-sm mb-6">
+              Search and enrich contacts from a single company
+            </p>
             <ManualForm userId={user?.id || ""} />
           </TabsContent>
 
           <TabsContent value="bulk" className="animate-fade-in">
+            <p className="text-center text-muted-foreground text-sm mb-6">
+              Upload multiple companies and enrich contacts in batch
+            </p>
             <ExcelUpload userId={user?.id || ""} />
           </TabsContent>
 
           <TabsContent value="people_enrichment" className="animate-fade-in">
+            <p className="text-center text-muted-foreground text-sm mb-6">
+              Enrich existing contact lists with updated information
+            </p>
             <BulkPeopleEnrichment userId={user?.id || ""} />
           </TabsContent>
         </Tabs>
