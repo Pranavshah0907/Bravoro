@@ -189,10 +189,10 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5 text-accent" />
-          Bulk Upload
+          Bulk Search
         </CardTitle>
         <CardDescription className="text-base">
-          Choose a template format, fill it with your data, and upload it back
+          Upload multiple companies and enrich contacts in batch
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

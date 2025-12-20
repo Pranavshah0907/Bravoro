@@ -197,23 +197,14 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="manual" className="animate-fade-in">
-            <p className="text-center text-muted-foreground text-sm mb-6">
-              Search and enrich contacts from a single company
-            </p>
             <ManualForm userId={user?.id || ""} />
           </TabsContent>
 
           <TabsContent value="bulk" className="animate-fade-in">
-            <p className="text-center text-muted-foreground text-sm mb-6">
-              Upload multiple companies and enrich contacts in batch
-            </p>
             <ExcelUpload userId={user?.id || ""} />
           </TabsContent>
 
           <TabsContent value="people_enrichment" className="animate-fade-in">
-            <p className="text-center text-muted-foreground text-sm mb-6">
-              Enrich existing contact lists with updated information
-            </p>
             <BulkPeopleEnrichment userId={user?.id || ""} />
           </TabsContent>
         </Tabs>
