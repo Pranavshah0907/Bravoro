@@ -3,14 +3,24 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen } from "lucide-react";
+import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen, Check } from "lucide-react";
 import * as XLSX from 'xlsx';
 
 interface ExcelUploadProps {
   userId: string;
 }
+
+type ProcessingStep = 'idle' | 'parsing' | 'creating' | 'triggering' | 'complete';
+
+const PROCESSING_STEPS: { key: ProcessingStep; label: string; progress: number }[] = [
+  { key: 'parsing', label: 'Parsing file...', progress: 25 },
+  { key: 'creating', label: 'Creating search record...', progress: 50 },
+  { key: 'triggering', label: 'Triggering processing...', progress: 75 },
+  { key: 'complete', label: 'Complete!', progress: 100 },
+];
 
 const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1RzADGJX8kzBRVk4M1RHFD3oIjcCwJNYhYj4_veuyvFw/copy";
 
@@ -19,6 +29,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [currentStep, setCurrentStep] = useState<ProcessingStep>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = async () => {
@@ -132,6 +143,11 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
     });
   };
 
+  const getCurrentProgress = () => {
+    const step = PROCESSING_STEPS.find(s => s.key === currentStep);
+    return step?.progress || 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -145,11 +161,14 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
     }
 
     setLoading(true);
+    setCurrentStep('parsing');
 
     try {
       // Step 1: Parse Excel to JSON
       console.log('Parsing Excel file...');
       const excelData = await parseExcelToJSON(selectedFile);
+      
+      setCurrentStep('creating');
       
       // Step 2: Insert search record into Supabase
       console.log('Creating search record...');
@@ -167,6 +186,8 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       if (searchError) throw searchError;
 
       console.log('Search created with ID:', search.id);
+
+      setCurrentStep('triggering');
 
       // Step 3: Trigger N8N webhook via edge function
       const { error: webhookError } = await supabase.functions.invoke(
@@ -188,16 +209,20 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       }
 
       console.log('Webhook triggered successfully');
+      setCurrentStep('complete');
 
       toast({
         title: "Processing Started",
         description: "Your request is being processed. You will receive an email when your results are ready.",
       });
 
-      // Reset form
-      setSelectedFile(null);
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
+      // Reset form after a brief delay to show completion
+      setTimeout(() => {
+        setSelectedFile(null);
+        setCurrentStep('idle');
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+      }, 1500);
       
     } catch (error) {
       console.error('Error processing file:', error);
@@ -206,6 +231,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
         description: error instanceof Error ? error.message : "Failed to process your request",
         variant: "destructive",
       });
+      setCurrentStep('idle');
     } finally {
       setLoading(false);
     }
@@ -343,6 +369,37 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
               </div>
             </div>
           </div>
+
+          {/* Progress Bar */}
+          {loading && currentStep !== 'idle' && (
+            <div className="space-y-3 p-4 rounded-xl bg-muted/30 border border-border/50">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">
+                  {PROCESSING_STEPS.find(s => s.key === currentStep)?.label}
+                </span>
+                <span className="text-muted-foreground">{getCurrentProgress()}%</span>
+              </div>
+              <Progress value={getCurrentProgress()} className="h-2" />
+              <div className="flex justify-between gap-2">
+                {PROCESSING_STEPS.map((step, index) => (
+                  <div key={step.key} className="flex items-center gap-1.5">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs transition-colors ${
+                      getCurrentProgress() >= step.progress 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {getCurrentProgress() >= step.progress ? <Check className="h-3 w-3" /> : index + 1}
+                    </div>
+                    <span className={`text-xs hidden sm:inline ${
+                      getCurrentProgress() >= step.progress ? 'text-foreground' : 'text-muted-foreground'
+                    }`}>
+                      {step.key === 'parsing' ? 'Parse' : step.key === 'creating' ? 'Create' : step.key === 'triggering' ? 'Process' : 'Done'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-center">
             <Button
