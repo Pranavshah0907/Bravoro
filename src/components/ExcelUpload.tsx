@@ -41,7 +41,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "Final_template.xlsm";
+      link.download = "BulkSearch_Template.xlsm";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
