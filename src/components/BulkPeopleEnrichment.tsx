@@ -261,7 +261,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
       // Step 4: Trigger N8N webhook directly
       console.log('Triggering n8n webhook...');
-      const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook-test/bulk_enrich', {
+      const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
