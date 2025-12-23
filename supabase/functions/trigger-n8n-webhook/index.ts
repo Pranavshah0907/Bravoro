@@ -119,15 +119,16 @@ serve(async (req) => {
     console.log(`[${requestId}] User email retrieved:`, !!userEmail);
 
     // Select webhook URL based on entry type
-    const n8nWebhookUrl = entryType === 'bulk_people_enrichment' 
-      ? 'https://n8n.srv1081444.hstgr.cloud/webhook-test/13e78941-0413-492a-996a-62cda067af16'
+    // NOTE: n8n expects an `authorization` header (no Bearer prefix) for these webhooks.
+    const n8nWebhookUrl = entryType === 'bulk_people_enrichment'
+      ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
       : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
 
     console.log(`[${requestId}] Using webhook URL for entry type:`, entryType);
 
     // Build payload based on entry type
     let payloadToSend: Record<string, unknown>;
-    
+
     if (entryType === 'bulk_upload' || entryType === 'bulk_people_enrichment') {
       // For bulk upload and people enrichment, include the Excel data
       payloadToSend = {
@@ -151,10 +152,10 @@ serve(async (req) => {
       'Content-Type': 'application/json',
       'type_of_entry': entryType || 'manual_entry',
     };
-    
+
     // Add webhook secret if configured
     if (n8nWebhookSecret) {
-      webhookHeaders['X-Webhook-Secret'] = n8nWebhookSecret;
+      webhookHeaders['authorization'] = n8nWebhookSecret;
     }
 
     const response = await fetch(n8nWebhookUrl, {
@@ -164,8 +165,12 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      console.error(`[${requestId}] N8N webhook failed with status:`, response.status);
-      throw new Error('External service unavailable');
+      const responseText = await response.text().catch(() => '');
+      console.error(
+        `[${requestId}] N8N webhook failed`,
+        JSON.stringify({ status: response.status, statusText: response.statusText, body: responseText })
+      );
+      throw new Error(`N8N webhook failed: ${response.status}`);
     }
 
     const result = await response.json();
