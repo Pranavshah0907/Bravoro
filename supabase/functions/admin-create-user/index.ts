@@ -188,10 +188,28 @@ Deno.serve(async (req) => {
           }),
         });
 
-        const webhookResult = await webhookResponse.json();
-        console.log(`[${requestId}] n8n webhook response received`);
+        console.log(`[${requestId}] n8n webhook response status: ${webhookResponse.status}`);
 
-        if (!webhookResult.success) {
+        // Handle n8n response - it might return empty body or non-JSON
+        let webhookSuccess = webhookResponse.ok;
+        try {
+          const responseText = await webhookResponse.text();
+          if (responseText) {
+            const webhookResult = JSON.parse(responseText);
+            console.log(`[${requestId}] n8n webhook response:`, JSON.stringify(webhookResult));
+            // If n8n explicitly returns success: false, treat as failure
+            if (webhookResult.success === false) {
+              webhookSuccess = false;
+            }
+          } else {
+            console.log(`[${requestId}] n8n webhook returned empty response (assuming success)`);
+          }
+        } catch (parseError) {
+          // If response is not JSON but status is OK, treat as success
+          console.log(`[${requestId}] n8n response is not JSON, using HTTP status: ${webhookResponse.ok}`);
+        }
+
+        if (!webhookSuccess) {
           console.error(`[${requestId}] n8n reported failure, rolling back user creation`);
 
           // Roll back created user so the email can be reused on retry
