@@ -49,13 +49,13 @@ serve(async (req) => {
 
     // Handle error case (no file, just error message)
     if (errorMessage && !file) {
-      console.log(`[${requestId}] Processing error case for search`);
+      console.log(`[${requestId}] Processing error case for search with message: ${errorMessage}`);
       
       const { error: updateError } = await supabaseClient
         .from('searches')
         .update({
           status: 'error',
-          error_message: 'Processing failed',
+          error_message: errorMessage,
           updated_at: new Date().toISOString()
         })
         .eq('id', searchId);
