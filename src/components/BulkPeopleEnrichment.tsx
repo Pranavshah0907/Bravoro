@@ -259,22 +259,24 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
       setCurrentStep('triggering');
 
-      // Step 4: Trigger N8N webhook directly
-      console.log('Triggering n8n webhook...');
-      const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'N7$kL9#mP2@vX5qR',
-        },
-        body: JSON.stringify({
-          search_id: search.id,
-          data: excelData,
-        }),
-      });
+      // Step 4: Trigger processing via backend function
+      console.log('Triggering processing...');
+      const { error: webhookError } = await supabase.functions.invoke(
+        "trigger-n8n-webhook",
+        {
+          body: {
+            searchId: search.id,
+            entryType: 'bulk_people_enrichment',
+            searchData: {
+              search_id: search.id,
+              data: excelData,
+            },
+          },
+        }
+      );
 
-      if (!webhookResponse.ok) {
-        throw new Error(`N8N webhook trigger failed: ${webhookResponse.status} ${webhookResponse.statusText}`);
+      if (webhookError) {
+        throw new Error(`N8N webhook trigger failed: ${webhookError.message}`);
       }
 
       console.log('Webhook triggered successfully');
