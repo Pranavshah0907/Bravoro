@@ -265,7 +265,10 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Some reverse proxies strip custom headers; send the same secret in common header names.
           'x-webhook-secret': 'N7$kL9#mP2@vX5qR',
+          'x-api-key': 'N7$kL9#mP2@vX5qR',
+          'Authorization': 'Bearer N7$kL9#mP2@vX5qR',
         },
         body: JSON.stringify({
           search_id: search.id,
