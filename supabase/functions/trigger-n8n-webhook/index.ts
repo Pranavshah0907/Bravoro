@@ -155,7 +155,7 @@ serve(async (req) => {
 
     // Add webhook secret if configured
     if (n8nWebhookSecret) {
-      webhookHeaders['authorization'] = n8nWebhookSecret;
+      webhookHeaders['x-webhook-secret'] = n8nWebhookSecret;
     }
 
     const response = await fetch(n8nWebhookUrl, {
