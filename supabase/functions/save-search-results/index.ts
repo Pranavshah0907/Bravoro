@@ -43,6 +43,28 @@ serve(async (req) => {
   }
 
   try {
+    // Verify webhook secret for authentication
+    const webhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
+    const providedSecret = req.headers.get('x-webhook-secret');
+    
+    if (!webhookSecret) {
+      console.error(`[${requestId}] N8N_WEBHOOK_SECRET not configured`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Server configuration error', request_id: requestId }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!providedSecret || providedSecret !== webhookSecret) {
+      console.error(`[${requestId}] Invalid or missing webhook secret`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized', request_id: requestId }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[${requestId}] Webhook authentication successful`);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
