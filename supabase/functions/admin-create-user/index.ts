@@ -190,27 +190,13 @@ Deno.serve(async (req) => {
 
         console.log(`[${requestId}] n8n webhook response status: ${webhookResponse.status}`);
 
-        // Handle n8n response - it might return empty body or non-JSON
-        let webhookSuccess = webhookResponse.ok;
-        try {
-          const responseText = await webhookResponse.text();
-          if (responseText) {
-            const webhookResult = JSON.parse(responseText);
-            console.log(`[${requestId}] n8n webhook response:`, JSON.stringify(webhookResult));
-            // If n8n explicitly returns success: false, treat as failure
-            if (webhookResult.success === false) {
-              webhookSuccess = false;
-            }
-          } else {
-            console.log(`[${requestId}] n8n webhook returned empty response (assuming success)`);
-          }
-        } catch (parseError) {
-          // If response is not JSON but status is OK, treat as success
-          console.log(`[${requestId}] n8n response is not JSON, using HTTP status: ${webhookResponse.ok}`);
-        }
+        // Check if n8n responded with content (Respond to Webhook node executed)
+        const responseText = await webhookResponse.text();
+        console.log(`[${requestId}] n8n webhook response body: ${responseText}`);
 
-        if (!webhookSuccess) {
-          console.error(`[${requestId}] n8n reported failure, rolling back user creation`);
+        // If empty response or non-OK status, n8n workflow didn't complete
+        if (!webhookResponse.ok || !responseText) {
+          console.error(`[${requestId}] n8n webhook failed - empty response or error status, rolling back user creation`);
 
           // Roll back created user so the email can be reused on retry
           if (authData.user) {
