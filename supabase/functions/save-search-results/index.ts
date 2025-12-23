@@ -29,7 +29,14 @@ interface RequestBody {
   companies: Company[];
 }
 
+// Generate a unique request ID for tracking
+function generateRequestId(): string {
+  return crypto.randomUUID();
+}
+
 serve(async (req) => {
+  const requestId = generateRequestId();
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -43,22 +50,22 @@ serve(async (req) => {
     const body: RequestBody = await req.json();
     const { search_id, companies } = body;
 
-    console.log(`[save-search-results] Received request for search_id: ${search_id}`);
-    console.log(`[save-search-results] Number of companies: ${companies?.length || 0}`);
+    console.log(`[${requestId}] Received request for search_id:`, search_id);
+    console.log(`[${requestId}] Number of companies:`, companies?.length || 0);
 
     // Validate required fields
     if (!search_id) {
-      console.error('[save-search-results] Missing search_id');
+      console.error(`[${requestId}] Missing search_id`);
       return new Response(
-        JSON.stringify({ success: false, error: 'search_id is required' }),
+        JSON.stringify({ success: false, error: 'Missing required field', request_id: requestId }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!companies || !Array.isArray(companies) || companies.length === 0) {
-      console.error('[save-search-results] Missing or empty companies array');
+      console.error(`[${requestId}] Missing or empty companies array`);
       return new Response(
-        JSON.stringify({ success: false, error: 'companies array is required and must not be empty' }),
+        JSON.stringify({ success: false, error: 'Missing required data', request_id: requestId }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -66,9 +73,9 @@ serve(async (req) => {
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(search_id)) {
-      console.error('[save-search-results] Invalid search_id format');
+      console.error(`[${requestId}] Invalid search_id format`);
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid search_id format' }),
+        JSON.stringify({ success: false, error: 'Invalid request format', request_id: requestId }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -80,14 +87,14 @@ serve(async (req) => {
       .eq('search_id', search_id);
 
     if (deleteError) {
-      console.error('[save-search-results] Error deleting existing results:', deleteError);
+      console.error(`[${requestId}] Error deleting existing results:`, deleteError);
     }
 
     // Insert each company's results
     const insertPromises = companies.map(async (company) => {
       const { company_name, domain, contacts } = company;
       
-      console.log(`[save-search-results] Inserting ${contacts?.length || 0} contacts for company: ${company_name}`);
+      console.log(`[${requestId}] Inserting contacts for company:`, company_name);
 
       const { error } = await supabase
         .from('search_results')
@@ -99,7 +106,7 @@ serve(async (req) => {
         });
 
       if (error) {
-        console.error(`[save-search-results] Error inserting company ${company_name}:`, error);
+        console.error(`[${requestId}] Error inserting company:`, error);
         throw error;
       }
 
@@ -109,7 +116,7 @@ serve(async (req) => {
     const results = await Promise.all(insertPromises);
     const totalContacts = results.reduce((sum, r) => sum + r.contacts_count, 0);
 
-    console.log(`[save-search-results] Successfully saved ${results.length} companies with ${totalContacts} total contacts`);
+    console.log(`[${requestId}] Successfully saved ${results.length} companies with ${totalContacts} total contacts`);
 
     // Update the search status to 'completed'
     const { error: updateError } = await supabase
@@ -118,24 +125,24 @@ serve(async (req) => {
       .eq('id', search_id);
 
     if (updateError) {
-      console.error('[save-search-results] Error updating search status:', updateError);
+      console.error(`[${requestId}] Error updating search status:`, updateError);
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Saved ${results.length} companies with ${totalContacts} contacts`,
+        message: 'Data saved successfully',
         companies_saved: results.length,
-        total_contacts: totalContacts
+        total_contacts: totalContacts,
+        request_id: requestId
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[save-search-results] Error:', errorMessage);
+    console.error(`[${requestId}] Error:`, error);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false, error: 'Request processing failed', request_id: requestId }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

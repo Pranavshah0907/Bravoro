@@ -9,7 +9,14 @@ const corsHeaders = {
 
 const uuidSchema = z.string().uuid({ message: "Invalid UUID format" });
 
+// Generate a unique request ID for tracking
+function generateRequestId(): string {
+  return crypto.randomUUID();
+}
+
 serve(async (req) => {
+  const requestId = generateRequestId();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,9 +35,9 @@ serve(async (req) => {
     // Validate search_id is a valid UUID
     const searchIdValidation = uuidSchema.safeParse(searchId);
     if (!searchIdValidation.success) {
-      console.error('Invalid search_id:', searchIdValidation.error.issues);
+      console.error(`[${requestId}] Invalid search_id:`, searchIdValidation.error.issues);
       return new Response(
-        JSON.stringify({ error: 'Invalid search_id: must be a valid UUID', details: searchIdValidation.error.issues }),
+        JSON.stringify({ error: 'Invalid request format', request_id: requestId }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -42,39 +49,44 @@ serve(async (req) => {
 
     // Handle error case (no file, just error message)
     if (errorMessage && !file) {
+      console.log(`[${requestId}] Processing error case for search`);
+      
       const { error: updateError } = await supabaseClient
         .from('searches')
         .update({
           status: 'error',
-          error_message: errorMessage,
+          error_message: 'Processing failed',
           updated_at: new Date().toISOString()
         })
         .eq('id', searchId);
 
       if (updateError) {
-        console.error('Update error:', updateError);
+        console.error(`[${requestId}] Update error:`, updateError);
         return new Response(
-          JSON.stringify({ error: updateError.message }),
+          JSON.stringify({ error: 'Service temporarily unavailable', request_id: requestId }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       return new Response(
-        JSON.stringify({ success: true, status: 'error' }),
+        JSON.stringify({ success: true, status: 'error', request_id: requestId }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Handle success case (file upload)
     if (!file) {
+      console.error(`[${requestId}] Missing file for successful completion`);
       return new Response(
-        JSON.stringify({ error: 'Missing file for successful completion' }),
+        JSON.stringify({ error: 'Missing required file', request_id: requestId }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const fileBuffer = await file.arrayBuffer();
     const fileName = `${searchId}_result.xlsx`;
+
+    console.log(`[${requestId}] Uploading file:`, fileName);
 
     // Upload to storage
     const { error: uploadError } = await supabaseClient.storage
@@ -85,23 +97,28 @@ serve(async (req) => {
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
+      console.error(`[${requestId}] Upload error:`, uploadError);
       return new Response(
-        JSON.stringify({ error: uploadError.message }),
+        JSON.stringify({ error: 'File upload failed', request_id: requestId }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Get user_id from search record
-    const { data: searchRecord } = await supabaseClient
+    const { data: searchRecord, error: searchError } = await supabaseClient
       .from('searches')
       .select('user_id')
       .eq('id', searchId)
       .single();
 
+    if (searchError) {
+      console.error(`[${requestId}] Search record error:`, searchError);
+    }
+
     if (!searchRecord) {
+      console.error(`[${requestId}] Search not found`);
       return new Response(
-        JSON.stringify({ error: 'Search not found' }),
+        JSON.stringify({ error: 'Resource not found', request_id: requestId }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -117,9 +134,9 @@ serve(async (req) => {
       .eq('id', searchId);
 
     if (updateError) {
-      console.error('Update error:', updateError);
+      console.error(`[${requestId}] Update error:`, updateError);
       return new Response(
-        JSON.stringify({ error: updateError.message }),
+        JSON.stringify({ error: 'Service temporarily unavailable', request_id: requestId }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -137,20 +154,21 @@ serve(async (req) => {
         });
 
       if (creditError) {
-        console.error('Credit tracking error:', creditError);
+        console.error(`[${requestId}] Credit tracking error:`, creditError);
         // Don't fail the whole request if credit tracking fails
       }
     }
 
+    console.log(`[${requestId}] File uploaded successfully`);
+
     return new Response(
-      JSON.stringify({ success: true, fileName }),
+      JSON.stringify({ success: true, request_id: requestId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[${requestId}] Error:`, error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Request processing failed', request_id: requestId }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
