@@ -222,68 +222,73 @@ const Dashboard = () => {
           ) : (
             /* Selected View - Left Panel + Form */
             <div className="flex min-h-screen">
-              {/* Left Sticky Cards - Full Height, Same Style as Home */}
-              <div className="w-80 shrink-0 sticky top-0 h-screen flex flex-col gap-4 pt-6 pb-6 pr-6">
-                {enrichmentOptions.map((option, index) => {
-                  const isSelected = selectedType === option.type;
-                  const Icon = option.icon;
-                  return (
-                    <button
-                      key={option.type}
-                      onClick={() => setSelectedType(option.type)}
-                      className={cn(
-                        "animate-sweep-left flex-1 relative flex flex-col items-center justify-center",
-                        "p-6 rounded-2xl",
-                        "bg-gradient-to-br", option.gradient,
-                        "border backdrop-blur-sm",
-                        "transition-all duration-300 ease-out",
-                        "hover:shadow-lg hover:shadow-primary/10",
-                        "focus:outline-none",
-                        isSelected 
-                          ? "border-primary/50 shadow-lg shadow-primary/15" 
-                          : "border-border/30 hover:border-primary/30"
-                      )}
-                      style={{ animationDelay: `${index * 80}ms` }}
-                    >
-                      {/* Active indicator bar */}
-                      {isSelected && (
-                        <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary rounded-r-full" />
-                      )}
-                      
-                      {/* Icon */}
-                      <div className={cn(
-                        "p-4 rounded-xl mb-4",
-                        "transition-all duration-300",
-                        isSelected 
-                          ? "bg-primary/20 text-primary" 
-                          : "bg-card/60 text-muted-foreground"
-                      )}>
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      
-                      {/* Text */}
-                      <h3 className={cn(
-                        "font-semibold text-base text-center transition-colors",
-                        isSelected ? "text-primary" : "text-foreground"
-                      )}>
-                        {option.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground text-center mt-1.5 px-2 leading-relaxed">
-                        {option.description}
-                      </p>
-                    </button>
-                  );
-                })}
+              {/* Left Sticky Cards - 75% height with top/bottom spacing */}
+              <div className="w-64 md:w-72 lg:w-80 shrink-0 sticky top-0 h-screen flex flex-col justify-center py-[12.5vh] pl-4 md:pl-6">
+                <div className="flex flex-col gap-3 md:gap-4 h-full">
+                  {enrichmentOptions.map((option, index) => {
+                    const isSelected = selectedType === option.type;
+                    const Icon = option.icon;
+                    return (
+                      <button
+                        key={option.type}
+                        onClick={() => setSelectedType(option.type)}
+                        className={cn(
+                          "animate-sweep-left flex-1 relative flex flex-col items-center justify-center",
+                          "p-4 md:p-6 rounded-2xl",
+                          "bg-gradient-to-br", option.gradient,
+                          "border backdrop-blur-sm",
+                          "transition-all duration-300 ease-out",
+                          "hover:shadow-lg hover:shadow-primary/10",
+                          "focus:outline-none",
+                          isSelected 
+                            ? "border-primary/50 shadow-lg shadow-primary/15" 
+                            : "border-border/30 hover:border-primary/30"
+                        )}
+                        style={{ animationDelay: `${index * 80}ms` }}
+                      >
+                        {/* Active indicator bar */}
+                        {isSelected && (
+                          <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary rounded-r-full" />
+                        )}
+                        
+                        {/* Icon */}
+                        <div className={cn(
+                          "p-3 md:p-4 rounded-xl mb-2 md:mb-4",
+                          "transition-all duration-300",
+                          isSelected 
+                            ? "bg-primary/20 text-primary" 
+                            : "bg-card/60 text-muted-foreground"
+                        )}>
+                          <Icon className="h-5 w-5 md:h-6 md:w-6" />
+                        </div>
+                        
+                        {/* Text */}
+                        <h3 className={cn(
+                          "font-semibold text-sm md:text-base text-center transition-colors",
+                          isSelected ? "text-primary" : "text-foreground"
+                        )}>
+                          {option.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground text-center mt-1 md:mt-1.5 px-2 leading-relaxed hidden sm:block">
+                          {option.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* Gap between left panel and form */}
+              <div className="w-4 md:w-6 lg:w-8 shrink-0" />
+
               {/* Right Form Area */}
-              <div className="flex-1 p-8 md:p-12">
+              <div className="flex-1 p-6 md:p-8 lg:p-12">
                 <div className="max-w-3xl mx-auto">
-                  <div className="mb-8 animate-fade-in">
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                  <div className="mb-6 md:mb-8 animate-fade-in">
+                    <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground mb-2">
                       {enrichmentOptions.find(o => o.type === selectedType)?.title}
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm md:text-base text-muted-foreground">
                       {enrichmentOptions.find(o => o.type === selectedType)?.description}
                     </p>
                   </div>
