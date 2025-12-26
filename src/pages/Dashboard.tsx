@@ -222,34 +222,58 @@ const Dashboard = () => {
           ) : (
             /* Selected View - Left Panel + Form */
             <div className="flex min-h-screen">
-              {/* Left Sticky Panel */}
-              <div className="w-72 shrink-0 sticky top-0 h-screen border-r border-border/50 bg-card/30 backdrop-blur-sm">
-                <div className="p-4 h-full flex flex-col">
-                  <div className="mb-6">
-                    <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Enrichment Options
-                    </h2>
-                  </div>
-                  
-                  <div className="space-y-3 flex-1">
-                    {enrichmentOptions.map((option, index) => (
-                      <div
-                        key={option.type}
-                        className="animate-slide-right"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        <EnrichmentCard
-                          title={option.title}
-                          description={option.description}
-                          icon={option.icon}
-                          isSelected={selectedType === option.type}
-                          isCompact
-                          onClick={() => setSelectedType(option.type)}
-                        />
+              {/* Left Sticky Cards - Full Height, Same Style as Home */}
+              <div className="w-80 shrink-0 sticky top-0 h-screen flex flex-col gap-4 pt-6 pb-6 pr-6">
+                {enrichmentOptions.map((option, index) => {
+                  const isSelected = selectedType === option.type;
+                  const Icon = option.icon;
+                  return (
+                    <button
+                      key={option.type}
+                      onClick={() => setSelectedType(option.type)}
+                      className={cn(
+                        "animate-sweep-left flex-1 relative flex flex-col items-center justify-center",
+                        "p-6 rounded-2xl",
+                        "bg-gradient-to-br", option.gradient,
+                        "border backdrop-blur-sm",
+                        "transition-all duration-300 ease-out",
+                        "hover:shadow-lg hover:shadow-primary/10",
+                        "focus:outline-none",
+                        isSelected 
+                          ? "border-primary/50 shadow-lg shadow-primary/15" 
+                          : "border-border/30 hover:border-primary/30"
+                      )}
+                      style={{ animationDelay: `${index * 80}ms` }}
+                    >
+                      {/* Active indicator bar */}
+                      {isSelected && (
+                        <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary rounded-r-full" />
+                      )}
+                      
+                      {/* Icon */}
+                      <div className={cn(
+                        "p-4 rounded-xl mb-4",
+                        "transition-all duration-300",
+                        isSelected 
+                          ? "bg-primary/20 text-primary" 
+                          : "bg-card/60 text-muted-foreground"
+                      )}>
+                        <Icon className="h-6 w-6" />
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      
+                      {/* Text */}
+                      <h3 className={cn(
+                        "font-semibold text-base text-center transition-colors",
+                        isSelected ? "text-primary" : "text-foreground"
+                      )}>
+                        {option.title}
+                      </h3>
+                      <p className="text-xs text-muted-foreground text-center mt-1.5 px-2 leading-relaxed">
+                        {option.description}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Right Form Area */}
