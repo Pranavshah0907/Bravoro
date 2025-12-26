@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
+import emploioLogo from "@/assets/emploio-logo.svg";
 
 const createUserSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -245,45 +246,45 @@ const Admin = () => {
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully",
+    });
+    navigate("/auth");
+  };
 
-      <header className="border-b border-border/40 glass-effect sticky top-0 z-50 animate-slide-up">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate("/dashboard")}
-                className="hover-lift text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Shield className="h-8 w-8 text-primary" />
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold gradient-text">
-                    Admin Panel
-                  </h1>
-                  <p className="text-xs text-muted-foreground">Manage users and permissions</p>
-                </div>
+  return (
+    <div className="min-h-screen bg-background flex">
+      <AppSidebar isAdmin={isAdmin} onSignOut={handleSignOut} />
+      
+      <main className="flex-1 ml-16 min-h-screen">
+        {/* Background Effects */}
+        <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
+          <div 
+            className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
+            style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)" }}
+          />
+        </div>
+
+        <div className="relative z-10 p-6 md:p-8 max-w-6xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="flex items-center justify-between animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Shield className="h-8 w-8 text-primary" />
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Panel</h1>
+                <p className="text-sm text-muted-foreground">Manage users and permissions</p>
               </div>
             </div>
             <img src={emploioLogo} alt="emploio" className="h-6 w-auto hidden md:block" />
           </div>
-        </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-6xl space-y-8 relative z-10">
-        {/* Create User Card */}
+          {/* Create User Card */}
         <Card className="shadow-strong hover-lift border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
@@ -458,6 +459,7 @@ const Admin = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </main>
     </div>
   );

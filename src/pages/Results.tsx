@@ -111,6 +111,7 @@ const Results = () => {
   const [loadingResults, setLoadingResults] = useState<Set<string>>(new Set());
   const [activeCompanyTab, setActiveCompanyTab] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState<Record<string, number>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -143,6 +144,14 @@ const Results = () => {
     if (session?.user) {
       setUser(session.user);
       await fetchSearches(session.user.id);
+      
+      // Check admin status
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .single();
+      setIsAdmin(roleData?.role === "admin");
     } else {
       navigate("/auth");
     }
@@ -676,51 +685,31 @@ const Results = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
-
-      {/* Header */}
-      <header className="border-b border-border/40 glass-effect sticky top-0 z-50">
-        <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={emploioLogo} alt="emploio" className="h-7 md:h-8 w-auto" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate("/dashboard")}
-              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-            >
-              <ArrowLeft className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Dashboard</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleSignOut}
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-            >
-              <LogOut className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Sign Out</span>
-            </Button>
-          </div>
+    <div className="min-h-screen bg-background flex">
+      <AppSidebar isAdmin={isAdmin} onSignOut={handleSignOut} />
+      
+      <main className="flex-1 ml-16 min-h-screen">
+        {/* Background Effects */}
+        <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
+          <div 
+            className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
+            style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)" }}
+          />
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 md:px-6 py-6 md:py-10 relative z-10">
-        <div className="max-w-7xl mx-auto">
+        <div className="relative z-10 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
           {/* Page Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8 animate-fade-in">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                Search Results
-              </h1>
-              <p className="text-muted-foreground mt-1">Track your enrichment requests and download results</p>
+            <div className="flex items-center justify-between w-full lg:w-auto">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                  Search Results
+                </h1>
+                <p className="text-muted-foreground mt-1">Track your enrichment requests and download results</p>
+              </div>
+              <img src={emploioLogo} alt="emploio" className="h-6 w-auto hidden md:block lg:hidden" />
             </div>
+            <img src={emploioLogo} alt="emploio" className="h-6 w-auto hidden lg:block" />
             
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2 animate-fade-in">
