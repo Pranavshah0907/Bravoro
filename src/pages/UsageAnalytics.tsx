@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, ArrowLeft } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { toast } from "sonner";
-import { format, subDays, startOfDay, endOfDay, subWeeks, subMonths, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
-import emploioLogo from "@/assets/emploio-logo.svg";
+import { format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth } from "date-fns";
+import { AppSidebar } from "@/components/AppSidebar";
+import { cn } from "@/lib/utils";
 
 type TimePeriod = "daily" | "weekly" | "monthly" | "quarterly";
 
@@ -31,6 +32,7 @@ const UsageAnalytics = () => {
   const [creditData, setCreditData] = useState<CreditData[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchCreditData = async () => {
     try {
@@ -42,6 +44,14 @@ const UsageAnalytics = () => {
         navigate("/auth");
         return;
       }
+
+      // Check admin status
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+      setIsAdmin(roleData?.role === "admin");
 
       const { data, error } = await supabase
         .from("credit_usage")
@@ -64,6 +74,12 @@ const UsageAnalytics = () => {
   useEffect(() => {
     fetchCreditData();
   }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out successfully");
+    navigate("/auth");
+  };
 
   const getTotalCredits = () => {
     return creditData.reduce(
@@ -179,148 +195,157 @@ const UsageAnalytics = () => {
   const totals = getTotalCredits();
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden p-4 md:p-8">
-      {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
+    <div className="min-h-screen bg-background flex">
+      <AppSidebar isAdmin={isAdmin} onSignOut={handleSignOut} />
       
-      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="hover-lift text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+      <main className="flex-1 ml-16 min-h-screen">
+        {/* Background Effects */}
+        <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
+          <div 
+            className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
+            style={{
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)",
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold gradient-text">Usage Analytics</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Usage Analytics</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Last Update: {format(lastUpdate, "MMM d yyyy 'at' hh:mm a")}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={fetchCreditData} disabled={loading} variant="outline" size="sm" className="hover-lift transition-all border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50">
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            <Button 
+              onClick={fetchCreditData} 
+              disabled={loading} 
+              variant="outline" 
+              size="sm" 
+              className="border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
               Refresh
             </Button>
-            <img src={emploioLogo} alt="emploio" className="h-6 w-auto hidden md:block" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Pie Chart Card */}
+            <Card className="lg:col-span-4 border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in" style={{ animationDelay: "0.1s" }}>
+              <CardHeader>
+                <CardTitle className="text-xl text-foreground">Total Credits</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          color: "hsl(var(--foreground))"
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.apollo }} />
+                      <p className="text-xs text-muted-foreground mb-1">Apollo</p>
+                      <p className="text-xl font-bold text-foreground">{totals.apollo}</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.cleon1 }} />
+                      <p className="text-xs text-muted-foreground mb-1">Cleon1</p>
+                      <p className="text-xl font-bold text-foreground">{totals.cleon1}</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.lusha }} />
+                      <p className="text-xs text-muted-foreground mb-1">Lusha</p>
+                      <p className="text-xl font-bold text-foreground">{totals.lusha}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Bar Chart Card */}
+            <Card className="lg:col-span-8 border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in" style={{ animationDelay: "0.2s" }}>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-xl text-foreground">Usage Over Time</CardTitle>
+                <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
+                  <SelectTrigger className="w-32 bg-muted/30 border-border/50 text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardHeader>
+              <CardContent>
+                {barData.length === 0 ? (
+                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    No usage data available yet
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={340}>
+                    <BarChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
+                        tickLine={{ stroke: "hsl(var(--border))" }}
+                      />
+                      <YAxis 
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
+                        tickLine={{ stroke: "hsl(var(--border))" }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                          color: "hsl(var(--foreground))"
+                        }}
+                        cursor={{ fill: "hsl(var(--accent))", opacity: 0.1 }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: "20px" }}
+                        iconType="circle"
+                      />
+                      <Bar dataKey="Apollo" stackId="a" fill={COLORS.apollo} radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Cleon1" stackId="a" fill={COLORS.cleon1} radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Lusha" stackId="a" fill={COLORS.lusha} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Pie Chart Card */}
-          <Card className="lg:col-span-4 shadow-strong hover-lift border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <CardHeader>
-              <CardTitle className="text-xl text-foreground">Total Credits</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "hsl(var(--popover))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        color: "hsl(var(--foreground))"
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.apollo }} />
-                    <p className="text-xs text-muted-foreground mb-1">Apollo</p>
-                    <p className="text-xl font-bold text-foreground">{totals.apollo}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.cleon1 }} />
-                    <p className="text-xs text-muted-foreground mb-1">Cleon1</p>
-                    <p className="text-xl font-bold text-foreground">{totals.cleon1}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.lusha }} />
-                    <p className="text-xs text-muted-foreground mb-1">Lusha</p>
-                    <p className="text-xl font-bold text-foreground">{totals.lusha}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Bar Chart Card */}
-          <Card className="lg:col-span-8 shadow-strong hover-lift border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl text-foreground">Usage Over Time</CardTitle>
-              <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-                <SelectTrigger className="w-32 bg-muted/30 border-border/50 text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-foreground">
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardHeader>
-            <CardContent>
-              {barData.length === 0 ? (
-                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                  No usage data available yet
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={340}>
-                  <BarChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="hsl(var(--muted-foreground))"
-                      tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
-                      tickLine={{ stroke: "hsl(var(--border))" }}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
-                      tickLine={{ stroke: "hsl(var(--border))" }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "hsl(var(--popover))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                        color: "hsl(var(--foreground))"
-                      }}
-                      cursor={{ fill: "hsl(var(--accent))", opacity: 0.1 }}
-                    />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: "20px" }}
-                      iconType="circle"
-                    />
-                    <Bar dataKey="Apollo" stackId="a" fill={COLORS.apollo} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="Cleon1" stackId="a" fill={COLORS.cleon1} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="Lusha" stackId="a" fill={COLORS.lusha} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };
