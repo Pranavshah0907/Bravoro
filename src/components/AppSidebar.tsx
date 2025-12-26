@@ -112,11 +112,8 @@ export const AppSidebar = ({ isAdmin, onSignOut, onHomeClick }: AppSidebarProps)
         isExpanded ? "w-56" : "w-16"
       )}
     >
-      {/* Spacer for top */}
-      <div className="h-16 border-b border-sidebar-border/50" />
-
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col p-2 gap-1">
+      <nav className="flex-1 flex flex-col p-2 pt-4 gap-1">
         {navItems.map((item, index) => renderNavItem(item, index))}
       </nav>
 
