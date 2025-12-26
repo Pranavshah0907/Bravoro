@@ -9,7 +9,6 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import emploioLogo from "@/assets/emploio-logo.svg";
 
 interface AppSidebarProps {
   isAdmin?: boolean;
@@ -113,23 +112,8 @@ export const AppSidebar = ({ isAdmin, onSignOut, onHomeClick }: AppSidebarProps)
         isExpanded ? "w-56" : "w-16"
       )}
     >
-      {/* Logo */}
-      <div className={cn(
-        "flex items-center h-16 border-b border-sidebar-border/50",
-        "transition-all duration-300",
-        isExpanded ? "px-4 gap-3" : "justify-center"
-      )}>
-        <div className="relative">
-          <img 
-            src={emploioLogo} 
-            alt="emploio" 
-            className={cn(
-              "transition-all duration-300",
-              isExpanded ? "h-7" : "h-6"
-            )} 
-          />
-        </div>
-      </div>
+      {/* Spacer for top */}
+      <div className="h-16 border-b border-sidebar-border/50" />
 
       {/* Navigation */}
       <nav className="flex-1 flex flex-col p-2 gap-1">
