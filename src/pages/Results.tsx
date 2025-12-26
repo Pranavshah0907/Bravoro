@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { LogOut, Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight, ArrowLeft } from "lucide-react";
+import { Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AppSidebar } from "@/components/AppSidebar";
 import {
   Tooltip,
   TooltipContent,

@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles } from "lucide-react";
+import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles } from "lucide-react";
 import { z } from "zod";
-import emploioLogo from "@/assets/emploio-logo.svg";
+import { AppSidebar } from "@/components/AppSidebar";
 
 const createUserSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
