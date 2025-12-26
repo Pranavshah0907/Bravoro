@@ -221,10 +221,17 @@ const Dashboard = () => {
             </div>
           ) : (
             /* Selected View - Left Panel + Form */
-            <div className="flex min-h-screen">
-              {/* Left Sticky Cards - 75% height with top/bottom spacing */}
-              <div className="w-64 md:w-72 lg:w-80 shrink-0 sticky top-0 h-screen flex flex-col justify-center py-[12.5vh] pl-4 md:pl-6">
-                <div className="flex flex-col gap-3 md:gap-4 h-full">
+            <div className="flex flex-col lg:flex-row min-h-screen">
+              {/* Left Sticky Cards - Responsive sizing */}
+              <div className="
+                lg:sticky lg:top-0 lg:h-screen
+                w-full lg:w-56 xl:w-64 2xl:w-72
+                shrink-0 
+                flex flex-col justify-center 
+                py-4 lg:py-[12.5vh] 
+                px-4 lg:px-0 lg:pl-4
+              ">
+                <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 xl:gap-4 h-auto lg:h-full overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
                   {enrichmentOptions.map((option, index) => {
                     const isSelected = selectedType === option.type;
                     const Icon = option.icon;
@@ -233,8 +240,9 @@ const Dashboard = () => {
                         key={option.type}
                         onClick={() => setSelectedType(option.type)}
                         className={cn(
-                          "animate-sweep-left flex-1 relative flex flex-col items-center justify-center",
-                          "p-4 md:p-6 rounded-2xl",
+                          "animate-sweep-left flex-shrink-0 lg:flex-1 relative flex flex-col items-center justify-center",
+                          "min-w-[120px] lg:min-w-0",
+                          "p-3 lg:p-4 xl:p-5 rounded-xl lg:rounded-2xl",
                           "bg-gradient-to-br", option.gradient,
                           "border backdrop-blur-sm",
                           "transition-all duration-300 ease-out",
@@ -248,28 +256,28 @@ const Dashboard = () => {
                       >
                         {/* Active indicator bar */}
                         {isSelected && (
-                          <div className="absolute left-0 top-4 bottom-4 w-1 bg-primary rounded-r-full" />
+                          <div className="absolute left-0 top-3 bottom-3 lg:top-4 lg:bottom-4 w-1 bg-primary rounded-r-full" />
                         )}
                         
                         {/* Icon */}
                         <div className={cn(
-                          "p-3 md:p-4 rounded-xl mb-2 md:mb-4",
+                          "p-2.5 lg:p-3 xl:p-4 rounded-lg lg:rounded-xl mb-1.5 lg:mb-3",
                           "transition-all duration-300",
                           isSelected 
                             ? "bg-primary/20 text-primary" 
                             : "bg-card/60 text-muted-foreground"
                         )}>
-                          <Icon className="h-5 w-5 md:h-6 md:w-6" />
+                          <Icon className="h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6" />
                         </div>
                         
                         {/* Text */}
                         <h3 className={cn(
-                          "font-semibold text-sm md:text-base text-center transition-colors",
+                          "font-semibold text-xs lg:text-sm xl:text-base text-center transition-colors leading-tight",
                           isSelected ? "text-primary" : "text-foreground"
                         )}>
                           {option.title}
                         </h3>
-                        <p className="text-xs text-muted-foreground text-center mt-1 md:mt-1.5 px-2 leading-relaxed hidden sm:block">
+                        <p className="text-[10px] lg:text-xs text-muted-foreground text-center mt-1 px-1 lg:px-2 leading-relaxed hidden lg:block">
                           {option.description}
                         </p>
                       </button>
@@ -279,16 +287,16 @@ const Dashboard = () => {
               </div>
 
               {/* Gap between left panel and form */}
-              <div className="w-4 md:w-6 lg:w-8 shrink-0" />
+              <div className="hidden lg:block w-3 xl:w-5 2xl:w-6 shrink-0" />
 
               {/* Right Form Area */}
-              <div className="flex-1 p-6 md:p-8 lg:p-12">
+              <div className="flex-1 p-4 lg:p-6 xl:p-8 2xl:p-10 pt-2 lg:pt-6">
                 <div className="max-w-3xl mx-auto">
-                  <div className="mb-6 md:mb-8 animate-fade-in">
-                    <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground mb-2">
+                  <div className="mb-4 lg:mb-6 animate-fade-in">
+                    <h1 className="text-lg lg:text-xl xl:text-2xl 2xl:text-3xl font-bold text-foreground mb-1.5 lg:mb-2">
                       {enrichmentOptions.find(o => o.type === selectedType)?.title}
                     </h1>
-                    <p className="text-sm md:text-base text-muted-foreground">
+                    <p className="text-xs lg:text-sm xl:text-base text-muted-foreground">
                       {enrichmentOptions.find(o => o.type === selectedType)?.description}
                     </p>
                   </div>
