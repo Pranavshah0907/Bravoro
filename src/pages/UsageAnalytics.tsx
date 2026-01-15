@@ -15,14 +15,14 @@ type TimePeriod = "daily" | "weekly" | "monthly" | "quarterly";
 
 interface CreditData {
   apollo_credits: number;
-  cleon1_credits: number;
+  aleads_credits: number;
   lusha_credits: number;
   created_at: string;
 }
 
 const COLORS = {
   apollo: "hsl(var(--chart-1))",
-  cleon1: "hsl(var(--chart-2))",
+  aleads: "hsl(var(--chart-2))",
   lusha: "hsl(var(--chart-3))",
 };
 
@@ -85,10 +85,10 @@ const UsageAnalytics = () => {
     return creditData.reduce(
       (acc, curr) => ({
         apollo: acc.apollo + curr.apollo_credits,
-        cleon1: acc.cleon1 + curr.cleon1_credits,
+        aleads: acc.aleads + curr.aleads_credits,
         lusha: acc.lusha + curr.lusha_credits,
       }),
-      { apollo: 0, cleon1: 0, lusha: 0 }
+      { apollo: 0, aleads: 0, lusha: 0 }
     );
   };
 
@@ -96,7 +96,7 @@ const UsageAnalytics = () => {
     const totals = getTotalCredits();
     return [
       { name: "Apollo", value: totals.apollo, color: COLORS.apollo },
-      { name: "Cleon1", value: totals.cleon1, color: COLORS.cleon1 },
+      { name: "A-Leads", value: totals.aleads, color: COLORS.aleads },
       { name: "Lusha", value: totals.lusha, color: COLORS.lusha },
     ];
   };
@@ -105,7 +105,7 @@ const UsageAnalytics = () => {
     const now = new Date();
     const limit = timePeriod === "daily" ? 5 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
     
-    const periods: { date: string; Apollo: number; Cleon1: number; Lusha: number; sortDate: Date }[] = [];
+    const periods: { date: string; Apollo: number; "A-Leads": number; Lusha: number; sortDate: Date }[] = [];
     
     for (let i = limit - 1; i >= 0; i--) {
       let periodDate: Date;
@@ -141,7 +141,7 @@ const UsageAnalytics = () => {
       periods.push({
         date: dateLabel,
         Apollo: 0,
-        Cleon1: 0,
+        "A-Leads": 0,
         Lusha: 0,
         sortDate: periodDate,
       });
@@ -176,16 +176,16 @@ const UsageAnalytics = () => {
         
         if (matches) {
           period.Apollo += item.apollo_credits;
-          period.Cleon1 += item.cleon1_credits;
+          period["A-Leads"] += item.aleads_credits;
           period.Lusha += item.lusha_credits;
         }
       });
     });
 
-    return periods.map(({ date, Apollo, Cleon1, Lusha }) => ({
+    return periods.map(({ date, Apollo, "A-Leads": ALeads, Lusha }) => ({
       date,
       Apollo,
-      Cleon1,
+      "A-Leads": ALeads,
       Lusha,
     }));
   };
@@ -271,9 +271,9 @@ const UsageAnalytics = () => {
                       <p className="text-xl font-bold text-foreground">{totals.apollo}</p>
                     </div>
                     <div className="text-center">
-                      <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.cleon1 }} />
-                      <p className="text-xs text-muted-foreground mb-1">Cleon1</p>
-                      <p className="text-xl font-bold text-foreground">{totals.cleon1}</p>
+                      <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.aleads }} />
+                      <p className="text-xs text-muted-foreground mb-1">A-Leads</p>
+                      <p className="text-xl font-bold text-foreground">{totals.aleads}</p>
                     </div>
                     <div className="text-center">
                       <div className="w-3 h-3 rounded-full mx-auto mb-2" style={{ backgroundColor: COLORS.lusha }} />
@@ -336,7 +336,7 @@ const UsageAnalytics = () => {
                         iconType="circle"
                       />
                       <Bar dataKey="Apollo" stackId="a" fill={COLORS.apollo} radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="Cleon1" stackId="a" fill={COLORS.cleon1} radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="A-Leads" stackId="a" fill={COLORS.aleads} radius={[0, 0, 0, 0]} />
                       <Bar dataKey="Lusha" stackId="a" fill={COLORS.lusha} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
