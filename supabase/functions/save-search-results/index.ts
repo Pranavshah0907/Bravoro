@@ -49,6 +49,15 @@ function toInt(value: unknown): number {
   return 0;
 }
 
+function pickFirst(obj: Record<string, unknown> | undefined, keys: string[]): unknown {
+  if (!obj) return undefined;
+  for (const k of keys) {
+    const v = obj[k];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+}
+
 serve(async (req: Request) => {
   const requestId = generateRequestId();
   
@@ -119,14 +128,52 @@ serve(async (req: Request) => {
     const search_id = typeof body?.search_id === 'string' ? body.search_id : '';
     const companies: Company[] = Array.isArray(body?.companies) ? (body.companies as Company[]) : [];
 
-    // Parse credits using exact field names only
-    const apolloCredits = toInt(body.apollo_credits);
-    const aleadsCredits = toInt(body.aleads_credits);
-    const lushaCredits = toInt(body.lusha_credits);
+    const bodyAny = body as unknown as Record<string, unknown>;
+
+    // Support multiple payload shapes:
+    // - root fields: apollo_credits, aleads_credits, lusha_credits
+    // - camelCase: apolloCredits, aleadsCredits, lushaCredits
+    // - nested object: credits: { apollo_credits, aleads_credits, lusha_credits }
+    // - form-data bracket keys: credits[apollo_credits]
+    const creditsObj = (bodyAny?.credits && typeof bodyAny.credits === 'object')
+      ? (bodyAny.credits as Record<string, unknown>)
+      : undefined;
+
+    const apolloRaw = pickFirst(bodyAny, [
+      'apollo_credits',
+      'apolloCredits',
+      'apollo',
+      'credits[apollo_credits]',
+      'credits[apolloCredits]',
+      'credits[apollo]',
+    ]) ?? pickFirst(creditsObj, ['apollo_credits', 'apolloCredits', 'apollo']);
+
+    const aleadsRaw = pickFirst(bodyAny, [
+      'aleads_credits',
+      'aleadsCredits',
+      'aleads',
+      'credits[aleads_credits]',
+      'credits[aleadsCredits]',
+      'credits[aleads]',
+    ]) ?? pickFirst(creditsObj, ['aleads_credits', 'aleadsCredits', 'aleads']);
+
+    const lushaRaw = pickFirst(bodyAny, [
+      'lusha_credits',
+      'lushaCredits',
+      'lusha',
+      'credits[lusha_credits]',
+      'credits[lushaCredits]',
+      'credits[lusha]',
+    ]) ?? pickFirst(creditsObj, ['lusha_credits', 'lushaCredits', 'lusha']);
+
+    const apolloCredits = toInt(apolloRaw);
+    const aleadsCredits = toInt(aleadsRaw);
+    const lushaCredits = toInt(lushaRaw);
 
     console.log(`[${requestId}] Received request for search_id:`, search_id);
     console.log(`[${requestId}] Number of companies:`, companies.length);
-    console.log(`[${requestId}] Credits received - apollo_credits: ${body.apollo_credits}, aleads_credits: ${body.aleads_credits}, lusha_credits: ${body.lusha_credits}`);
+    console.log(`[${requestId}] Body keys:`, Object.keys(bodyAny));
+    console.log(`[${requestId}] Credits raw - apollo: ${apolloRaw}, aleads: ${aleadsRaw}, lusha: ${lushaRaw}`);
     console.log(`[${requestId}] Credits parsed - Apollo: ${apolloCredits}, A-Leads: ${aleadsCredits}, Lusha: ${lushaCredits}`);
 
     // Validate required fields
