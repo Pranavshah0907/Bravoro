@@ -27,22 +27,9 @@ interface Company {
 interface RequestBody {
   search_id: string;
   companies?: Company[];
-
-  // Credits may arrive in different shapes depending on the n8n workflow
   apollo_credits?: number | string | null;
   cleon1_credits?: number | string | null;
-  clay_credits?: number | string | null;
   lusha_credits?: number | string | null;
-
-  credits?: {
-    apollo?: number | string | null;
-    cleon1?: number | string | null;
-    clay?: number | string | null;
-    lusha?: number | string | null;
-  } | null;
-
-  // Allow unknown extra fields without failing parsing
-  [key: string]: unknown;
 }
 
 // Generate a unique request ID for tracking
@@ -50,24 +37,16 @@ function generateRequestId(): string {
   return crypto.randomUUID();
 }
 
-function toInt(value: unknown): number | undefined {
-  if (value === null || value === undefined) return undefined;
+function toInt(value: unknown): number {
+  if (value === null || value === undefined) return 0;
   if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value);
   if (typeof value === 'string') {
     const trimmed = value.trim();
-    if (!trimmed) return undefined;
+    if (!trimmed) return 0;
     const n = Number(trimmed);
-    return Number.isFinite(n) ? Math.trunc(n) : undefined;
+    return Number.isFinite(n) ? Math.trunc(n) : 0;
   }
-  return undefined;
-}
-
-function pickFirstInt(...values: unknown[]): number | undefined {
-  for (const v of values) {
-    const parsed = toInt(v);
-    if (parsed !== undefined) return parsed;
-  }
-  return undefined;
+  return 0;
 }
 
 serve(async (req: Request) => {
@@ -130,59 +109,25 @@ serve(async (req: Request) => {
         }
       }
       
-      body = formEntries as RequestBody;
+      body = formEntries as unknown as RequestBody;
       console.log(`[${requestId}] Parsed form data keys:`, Object.keys(formEntries));
     } else {
       // Parse as JSON
       body = (await req.json()) as RequestBody;
     }
 
-    const bodyAny = body as Record<string, unknown>;
-    const creditsAny =
-      body?.credits && typeof body.credits === 'object'
-        ? (body.credits as Record<string, unknown>)
-        : undefined;
-
     const search_id = typeof body?.search_id === 'string' ? body.search_id : '';
     const companies: Company[] = Array.isArray(body?.companies) ? (body.companies as Company[]) : [];
 
-    const apolloCredits = pickFirstInt(
-      body.apollo_credits,
-      bodyAny['apolloCredits'],
-      bodyAny['apollo_credit'],
-      bodyAny['apollo'],
-      body.credits?.apollo,
-      creditsAny?.['apollo_credits'],
-    );
-
-    const cleon1Credits = pickFirstInt(
-      body.cleon1_credits,
-      bodyAny['cleon1Credits'],
-      bodyAny['cleon1'],
-      body.clay_credits,
-      bodyAny['clay_credits'],
-      bodyAny['clayCredits'],
-      bodyAny['clay'],
-      body.credits?.cleon1,
-      body.credits?.clay,
-    );
-
-    const lushaCredits = pickFirstInt(
-      body.lusha_credits,
-      bodyAny['lushaCredits'],
-      bodyAny['lusha'],
-      body.credits?.lusha,
-      creditsAny?.['lusha_credits'],
-    );
-
-    const creditKeys = Object.keys(body ?? {}).filter((k) => k.toLowerCase().includes('credit'));
+    // Parse credits using exact field names only
+    const apolloCredits = toInt(body.apollo_credits);
+    const cleon1Credits = toInt(body.cleon1_credits);
+    const lushaCredits = toInt(body.lusha_credits);
 
     console.log(`[${requestId}] Received request for search_id:`, search_id);
     console.log(`[${requestId}] Number of companies:`, companies.length);
-    console.log(`[${requestId}] Credit-related keys present:`, creditKeys);
-    console.log(
-      `[${requestId}] Credits parsed - Apollo: ${apolloCredits ?? 'not provided'}, Cleon1/Clay: ${cleon1Credits ?? 'not provided'}, Lusha: ${lushaCredits ?? 'not provided'}`,
-    );
+    console.log(`[${requestId}] Credits received - apollo_credits: ${body.apollo_credits}, cleon1_credits: ${body.cleon1_credits}, lusha_credits: ${body.lusha_credits}`);
+    console.log(`[${requestId}] Credits parsed - Apollo: ${apolloCredits}, Cleon1: ${cleon1Credits}, Lusha: ${lushaCredits}`);
 
     // Validate required fields
     if (!search_id) {
@@ -193,7 +138,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const hasAnyCredits = [apolloCredits, cleon1Credits, lushaCredits].some((v) => typeof v === 'number');
+    const hasAnyCredits = apolloCredits > 0 || cleon1Credits > 0 || lushaCredits > 0;
 
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -299,7 +244,7 @@ serve(async (req: Request) => {
         if (creditError) {
           console.error(`[${requestId}] Error updating credit usage:`, creditError);
         } else {
-          console.log(`[${requestId}] Credit usage updated - Apollo: ${nextApollo}, Cleon1/Clay: ${nextCleon1}, Lusha: ${nextLusha}`);
+          console.log(`[${requestId}] Credit usage updated - Apollo: ${nextApollo}, Cleon1: ${nextCleon1}, Lusha: ${nextLusha}`);
         }
       } else {
         const { error: creditError } = await supabase
@@ -315,7 +260,7 @@ serve(async (req: Request) => {
         if (creditError) {
           console.error(`[${requestId}] Error saving credit usage:`, creditError);
         } else {
-          console.log(`[${requestId}] Credit usage saved - Apollo: ${nextApollo}, Cleon1/Clay: ${nextCleon1}, Lusha: ${nextLusha}`);
+          console.log(`[${requestId}] Credit usage saved - Apollo: ${nextApollo}, Cleon1: ${nextCleon1}, Lusha: ${nextLusha}`);
         }
       }
     } else {
