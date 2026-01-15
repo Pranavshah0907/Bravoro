@@ -1,17 +1,20 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, TrendingUp, Activity, Zap } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { RefreshCw, TrendingUp, Activity, Zap, CalendarIcon } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Sector } from "recharts";
 import { toast } from "sonner";
-import { format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth } from "date-fns";
+import { format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from "date-fns";
 import { AppSidebar } from "@/components/AppSidebar";
 import { cn } from "@/lib/utils";
+import type { DateRange } from "react-day-picker";
 
-type TimePeriod = "daily" | "weekly" | "monthly" | "quarterly";
+type TimePeriod = "daily" | "weekly" | "monthly" | "quarterly" | "custom";
 
 interface CreditData {
   apollo_credits: number;
@@ -76,12 +79,22 @@ const UsageAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activePieIndex, setActivePieIndex] = useState<number | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 7),
+    to: new Date(),
+  });
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const onPieEnter = useCallback((_: any, index: number) => {
     setActivePieIndex(index);
   }, []);
 
   const onPieLeave = useCallback(() => {
+    setActivePieIndex(undefined);
+  }, []);
+
+  // Reset active pie index when mouse leaves the chart container
+  const handleChartMouseLeave = useCallback(() => {
     setActivePieIndex(undefined);
   }, []);
 
@@ -154,6 +167,94 @@ const UsageAnalytics = () => {
 
   const getBarChartData = () => {
     const now = new Date();
+    
+    // Handle custom date range
+    if (timePeriod === "custom" && dateRange?.from && dateRange?.to) {
+      const days = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
+      const periods: { date: string; Apollo: number; "A-Leads": number; Lusha: number; sortDate: Date }[] = [];
+      
+      // Group by appropriate interval based on range size
+      const dayCount = days.length;
+      
+      if (dayCount <= 14) {
+        // Show daily for up to 2 weeks
+        days.forEach(day => {
+          periods.push({
+            date: format(day, "MMM d"),
+            Apollo: 0,
+            "A-Leads": 0,
+            Lusha: 0,
+            sortDate: day,
+          });
+        });
+        
+        creditData.forEach((item) => {
+          const date = new Date(item.created_at);
+          periods.forEach((period) => {
+            if (format(date, "MMM d yyyy") === format(period.sortDate, "MMM d yyyy")) {
+              period.Apollo += item.apollo_credits;
+              period["A-Leads"] += item.aleads_credits;
+              period.Lusha += item.lusha_credits;
+            }
+          });
+        });
+      } else if (dayCount <= 90) {
+        // Show weekly for up to 3 months
+        const weeks = eachWeekOfInterval({ start: dateRange.from, end: dateRange.to });
+        weeks.forEach(week => {
+          periods.push({
+            date: format(week, "MMM d"),
+            Apollo: 0,
+            "A-Leads": 0,
+            Lusha: 0,
+            sortDate: week,
+          });
+        });
+        
+        creditData.forEach((item) => {
+          const date = new Date(item.created_at);
+          const itemWeekStart = startOfWeek(date);
+          periods.forEach((period) => {
+            if (format(itemWeekStart, "MMM d yyyy") === format(period.sortDate, "MMM d yyyy")) {
+              period.Apollo += item.apollo_credits;
+              period["A-Leads"] += item.aleads_credits;
+              period.Lusha += item.lusha_credits;
+            }
+          });
+        });
+      } else {
+        // Show monthly for longer ranges
+        const months = eachMonthOfInterval({ start: dateRange.from, end: dateRange.to });
+        months.forEach(month => {
+          periods.push({
+            date: format(month, "MMM yyyy"),
+            Apollo: 0,
+            "A-Leads": 0,
+            Lusha: 0,
+            sortDate: month,
+          });
+        });
+        
+        creditData.forEach((item) => {
+          const date = new Date(item.created_at);
+          periods.forEach((period) => {
+            if (format(date, "MMM yyyy") === period.date) {
+              period.Apollo += item.apollo_credits;
+              period["A-Leads"] += item.aleads_credits;
+              period.Lusha += item.lusha_credits;
+            }
+          });
+        });
+      }
+      
+      return periods.map(({ date, Apollo, "A-Leads": ALeads, Lusha }) => ({
+        date,
+        Apollo,
+        "A-Leads": ALeads,
+        Lusha,
+      }));
+    }
+    
     const limit = timePeriod === "daily" ? 5 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
     
     const periods: { date: string; Apollo: number; "A-Leads": number; Lusha: number; sortDate: Date }[] = [];
@@ -241,6 +342,34 @@ const UsageAnalytics = () => {
     }));
   };
 
+  // Calculate period totals for the selected time range
+  const periodTotals = useMemo(() => {
+    const barData = getBarChartData();
+    return barData.reduce(
+      (acc, curr) => ({
+        apollo: acc.apollo + curr.Apollo,
+        aleads: acc.aleads + curr["A-Leads"],
+        lusha: acc.lusha + curr.Lusha,
+      }),
+      { apollo: 0, aleads: 0, lusha: 0 }
+    );
+  }, [creditData, timePeriod, dateRange]);
+
+  const periodGrandTotal = periodTotals.apollo + periodTotals.aleads + periodTotals.lusha;
+
+  const getPeriodLabel = () => {
+    if (timePeriod === "custom" && dateRange?.from && dateRange?.to) {
+      return `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`;
+    }
+    switch (timePeriod) {
+      case "daily": return "Last 5 Days";
+      case "weekly": return "Last 5 Weeks";
+      case "monthly": return "Last 6 Months";
+      case "quarterly": return "Last 4 Quarters";
+      default: return "";
+    }
+  };
+
   const pieData = getPieChartData();
   const barData = getBarChartData();
   const totals = getTotalCredits();
@@ -273,12 +402,12 @@ const UsageAnalytics = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
             <div>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                  <Activity className="h-6 w-6 text-primary" />
+                <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                  <Activity className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Usage Analytics</h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">
+                  <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">Usage Analytics</h1>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Last updated: {format(lastUpdate, "MMM d, yyyy 'at' h:mm a")}
                   </p>
                 </div>
@@ -289,24 +418,24 @@ const UsageAnalytics = () => {
               disabled={loading} 
               variant="outline" 
               size="sm" 
-              className="border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50 transition-all duration-300"
+              className="border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 text-xs"
             >
-              <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-              Refresh Data
+              <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
+              Refresh
             </Button>
           </div>
 
           {/* Stats Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: "0.05s" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fade-in" style={{ animationDelay: "0.05s" }}>
             <Card className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-primary/30 transition-all duration-300 group">
-              <CardContent className="p-5">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Credits</p>
-                    <p className="text-2xl font-bold text-foreground mt-1">{grandTotal.toLocaleString()}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Credits</p>
+                    <p className="text-xl font-bold text-foreground mt-0.5">{grandTotal.toLocaleString()}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                    <TrendingUp className="h-5 w-5 text-primary" />
+                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                    <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
                 </div>
               </CardContent>
@@ -322,17 +451,17 @@ const UsageAnalytics = () => {
                 className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-border/60 transition-all duration-300 group"
                 style={{ animationDelay: `${0.1 + index * 0.05}s` }}
               >
-                <CardContent className="p-5">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{item.name}</p>
-                      <p className="text-2xl font-bold text-foreground mt-1">{item.value.toLocaleString()}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{item.name}</p>
+                      <p className="text-xl font-bold text-foreground mt-0.5">{item.value.toLocaleString()}</p>
                     </div>
                     <div 
-                      className="p-3 rounded-xl transition-all duration-300 group-hover:scale-105"
+                      className="p-2.5 rounded-lg transition-all duration-300 group-hover:scale-105"
                       style={{ backgroundColor: `${item.color}20` }}
                     >
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                     </div>
                   </div>
                 </CardContent>
@@ -343,25 +472,25 @@ const UsageAnalytics = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Pie Chart Card */}
             <Card className="lg:col-span-4 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative" style={{ animationDelay: "0.15s" }}>
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-60" />
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-accent to-primary opacity-60" />
+              <CardHeader className="pb-2 pt-4">
+                <CardTitle className="text-base text-foreground flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   Credit Distribution
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <ResponsiveContainer width="100%" height={240}>
-                    <PieChart>
+              <CardContent className="pb-4">
+                <div className="space-y-3" onMouseLeave={handleChartMouseLeave}>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart onMouseLeave={handleChartMouseLeave}>
                       <Pie
                         activeIndex={activePieIndex}
                         activeShape={renderActiveShape}
                         data={pieData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={55}
-                        outerRadius={85}
+                        innerRadius={50}
+                        outerRadius={75}
                         paddingAngle={2}
                         dataKey="value"
                         onMouseEnter={onPieEnter}
@@ -385,19 +514,20 @@ const UsageAnalytics = () => {
                         contentStyle={{ 
                           backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
-                          borderRadius: "12px",
+                          borderRadius: "10px",
                           boxShadow: "0 8px 32px -4px rgb(0 0 0 / 0.3)",
                           color: "hsl(var(--foreground))",
-                          padding: "12px 16px",
+                          padding: "10px 14px",
+                          fontSize: "12px",
                         }}
-                        itemStyle={{ color: "hsl(var(--foreground))", fontWeight: 500 }}
-                        labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+                        itemStyle={{ color: "hsl(var(--foreground))", fontWeight: 500, fontSize: "12px" }}
+                        labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, fontSize: "12px" }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                   
                   {/* Legend */}
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-2">
                     {[
                       { name: "Apollo", value: totals.apollo, color: COLORS.apollo },
                       { name: "A-Leads", value: totals.aleads, color: COLORS.aleads },
@@ -408,23 +538,23 @@ const UsageAnalytics = () => {
                         <div 
                           key={item.name}
                           className={cn(
-                            "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
+                            "flex items-center justify-between p-2.5 rounded-lg transition-all duration-300",
                             "hover:bg-muted/50 cursor-pointer group",
                             activePieIndex === index && "bg-muted/50"
                           )}
                           onMouseEnter={() => setActivePieIndex(index)}
                           onMouseLeave={() => setActivePieIndex(undefined)}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2.5">
                             <div 
-                              className="w-3 h-3 rounded-full transition-transform group-hover:scale-125" 
+                              className="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125" 
                               style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}50` }} 
                             />
-                            <span className="text-sm font-medium text-foreground">{item.name}</span>
+                            <span className="text-xs font-medium text-foreground">{item.name}</span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">{percentage}%</span>
-                            <span className="text-sm font-bold text-foreground min-w-[3rem] text-right">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{percentage}%</span>
+                            <span className="text-xs font-bold text-foreground min-w-[2.5rem] text-right">
                               {item.value.toLocaleString()}
                             </span>
                           </div>
@@ -438,34 +568,110 @@ const UsageAnalytics = () => {
 
             {/* Bar Chart Card */}
             <Card className="lg:col-span-8 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative" style={{ animationDelay: "0.2s" }}>
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent via-primary to-accent opacity-60" />
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                  Usage Over Time
-                </CardTitle>
-                <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-                  <SelectTrigger className="w-32 bg-muted/20 border-border/40 text-foreground hover:bg-muted/30 transition-colors">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent via-primary to-accent opacity-60" />
+              <CardHeader className="flex flex-col gap-3 pb-3 pt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <CardTitle className="text-base text-foreground flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                    Usage Over Time
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
+                      <SelectTrigger className="w-28 bg-muted/20 border-border/40 text-foreground hover:bg-muted/30 transition-colors text-xs h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily" className="text-xs">Daily</SelectItem>
+                        <SelectItem value="weekly" className="text-xs">Weekly</SelectItem>
+                        <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                        <SelectItem value="quarterly" className="text-xs">Quarterly</SelectItem>
+                        <SelectItem value="custom" className="text-xs">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    {timePeriod === "custom" && (
+                      <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "h-8 justify-start text-left font-normal text-xs bg-muted/20 border-border/40 hover:bg-muted/30",
+                              !dateRange && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-1.5 h-3 w-3" />
+                            {dateRange?.from ? (
+                              dateRange.to ? (
+                                <>
+                                  {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d")}
+                                </>
+                              ) : (
+                                format(dateRange.from, "MMM d, yyyy")
+                              )
+                            ) : (
+                              <span>Pick dates</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                          <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={dateRange?.from}
+                            selected={dateRange}
+                            onSelect={(range) => {
+                              setDateRange(range);
+                              if (range?.from && range?.to) {
+                                setIsCalendarOpen(false);
+                              }
+                            }}
+                            numberOfMonths={2}
+                            disabled={(date) => date > new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Period Summary */}
+                <div className="flex flex-wrap items-center gap-4 pt-1 pb-1 px-3 bg-muted/20 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Period:</span>
+                    <span className="text-xs font-medium text-foreground">{getPeriodLabel()}</span>
+                  </div>
+                  <div className="h-4 w-px bg-border/50" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Total:</span>
+                    <span className="text-xs font-bold text-primary">{periodGrandTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="h-4 w-px bg-border/50 hidden sm:block" />
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {[
+                      { name: "Apollo", value: periodTotals.apollo, color: COLORS.apollo },
+                      { name: "A-Leads", value: periodTotals.aleads, color: COLORS.aleads },
+                      { name: "Lusha", value: periodTotals.lusha, color: COLORS.lusha },
+                    ].map((item) => (
+                      <div key={item.name} className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-[10px] text-muted-foreground">{item.name}:</span>
+                        <span className="text-xs font-semibold text-foreground">{item.value.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pb-4">
                 {barData.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-[320px] text-muted-foreground">
-                    <Activity className="h-12 w-12 mb-4 opacity-40" />
-                    <p className="text-lg font-medium">No usage data yet</p>
-                    <p className="text-sm opacity-70">Start using credits to see analytics</p>
+                  <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
+                    <Activity className="h-10 w-10 mb-3 opacity-40" />
+                    <p className="text-sm font-medium">No usage data yet</p>
+                    <p className="text-xs opacity-70">Start using credits to see analytics</p>
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={340}>
-                    <BarChart data={barData} margin={{ top: 20, right: 20, left: -10, bottom: 20 }}>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={barData} margin={{ top: 10, right: 10, left: -15, bottom: 10 }}>
                       <defs>
                         <linearGradient id="apolloGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={1}/>
@@ -484,34 +690,36 @@ const UsageAnalytics = () => {
                       <XAxis 
                         dataKey="date" 
                         stroke="hsl(var(--muted-foreground))"
-                        tick={{ fill: "hsl(var(--foreground))", fontSize: 12, fontWeight: 500 }}
+                        tick={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 500 }}
                         tickLine={false}
                         axisLine={{ stroke: "hsl(var(--border))", strokeOpacity: 0.3 }}
                       />
                       <YAxis 
                         stroke="hsl(var(--muted-foreground))"
-                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
                         tickLine={false}
                         axisLine={false}
+                        width={35}
                       />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
-                          borderRadius: "12px",
+                          borderRadius: "10px",
                           boxShadow: "0 8px 32px -4px rgb(0 0 0 / 0.3)",
                           color: "hsl(var(--foreground))",
-                          padding: "12px 16px",
+                          padding: "10px 14px",
+                          fontSize: "12px",
                         }}
                         cursor={{ fill: "hsl(var(--accent))", opacity: 0.08 }}
-                        itemStyle={{ color: "hsl(var(--foreground))", padding: "2px 0" }}
-                        labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: "8px" }}
+                        itemStyle={{ color: "hsl(var(--foreground))", padding: "2px 0", fontSize: "11px" }}
+                        labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: "6px", fontSize: "12px" }}
                       />
                       <Legend 
-                        wrapperStyle={{ paddingTop: "16px" }}
+                        wrapperStyle={{ paddingTop: "12px" }}
                         iconType="circle"
-                        iconSize={8}
-                        formatter={(value) => <span className="text-sm text-foreground ml-1">{value}</span>}
+                        iconSize={6}
+                        formatter={(value) => <span className="text-xs text-foreground ml-0.5">{value}</span>}
                       />
                       <Bar 
                         dataKey="Apollo" 
@@ -529,7 +737,7 @@ const UsageAnalytics = () => {
                         dataKey="Lusha" 
                         stackId="a" 
                         fill="url(#lushaGradient)" 
-                        radius={[4, 4, 0, 0]}
+                        radius={[3, 3, 0, 0]}
                       />
                     </BarChart>
                   </ResponsiveContainer>
