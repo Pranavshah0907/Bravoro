@@ -259,8 +259,11 @@ const UsageAnalytics = () => {
                           backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                           color: "hsl(var(--foreground))"
                         }}
+                        itemStyle={{ color: "hsl(var(--foreground))" }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
