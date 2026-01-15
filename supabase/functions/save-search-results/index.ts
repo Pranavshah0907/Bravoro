@@ -105,7 +105,37 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const body = (await req.json()) as RequestBody;
+    // Parse request body - handle both JSON and Form Data
+    let body: RequestBody;
+    const contentType = req.headers.get('content-type') || '';
+    
+    console.log(`[${requestId}] Content-Type: ${contentType}`);
+    
+    if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
+      // Parse as form data
+      const formData = await req.formData();
+      const formEntries: Record<string, unknown> = {};
+      
+      for (const [key, value] of formData.entries()) {
+        console.log(`[${requestId}] Form field: ${key} = ${value}`);
+        // Try to parse JSON strings (for nested objects like companies)
+        if (typeof value === 'string') {
+          try {
+            formEntries[key] = JSON.parse(value);
+          } catch {
+            formEntries[key] = value;
+          }
+        } else {
+          formEntries[key] = value;
+        }
+      }
+      
+      body = formEntries as RequestBody;
+      console.log(`[${requestId}] Parsed form data keys:`, Object.keys(formEntries));
+    } else {
+      // Parse as JSON
+      body = (await req.json()) as RequestBody;
+    }
 
     const bodyAny = body as Record<string, unknown>;
     const creditsAny =
