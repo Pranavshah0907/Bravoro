@@ -28,7 +28,7 @@ interface RequestBody {
   search_id: string;
   companies?: Company[];
   apollo_credits?: number | string | null;
-  cleon1_credits?: number | string | null;
+  aleads_credits?: number | string | null;
   lusha_credits?: number | string | null;
 }
 
@@ -121,13 +121,13 @@ serve(async (req: Request) => {
 
     // Parse credits using exact field names only
     const apolloCredits = toInt(body.apollo_credits);
-    const cleon1Credits = toInt(body.cleon1_credits);
+    const aleadsCredits = toInt(body.aleads_credits);
     const lushaCredits = toInt(body.lusha_credits);
 
     console.log(`[${requestId}] Received request for search_id:`, search_id);
     console.log(`[${requestId}] Number of companies:`, companies.length);
-    console.log(`[${requestId}] Credits received - apollo_credits: ${body.apollo_credits}, cleon1_credits: ${body.cleon1_credits}, lusha_credits: ${body.lusha_credits}`);
-    console.log(`[${requestId}] Credits parsed - Apollo: ${apolloCredits}, Cleon1: ${cleon1Credits}, Lusha: ${lushaCredits}`);
+    console.log(`[${requestId}] Credits received - apollo_credits: ${body.apollo_credits}, aleads_credits: ${body.aleads_credits}, lusha_credits: ${body.lusha_credits}`);
+    console.log(`[${requestId}] Credits parsed - Apollo: ${apolloCredits}, A-Leads: ${aleadsCredits}, Lusha: ${lushaCredits}`);
 
     // Validate required fields
     if (!search_id) {
@@ -138,7 +138,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const hasAnyCredits = apolloCredits > 0 || cleon1Credits > 0 || lushaCredits > 0;
+    const hasAnyCredits = apolloCredits > 0 || aleadsCredits > 0 || lushaCredits > 0;
 
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -206,7 +206,7 @@ serve(async (req: Request) => {
 
       const { data: existingCredit, error: existingError } = await supabase
         .from('credit_usage')
-        .select('id, apollo_credits, cleon1_credits, lusha_credits')
+        .select('id, apollo_credits, aleads_credits, lusha_credits')
         .eq('user_id', searchData.user_id)
         .eq('search_id', search_id)
         .order('created_at', { ascending: false })
@@ -222,9 +222,9 @@ serve(async (req: Request) => {
         ? Math.max(existingCredit?.apollo_credits ?? 0, apolloCredits)
         : (existingCredit?.apollo_credits ?? 0);
 
-      const nextCleon1 = cleon1Credits !== undefined
-        ? Math.max(existingCredit?.cleon1_credits ?? 0, cleon1Credits)
-        : (existingCredit?.cleon1_credits ?? 0);
+      const nextAleads = aleadsCredits !== undefined
+        ? Math.max(existingCredit?.aleads_credits ?? 0, aleadsCredits)
+        : (existingCredit?.aleads_credits ?? 0);
 
       const nextLusha = lushaCredits !== undefined
         ? Math.max(existingCredit?.lusha_credits ?? 0, lushaCredits)
@@ -235,7 +235,7 @@ serve(async (req: Request) => {
           .from('credit_usage')
           .update({
             apollo_credits: nextApollo,
-            cleon1_credits: nextCleon1,
+            aleads_credits: nextAleads,
             lusha_credits: nextLusha,
             updated_at: new Date().toISOString(),
           })
@@ -244,7 +244,7 @@ serve(async (req: Request) => {
         if (creditError) {
           console.error(`[${requestId}] Error updating credit usage:`, creditError);
         } else {
-          console.log(`[${requestId}] Credit usage updated - Apollo: ${nextApollo}, Cleon1: ${nextCleon1}, Lusha: ${nextLusha}`);
+          console.log(`[${requestId}] Credit usage updated - Apollo: ${nextApollo}, A-Leads: ${nextAleads}, Lusha: ${nextLusha}`);
         }
       } else {
         const { error: creditError } = await supabase
@@ -253,19 +253,19 @@ serve(async (req: Request) => {
             user_id: searchData.user_id,
             search_id: search_id,
             apollo_credits: nextApollo,
-            cleon1_credits: nextCleon1,
+            aleads_credits: nextAleads,
             lusha_credits: nextLusha,
           });
 
         if (creditError) {
           console.error(`[${requestId}] Error saving credit usage:`, creditError);
         } else {
-          console.log(`[${requestId}] Credit usage saved - Apollo: ${nextApollo}, Cleon1: ${nextCleon1}, Lusha: ${nextLusha}`);
+          console.log(`[${requestId}] Credit usage saved - Apollo: ${nextApollo}, A-Leads: ${nextAleads}, Lusha: ${nextLusha}`);
         }
       }
     } else {
       console.log(
-        `[${requestId}] No credits to save or user_id not found. user_id: ${searchData?.user_id}, apollo: ${apolloCredits}, cleon1: ${cleon1Credits}, lusha: ${lushaCredits}`,
+        `[${requestId}] No credits to save or user_id not found. user_id: ${searchData?.user_id}, apollo: ${apolloCredits}, aleads: ${aleadsCredits}, lusha: ${lushaCredits}`,
       );
     }
 
