@@ -16,8 +16,8 @@ export type Database = {
     Tables: {
       credit_usage: {
         Row: {
+          aleads_credits: number
           apollo_credits: number
-          cleon1_credits: number
           created_at: string
           id: string
           lusha_credits: number
@@ -26,8 +26,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          aleads_credits?: number
           apollo_credits?: number
-          cleon1_credits?: number
           created_at?: string
           id?: string
           lusha_credits?: number
@@ -36,8 +36,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          aleads_credits?: number
           apollo_credits?: number
-          cleon1_credits?: number
           created_at?: string
           id?: string
           lusha_credits?: number
