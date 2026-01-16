@@ -168,7 +168,7 @@ serve(async (req) => {
     if (enrichedContacts > 0) {
       const { error: enrichError } = await supabaseClient.rpc('increment_enrichment_used', {
         p_user_id: searchRecord.user_id,
-        p_amount: enrichedContacts
+        p_count: enrichedContacts
       });
 
       if (enrichError) {
