@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles } from "lucide-react";
+import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles, Edit, Target } from "lucide-react";
 import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
 import emploioLogo from "@/assets/emploio-logo.svg";
@@ -19,6 +20,7 @@ const createUserSchema = z.object({
   fullName: z.string().trim().min(2, "Full name must be at least 2 characters"),
   tempPassword: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["admin", "user"]),
+  enrichmentLimit: z.number().int().min(0, "Enrichment limit must be 0 or greater"),
 });
 
 interface UserWithRole {
@@ -28,6 +30,8 @@ interface UserWithRole {
   role: string;
   created_at: string;
   requires_password_reset: boolean | null;
+  enrichment_limit: number;
+  enrichment_used: number;
 }
 
 const Admin = () => {
@@ -43,6 +47,13 @@ const Admin = () => {
   const [newUserFullName, setNewUserFullName] = useState("");
   const [newUserTempPassword, setNewUserTempPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+  const [newUserEnrichmentLimit, setNewUserEnrichmentLimit] = useState<number>(0);
+
+  // Edit limit modal state
+  const [editLimitDialogOpen, setEditLimitDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [newEnrichmentLimit, setNewEnrichmentLimit] = useState<number>(0);
+  const [updatingLimit, setUpdatingLimit] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -82,7 +93,7 @@ const Admin = () => {
   const loadUsers = async () => {
     const { data: profilesData } = await supabase
       .from("profiles")
-      .select("id, email, full_name, created_at, requires_password_reset");
+      .select("id, email, full_name, created_at, requires_password_reset, enrichment_limit, enrichment_used");
 
     if (!profilesData) return;
 
@@ -97,6 +108,8 @@ const Admin = () => {
         return {
           ...profile,
           role: roleData?.role || "user",
+          enrichment_limit: profile.enrichment_limit ?? 0,
+          enrichment_used: profile.enrichment_used ?? 0,
         };
       })
     );
@@ -167,6 +180,7 @@ const Admin = () => {
         fullName: newUserFullName,
         tempPassword: newUserTempPassword,
         role: newUserRole,
+        enrichmentLimit: newUserEnrichmentLimit,
       });
 
       setCreatingUser(true);
@@ -177,6 +191,7 @@ const Admin = () => {
           fullName: newUserFullName.trim(),
           tempPassword: newUserTempPassword,
           role: newUserRole,
+          enrichmentLimit: newUserEnrichmentLimit,
         },
       });
 
@@ -199,6 +214,7 @@ const Admin = () => {
             setNewUserFullName("");
             setNewUserTempPassword("");
             setNewUserRole("user");
+            setNewUserEnrichmentLimit(0);
             loadUsers();
             return;
           }
@@ -216,6 +232,7 @@ const Admin = () => {
       setNewUserFullName("");
       setNewUserTempPassword("");
       setNewUserRole("user");
+      setNewUserEnrichmentLimit(0);
       loadUsers();
     } catch (error: any) {
       toast({
@@ -225,6 +242,47 @@ const Admin = () => {
       });
     } finally {
       setCreatingUser(false);
+    }
+  };
+
+  const handleOpenEditLimit = (userToEdit: UserWithRole) => {
+    setEditingUser(userToEdit);
+    setNewEnrichmentLimit(userToEdit.enrichment_limit);
+    setEditLimitDialogOpen(true);
+  };
+
+  const handleUpdateEnrichmentLimit = async () => {
+    if (!editingUser) return;
+
+    try {
+      setUpdatingLimit(true);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          enrichment_limit: newEnrichmentLimit,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", editingUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Enrichment Limit Updated",
+        description: `${editingUser.email}'s enrichment limit has been updated to ${newEnrichmentLimit}`,
+      });
+
+      setEditLimitDialogOpen(false);
+      setEditingUser(null);
+      loadUsers();
+    } catch (error: any) {
+      toast({
+        title: "Failed to Update Limit",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingLimit(false);
     }
   };
 
@@ -349,20 +407,41 @@ const Admin = () => {
                   User will be required to change this password on first login
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="role" className="text-foreground font-medium">User Role *</Label>
-                <select
-                  id="role"
-                  value={newUserRole}
-                  onChange={(e) => setNewUserRole(e.target.value as "admin" | "user")}
-                  className="flex h-11 w-full rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-sm text-foreground ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <p className="text-sm text-muted-foreground">
-                  Admins have full access to the admin panel and can manage users
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="text-foreground font-medium">User Role *</Label>
+                  <select
+                    id="role"
+                    value={newUserRole}
+                    onChange={(e) => setNewUserRole(e.target.value as "admin" | "user")}
+                    className="flex h-11 w-full rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-sm text-foreground ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <p className="text-sm text-muted-foreground">
+                    Admins have full access to the admin panel
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="enrichmentLimit" className="text-foreground font-medium">Enrichment Contact Limit *</Label>
+                  <div className="relative">
+                    <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="enrichmentLimit"
+                      type="number"
+                      min="0"
+                      placeholder="e.g., 1000"
+                      value={newUserEnrichmentLimit}
+                      onChange={(e) => setNewUserEnrichmentLimit(parseInt(e.target.value) || 0)}
+                      required
+                      className="h-11 pl-10 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Maximum contacts this user can enrich
+                  </p>
+                </div>
               </div>
               <Button 
                 type="submit" 
@@ -404,6 +483,7 @@ const Admin = () => {
                     <TableHead className="font-semibold text-foreground">Email</TableHead>
                     <TableHead className="font-semibold text-foreground">Full Name</TableHead>
                     <TableHead className="font-semibold text-foreground">Role</TableHead>
+                    <TableHead className="font-semibold text-foreground">Enrichment Limit</TableHead>
                     <TableHead className="font-semibold text-foreground">Status</TableHead>
                     <TableHead className="font-semibold text-foreground">Created</TableHead>
                     <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
@@ -429,6 +509,21 @@ const Admin = () => {
                         >
                           {user.role}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">
+                            {user.enrichment_used} / {user.enrichment_limit}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenEditLimit(user)}
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge 
@@ -461,6 +556,76 @@ const Admin = () => {
         </Card>
         </div>
       </main>
+
+      {/* Edit Enrichment Limit Dialog */}
+      <Dialog open={editLimitDialogOpen} onOpenChange={setEditLimitDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Edit Enrichment Limit
+            </DialogTitle>
+            <DialogDescription>
+              Update the enrichment contact limit for {editingUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-sm">Current Usage</Label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary to-accent transition-all"
+                    style={{ 
+                      width: `${editingUser ? Math.min((editingUser.enrichment_used / Math.max(editingUser.enrichment_limit, 1)) * 100, 100) : 0}%` 
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-foreground min-w-[80px] text-right">
+                  {editingUser?.enrichment_used} / {editingUser?.enrichment_limit}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newLimit" className="text-foreground font-medium">New Enrichment Limit</Label>
+              <Input
+                id="newLimit"
+                type="number"
+                min="0"
+                value={newEnrichmentLimit}
+                onChange={(e) => setNewEnrichmentLimit(parseInt(e.target.value) || 0)}
+                className="h-11 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="text-xs text-muted-foreground">
+                Set to 0 to disable enrichment for this user
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditLimitDialogOpen(false)}
+              className="border-border/50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateEnrichmentLimit}
+              disabled={updatingLimit}
+              className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            >
+              {updatingLimit ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Limit"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

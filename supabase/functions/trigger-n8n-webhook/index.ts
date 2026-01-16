@@ -103,10 +103,14 @@ serve(async (req) => {
     console.log(`[${requestId}] Search record found:`, !!searchRecord);
 
     let userEmail = '';
+    let enrichmentRemaining = 0;
+    let enrichmentLimit = 0;
+
     if (searchRecord?.user_id) {
+      // Get user profile including enrichment data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('email')
+        .select('email, enrichment_limit, enrichment_used')
         .eq('id', searchRecord.user_id)
         .maybeSingle();
       
@@ -114,6 +118,11 @@ serve(async (req) => {
         console.error(`[${requestId}] Profile error:`, profileError);
       }
       userEmail = profileData?.email || '';
+      enrichmentLimit = profileData?.enrichment_limit ?? 0;
+      const enrichmentUsed = profileData?.enrichment_used ?? 0;
+      enrichmentRemaining = Math.max(0, enrichmentLimit - enrichmentUsed);
+      
+      console.log(`[${requestId}] Enrichment data - limit: ${enrichmentLimit}, used: ${enrichmentUsed}, remaining: ${enrichmentRemaining}`);
     }
 
     console.log(`[${requestId}] User email retrieved:`, !!userEmail);
@@ -135,6 +144,8 @@ serve(async (req) => {
         search_id: searchId,
         user_email: userEmail,
         data: (searchData as { data?: unknown }).data, // The parsed Excel content
+        enrichment_remaining: enrichmentRemaining,
+        enrichment_limit: enrichmentLimit,
       };
     } else {
       // For manual entry, spread the search data fields
@@ -142,10 +153,12 @@ serve(async (req) => {
         ...searchData,
         search_id: searchId,
         user_email: userEmail,
+        enrichment_remaining: enrichmentRemaining,
+        enrichment_limit: enrichmentLimit,
       };
     }
 
-    console.log(`[${requestId}] Sending payload to n8n webhook`);
+    console.log(`[${requestId}] Sending payload to n8n webhook with enrichment_remaining: ${enrichmentRemaining}, enrichment_limit: ${enrichmentLimit}`);
 
     // Build headers with webhook secret authentication
     const webhookHeaders: Record<string, string> = {
