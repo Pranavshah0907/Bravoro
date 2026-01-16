@@ -92,6 +92,8 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
+          enrichment_limit: number
+          enrichment_used: number
           full_name: string | null
           id: string
           requires_password_reset: boolean | null
@@ -100,6 +102,8 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email: string
+          enrichment_limit?: number
+          enrichment_used?: number
           full_name?: string | null
           id: string
           requires_password_reset?: boolean | null
@@ -108,6 +112,8 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string
+          enrichment_limit?: number
+          enrichment_used?: number
           full_name?: string | null
           id?: string
           requires_password_reset?: boolean | null
@@ -267,6 +273,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_enrichment_used: {
+        Args: { p_count: number; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {

@@ -30,6 +30,7 @@ interface RequestBody {
   apollo_credits?: number | string | null;
   aleads_credits?: number | string | null;
   lusha_credits?: number | string | null;
+  enriched_contacts?: number | string | null;
 }
 
 // Generate a unique request ID for tracking
@@ -166,15 +167,25 @@ serve(async (req: Request) => {
       'credits[lusha]',
     ]) ?? pickFirst(creditsObj, ['lusha_credits', 'lushaCredits', 'lusha']);
 
+    // Parse enriched_contacts from payload
+    const enrichedContactsRaw = pickFirst(bodyAny, [
+      'enriched_contacts',
+      'enrichedContacts',
+      'enriched_count',
+      'enrichedCount',
+    ]);
+
     const apolloCredits = toInt(apolloRaw);
     const aleadsCredits = toInt(aleadsRaw);
     const lushaCredits = toInt(lushaRaw);
+    const enrichedContacts = toInt(enrichedContactsRaw);
 
     console.log(`[${requestId}] Received request for search_id:`, search_id);
     console.log(`[${requestId}] Number of companies:`, companies.length);
     console.log(`[${requestId}] Body keys:`, Object.keys(bodyAny));
     console.log(`[${requestId}] Credits raw - apollo: ${apolloRaw}, aleads: ${aleadsRaw}, lusha: ${lushaRaw}`);
     console.log(`[${requestId}] Credits parsed - Apollo: ${apolloCredits}, A-Leads: ${aleadsCredits}, Lusha: ${lushaCredits}`);
+    console.log(`[${requestId}] Enriched contacts: ${enrichedContacts}`);
 
     // Validate required fields
     if (!search_id) {
@@ -245,6 +256,22 @@ serve(async (req: Request) => {
 
     if (updateError) {
       console.error(`[${requestId}] Error updating search status:`, updateError);
+    }
+
+    // Update enrichment_used if enriched_contacts was provided
+    if (searchData?.user_id && enrichedContacts > 0) {
+      console.log(`[${requestId}] Incrementing enrichment_used by ${enrichedContacts} for user:`, searchData.user_id);
+      
+      const { error: rpcError } = await supabase.rpc('increment_enrichment_used', {
+        p_user_id: searchData.user_id,
+        p_count: enrichedContacts,
+      });
+
+      if (rpcError) {
+        console.error(`[${requestId}] Error incrementing enrichment_used:`, rpcError);
+      } else {
+        console.log(`[${requestId}] Successfully incremented enrichment_used by ${enrichedContacts}`);
+      }
     }
 
     // Save credit usage if any credits were provided
@@ -322,6 +349,7 @@ serve(async (req: Request) => {
         message: 'Data saved successfully',
         companies_saved: results.length,
         total_contacts: totalContacts,
+        enriched_contacts_deducted: enrichedContacts,
         request_id: requestId
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

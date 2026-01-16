@@ -72,9 +72,9 @@ Deno.serve(async (req) => {
     }
 
     // Get the request body
-    const { email, fullName, tempPassword, role = 'user' } = await req.json();
+    const { email, fullName, tempPassword, role = 'user', enrichmentLimit = 0 } = await req.json();
 
-    console.log(`[${requestId}] Creating user with email:`, email);
+    console.log(`[${requestId}] Creating user with email:`, email, 'enrichmentLimit:', enrichmentLimit);
 
     // Create the new user
     let { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -143,11 +143,19 @@ Deno.serve(async (req) => {
     }
 
     if (authData.user) {
-      // Mark user as requiring password reset
-      await supabaseAdmin
+      // Update profile with password reset flag and enrichment limit
+      const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .update({ requires_password_reset: true })
+        .update({ 
+          requires_password_reset: true,
+          enrichment_limit: enrichmentLimit,
+          enrichment_used: 0
+        })
         .eq('id', authData.user.id);
+
+      if (profileError) {
+        console.error(`[${requestId}] Error updating profile:`, profileError);
+      }
 
       // Delete any existing role assignments (from trigger)
       await supabaseAdmin
@@ -160,7 +168,7 @@ Deno.serve(async (req) => {
         .from('user_roles')
         .insert({ user_id: authData.user.id, role: role });
 
-      console.log(`[${requestId}] User created successfully with role:`, role);
+      console.log(`[${requestId}] User created successfully with role:`, role, 'enrichmentLimit:', enrichmentLimit);
 
       // Send welcome email via n8n webhook
       const origin = req.headers.get('origin') || supabaseUrl;

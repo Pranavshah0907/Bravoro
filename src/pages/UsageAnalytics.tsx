@@ -23,6 +23,11 @@ interface CreditData {
   created_at: string;
 }
 
+interface EnrichmentData {
+  enrichment_limit: number;
+  enrichment_used: number;
+}
+
 const COLORS = {
   apollo: "hsl(var(--chart-1))",
   aleads: "hsl(var(--chart-2))",
@@ -84,6 +89,7 @@ const UsageAnalytics = () => {
     to: new Date(),
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [enrichmentData, setEnrichmentData] = useState<EnrichmentData>({ enrichment_limit: 0, enrichment_used: 0 });
 
   const onPieEnter = useCallback((_: any, index: number) => {
     setActivePieIndex(index);
@@ -109,13 +115,27 @@ const UsageAnalytics = () => {
         return;
       }
 
-      // Check admin status
+      // Check admin status and get enrichment data
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .single();
       setIsAdmin(roleData?.role === "admin");
+
+      // Fetch enrichment data from profiles
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("enrichment_limit, enrichment_used")
+        .eq("id", user.id)
+        .single();
+      
+      if (profileData) {
+        setEnrichmentData({
+          enrichment_limit: profileData.enrichment_limit ?? 0,
+          enrichment_used: profileData.enrichment_used ?? 0,
+        });
+      }
 
       const { data, error } = await supabase
         .from("credit_usage")
@@ -424,6 +444,47 @@ const UsageAnalytics = () => {
               Refresh
             </Button>
           </div>
+
+          {/* Enrichment Contacts Remaining Card */}
+          {enrichmentData.enrichment_limit > 0 && (
+            <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card/90 animate-fade-in" style={{ animationDelay: "0.03s" }}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Enriched Contacts Remaining</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">
+                      {Math.max(0, enrichmentData.enrichment_limit - enrichmentData.enrichment_used).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <Activity className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Used: {enrichmentData.enrichment_used.toLocaleString()}</span>
+                    <span>Limit: {enrichmentData.enrichment_limit.toLocaleString()}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full transition-all duration-500",
+                        enrichmentData.enrichment_used / enrichmentData.enrichment_limit > 0.9 
+                          ? "bg-destructive" 
+                          : enrichmentData.enrichment_used / enrichmentData.enrichment_limit > 0.7 
+                            ? "bg-yellow-500" 
+                            : "bg-gradient-to-r from-primary to-accent"
+                      )}
+                      style={{ width: `${Math.min((enrichmentData.enrichment_used / enrichmentData.enrichment_limit) * 100, 100)}%` }}
+                    />
+                  </div>
+                  {enrichmentData.enrichment_used / enrichmentData.enrichment_limit > 0.9 && (
+                    <p className="text-xs text-destructive font-medium">⚠️ Almost at limit - contact admin for more</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Stats Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fade-in" style={{ animationDelay: "0.05s" }}>
