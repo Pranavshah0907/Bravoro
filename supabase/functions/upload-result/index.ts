@@ -44,8 +44,11 @@ serve(async (req) => {
 
     // Parse and validate credit values with bounds (0-1000000)
     const apolloCredits = Math.max(0, Math.min(1000000, parseInt(formData.get('apollo_credits') as string || '0') || 0));
-    const cleon1Credits = Math.max(0, Math.min(1000000, parseInt(formData.get('cleon1_credits') as string || '0') || 0));
+    const aleadsCredits = Math.max(0, Math.min(1000000, parseInt(formData.get('aleads_credits') as string || '0') || 0));
     const lushaCredits = Math.max(0, Math.min(1000000, parseInt(formData.get('lusha_credits') as string || '0') || 0));
+    const enrichedContacts = Math.max(0, Math.min(1000000, parseInt(formData.get('enriched_contacts') as string || '0') || 0));
+
+    console.log(`[${requestId}] Credits received - Apollo: ${apolloCredits}, Aleads: ${aleadsCredits}, Lusha: ${lushaCredits}, Enriched: ${enrichedContacts}`);
 
     // Handle error case (no file, just error message)
     if (errorMessage && !file) {
@@ -142,20 +145,37 @@ serve(async (req) => {
     }
 
     // Store credit usage if any credits were used
-    if (apolloCredits > 0 || cleon1Credits > 0 || lushaCredits > 0) {
+    if (apolloCredits > 0 || aleadsCredits > 0 || lushaCredits > 0) {
       const { error: creditError } = await supabaseClient
         .from('credit_usage')
         .insert({
           user_id: searchRecord.user_id,
           search_id: searchId,
           apollo_credits: apolloCredits,
-          cleon1_credits: cleon1Credits,
+          aleads_credits: aleadsCredits,
           lusha_credits: lushaCredits,
         });
 
       if (creditError) {
         console.error(`[${requestId}] Credit tracking error:`, creditError);
         // Don't fail the whole request if credit tracking fails
+      } else {
+        console.log(`[${requestId}] Credit usage saved - Apollo: ${apolloCredits}, Aleads: ${aleadsCredits}, Lusha: ${lushaCredits}`);
+      }
+    }
+
+    // Increment enriched contacts counter in profiles
+    if (enrichedContacts > 0) {
+      const { error: enrichError } = await supabaseClient.rpc('increment_enrichment_used', {
+        p_user_id: searchRecord.user_id,
+        p_amount: enrichedContacts
+      });
+
+      if (enrichError) {
+        console.error(`[${requestId}] Enrichment tracking error:`, enrichError);
+        // Don't fail the whole request if enrichment tracking fails
+      } else {
+        console.log(`[${requestId}] Incremented enrichment_used by ${enrichedContacts}`);
       }
     }
 
