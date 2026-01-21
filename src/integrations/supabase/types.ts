@@ -128,6 +128,7 @@ export type Database = {
           created_at: string
           domain: string | null
           id: string
+          result_type: string | null
           search_id: string
           updated_at: string
         }
@@ -137,6 +138,7 @@ export type Database = {
           created_at?: string
           domain?: string | null
           id?: string
+          result_type?: string | null
           search_id: string
           updated_at?: string
         }
@@ -146,6 +148,7 @@ export type Database = {
           created_at?: string
           domain?: string | null
           id?: string
+          result_type?: string | null
           search_id?: string
           updated_at?: string
         }

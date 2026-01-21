@@ -31,6 +31,9 @@ interface RequestBody {
   aleads_credits?: number | string | null;
   lusha_credits?: number | string | null;
   enriched_contacts?: number | string | null;
+  // New fields for people enrichment with success/failure categorization
+  enriched_contacts_data?: Contact[];
+  missing_contacts?: Contact[];
 }
 
 // Generate a unique request ID for tracking
@@ -128,6 +131,11 @@ serve(async (req: Request) => {
 
     const search_id = typeof body?.search_id === 'string' ? body.search_id : '';
     const companies: Company[] = Array.isArray(body?.companies) ? (body.companies as Company[]) : [];
+    
+    // Check for people enrichment payload format (enriched_contacts_data and/or missing_contacts)
+    const enrichedContactsData: Contact[] = Array.isArray(body?.enriched_contacts_data) ? (body.enriched_contacts_data as Contact[]) : [];
+    const missingContactsData: Contact[] = Array.isArray(body?.missing_contacts) ? (body.missing_contacts as Contact[]) : [];
+    const isPeopleEnrichmentPayload = enrichedContactsData.length > 0 || missingContactsData.length > 0;
 
     const bodyAny = body as unknown as Record<string, unknown>;
 
@@ -182,10 +190,13 @@ serve(async (req: Request) => {
 
     console.log(`[${requestId}] Received request for search_id:`, search_id);
     console.log(`[${requestId}] Number of companies:`, companies.length);
+    console.log(`[${requestId}] Is people enrichment payload:`, isPeopleEnrichmentPayload);
+    console.log(`[${requestId}] Enriched contacts data count:`, enrichedContactsData.length);
+    console.log(`[${requestId}] Missing contacts data count:`, missingContactsData.length);
     console.log(`[${requestId}] Body keys:`, Object.keys(bodyAny));
     console.log(`[${requestId}] Credits raw - apollo: ${apolloRaw}, aleads: ${aleadsRaw}, lusha: ${lushaRaw}`);
     console.log(`[${requestId}] Credits parsed - Apollo: ${apolloCredits}, A-Leads: ${aleadsCredits}, Lusha: ${lushaCredits}`);
-    console.log(`[${requestId}] Enriched contacts: ${enrichedContacts}`);
+    console.log(`[${requestId}] Enriched contacts count: ${enrichedContacts}`);
 
     // Validate required fields
     if (!search_id) {
@@ -218,31 +229,84 @@ serve(async (req: Request) => {
       console.error(`[${requestId}] Error deleting existing results:`, deleteError);
     }
 
-    // Insert each company's results
-    const insertPromises = companies.map(async (company) => {
-      const { company_name, domain, contacts } = company;
+    let results: { company_name: string; contacts_count: number }[] = [];
+    let totalContacts = 0;
+
+    // Handle people enrichment payload format
+    if (isPeopleEnrichmentPayload) {
+      console.log(`[${requestId}] Processing people enrichment payload format`);
       
-      console.log(`[${requestId}] Inserting contacts for company:`, company_name);
+      // Insert enriched contacts
+      if (enrichedContactsData.length > 0) {
+        const { error: enrichedError } = await supabase
+          .from('search_results')
+          .insert({
+            search_id,
+            company_name: 'People Enriched',
+            domain: null,
+            contact_data: enrichedContactsData,
+            result_type: 'enriched'
+          });
 
-      const { error } = await supabase
-        .from('search_results')
-        .insert({
-          search_id,
-          company_name: company_name || 'Unknown Company',
-          domain: domain || null,
-          contact_data: contacts || []
-        });
-
-      if (error) {
-        console.error(`[${requestId}] Error inserting company:`, error);
-        throw error;
+        if (enrichedError) {
+          console.error(`[${requestId}] Error inserting enriched contacts:`, enrichedError);
+          throw enrichedError;
+        }
+        
+        results.push({ company_name: 'People Enriched', contacts_count: enrichedContactsData.length });
+        console.log(`[${requestId}] Inserted ${enrichedContactsData.length} enriched contacts`);
       }
 
-      return { company_name, contacts_count: contacts?.length || 0 };
-    });
+      // Insert missing contacts
+      if (missingContactsData.length > 0) {
+        const { error: missingError } = await supabase
+          .from('search_results')
+          .insert({
+            search_id,
+            company_name: 'People not found',
+            domain: null,
+            contact_data: missingContactsData,
+            result_type: 'missing'
+          });
 
-    const results = await Promise.all(insertPromises);
-    const totalContacts = results.reduce((sum, r) => sum + r.contacts_count, 0);
+        if (missingError) {
+          console.error(`[${requestId}] Error inserting missing contacts:`, missingError);
+          throw missingError;
+        }
+        
+        results.push({ company_name: 'People not found', contacts_count: missingContactsData.length });
+        console.log(`[${requestId}] Inserted ${missingContactsData.length} missing contacts`);
+      }
+
+      totalContacts = enrichedContactsData.length + missingContactsData.length;
+    } else {
+      // Original logic: Insert each company's results
+      const insertPromises = companies.map(async (company) => {
+        const { company_name, domain, contacts } = company;
+        
+        console.log(`[${requestId}] Inserting contacts for company:`, company_name);
+
+        const { error } = await supabase
+          .from('search_results')
+          .insert({
+            search_id,
+            company_name: company_name || 'Unknown Company',
+            domain: domain || null,
+            contact_data: contacts || [],
+            result_type: 'enriched'
+          });
+
+        if (error) {
+          console.error(`[${requestId}] Error inserting company:`, error);
+          throw error;
+        }
+
+        return { company_name, contacts_count: contacts?.length || 0 };
+      });
+
+      results = await Promise.all(insertPromises);
+      totalContacts = results.reduce((sum, r) => sum + r.contacts_count, 0);
+    }
 
     console.log(`[${requestId}] Successfully saved ${results.length} companies with ${totalContacts} total contacts`);
 
