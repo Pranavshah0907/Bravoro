@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight } from "lucide-react";
+import { Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
 import {
@@ -46,6 +46,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Pagination,
@@ -306,6 +312,71 @@ const Results = () => {
     });
   };
 
+  const handleExportSegregatedExcel = (searchId: string) => {
+    const results = searchResults[searchId];
+    if (!results || results.length === 0) return;
+
+    const wb = XLSX.utils.book_new();
+    const usedSheetNames = new Set<string>();
+
+    results.forEach(result => {
+      // Create sheet data for this company
+      const sheetData = result.contact_data.map(contact => ({
+        First_Name: contact.First_Name,
+        Last_Name: contact.Last_Name,
+        Domain: result.domain || contact.Domain,
+        Organization: result.company_name,
+        Title: contact.Title,
+        Email: contact.Email,
+        LinkedIn: contact.LinkedIn,
+        Phone_Number_1: contact.Phone_Number_1,
+        Phone_Number_2: contact.Phone_Number_2,
+      }));
+
+      if (sheetData.length === 0) return;
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(sheetData);
+
+      // Sanitize sheet name (Excel has 31 char limit, no special chars)
+      let sheetName = (result.company_name || 'Unknown')
+        .replace(/[\\/*?:\[\]]/g, '') // Remove invalid chars
+        .trim()
+        .substring(0, 31);            // Max 31 characters
+      
+      // Handle empty sheet name
+      if (!sheetName) sheetName = 'Company';
+
+      // Ensure unique sheet names if duplicates exist
+      let finalName = sheetName;
+      let counter = 1;
+      while (usedSheetNames.has(finalName)) {
+        const suffix = `_${counter}`;
+        finalName = sheetName.substring(0, 31 - suffix.length) + suffix;
+        counter++;
+      }
+      usedSheetNames.add(finalName);
+
+      XLSX.utils.book_append_sheet(wb, ws, finalName);
+    });
+
+    if (wb.SheetNames.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No contacts found to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    XLSX.writeFile(wb, `search_results_segregated_${searchId.slice(0, 8)}.xlsx`);
+
+    toast({
+      title: "Export Complete",
+      description: "Results exported with separate company sheets",
+    });
+  };
+
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
 
@@ -459,15 +530,29 @@ const Results = () => {
             <h4 className="text-sm font-semibold text-foreground">
               Enriched Contacts <span className="text-muted-foreground font-normal">({allContacts.length} total)</span>
             </h4>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleExportToExcel(search.id)}
-              className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
+                <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Combined Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Segregated Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {renderContactsTable(search.id, 'all', allContacts)}
@@ -536,15 +621,29 @@ const Results = () => {
       <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h4 className="text-sm font-semibold text-foreground">Contact Results</h4>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleExportToExcel(search.id)}
-            className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export Excel
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
+              <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
+                <Download className="h-4 w-4 mr-2" />
+                Combined Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Segregated Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {results.length > 1 ? (
