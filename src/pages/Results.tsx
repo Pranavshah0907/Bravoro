@@ -208,11 +208,19 @@ const Results = () => {
       setSearchResults(prev => ({ ...prev, [searchId]: results }));
       
       if (results.length > 0) {
-        // Check if this is a people enrichment result (has enriched/missing result types)
-        const isPeopleEnrichment = results.some(r => 
-          r.result_type === 'enriched' || r.result_type === 'missing' || 
-          r.company_name === 'People Enriched' || r.company_name === 'People not found'
-        );
+        // IMPORTANT:
+        // `search_results.result_type` now defaults to 'enriched' for *all* rows, including manual/bulk searches.
+        // So we must NOT use `result_type === 'enriched'` to detect the special "People Enriched / People not found" UI.
+        // People enrichment is driven by the search type (and optionally presence of 'missing' rows for backwards compatibility).
+        const search = searches.find(s => s.id === searchId);
+        const isPeopleEnrichment =
+          search?.search_type === "bulk_people_enrichment" ||
+          results.some(
+            (r) =>
+              r.result_type === "missing" ||
+              r.company_name === "People Enriched" ||
+              r.company_name === "People not found"
+          );
         
         if (isPeopleEnrichment) {
           // For people enrichment, set 'enriched' as the default active tab
