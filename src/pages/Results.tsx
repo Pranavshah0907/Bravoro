@@ -208,8 +208,20 @@ const Results = () => {
       setSearchResults(prev => ({ ...prev, [searchId]: results }));
       
       if (results.length > 0) {
-        setActiveCompanyTab(prev => ({ ...prev, [searchId]: results[0].company_name }));
-        setCurrentPage(prev => ({ ...prev, [`${searchId}-${results[0].company_name}`]: 1 }));
+        // Check if this is a people enrichment result (has enriched/missing result types)
+        const isPeopleEnrichment = results.some(r => 
+          r.result_type === 'enriched' || r.result_type === 'missing' || 
+          r.company_name === 'People Enriched' || r.company_name === 'People not found'
+        );
+        
+        if (isPeopleEnrichment) {
+          // For people enrichment, set 'enriched' as the default active tab
+          setActiveCompanyTab(prev => ({ ...prev, [searchId]: 'enriched' }));
+          setCurrentPage(prev => ({ ...prev, [`${searchId}-enriched`]: 1 }));
+        } else {
+          setActiveCompanyTab(prev => ({ ...prev, [searchId]: results[0].company_name }));
+          setCurrentPage(prev => ({ ...prev, [`${searchId}-${results[0].company_name}`]: 1 }));
+        }
       }
     } catch (error) {
       console.error("Error fetching search results:", error);
