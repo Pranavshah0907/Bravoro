@@ -97,6 +97,7 @@ interface SearchResult {
   company_name: string;
   domain: string | null;
   contact_data: Contact[];
+  result_type?: string;
 }
 
 const CONTACTS_PER_PAGE = 10;
@@ -377,6 +378,71 @@ const Results = () => {
     });
   };
 
+  const handleExportPeopleEnrichment = (searchId: string) => {
+    const results = searchResults[searchId];
+    if (!results) return;
+
+    const wb = XLSX.utils.book_new();
+
+    // Find enriched and missing results
+    const enrichedResult = results.find(r => 
+      r.result_type === 'enriched' || r.company_name === 'People Enriched'
+    );
+    const missingResult = results.find(r => 
+      r.result_type === 'missing' || r.company_name === 'People not found'
+    );
+
+    // Sheet 1: Output (enriched contacts)
+    if (enrichedResult?.contact_data?.length > 0) {
+      const enrichedData = enrichedResult.contact_data.map(c => ({
+        First_Name: c.First_Name,
+        Last_Name: c.Last_Name,
+        Domain: c.Domain,
+        Organization: c.Organization,
+        Title: c.Title,
+        Email: c.Email,
+        LinkedIn: c.LinkedIn,
+        Phone_Number_1: c.Phone_Number_1,
+        Phone_Number_2: c.Phone_Number_2,
+      }));
+      const ws1 = XLSX.utils.json_to_sheet(enrichedData);
+      XLSX.utils.book_append_sheet(wb, ws1, "Output");
+    }
+
+    // Sheet 2: Missing_contacts
+    if (missingResult?.contact_data?.length > 0) {
+      const missingData = missingResult.contact_data.map(c => ({
+        First_Name: c.First_Name,
+        Last_Name: c.Last_Name,
+        Domain: c.Domain || '',
+        Organization: c.Organization || '',
+        Title: c.Title || '',
+        Email: c.Email || '',
+        LinkedIn: c.LinkedIn || '',
+        Phone_Number_1: c.Phone_Number_1 || '',
+        Phone_Number_2: c.Phone_Number_2 || '',
+      }));
+      const ws2 = XLSX.utils.json_to_sheet(missingData);
+      XLSX.utils.book_append_sheet(wb, ws2, "Missing_contacts");
+    }
+
+    if (wb.SheetNames.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No contacts found to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    XLSX.writeFile(wb, `people_enrichment_${searchId.slice(0, 8)}.xlsx`);
+
+    toast({
+      title: "Export Complete",
+      description: "People enrichment results exported to Excel",
+    });
+  };
+
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
 
@@ -510,83 +576,152 @@ const Results = () => {
       );
     }
 
-    // For bulk_people_enrichment, show flat list without company tabs
+    // For bulk_people_enrichment, show tabs for enriched vs missing contacts
     if (search.search_type === "bulk_people_enrichment") {
-      // Combine all contacts from all results into a flat list
-      const allContacts = results.flatMap(r => r.contact_data);
-      const paginatedContacts = getPaginatedContacts(search.id, 'all', allContacts);
-      const totalPages = getTotalPages(allContacts);
-      const pageKey = getPageKey(search.id, 'all');
-      const currentPageNum = currentPage[pageKey] || 1;
+      // Separate results by type
+      const enrichedResult = results.find(r => r.result_type === 'enriched' || r.company_name === 'People Enriched');
+      const missingResult = results.find(r => r.result_type === 'missing' || r.company_name === 'People not found');
+      
+      const enrichedContacts = enrichedResult?.contact_data || [];
+      const missingContacts = missingResult?.contact_data || [];
+      
+      // If no categorized results, fall back to showing all contacts as enriched (backwards compatibility)
+      const hasCategories = enrichedResult || missingResult;
+      if (!hasCategories) {
+        const allContacts = results.flatMap(r => r.contact_data);
+        const pageKey = getPageKey(search.id, 'all');
+        const totalPages = getTotalPages(allContacts);
+        const currentPageNum = currentPage[pageKey] || 1;
 
-      // Initialize page if needed
-      if (!currentPage[pageKey]) {
-        setCurrentPage(prev => ({ ...prev, [pageKey]: 1 }));
+        if (!currentPage[pageKey]) {
+          setCurrentPage(prev => ({ ...prev, [pageKey]: 1 }));
+        }
+
+        return (
+          <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <h4 className="text-sm font-semibold text-foreground">
+                Enriched Contacts <span className="text-muted-foreground font-normal">({allContacts.length} total)</span>
+              </h4>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleExportPeopleEnrichment(search.id)}
+                className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Excel
+              </Button>
+            </div>
+            {renderContactsTable(search.id, 'all', allContacts)}
+            {totalPages > 1 && (
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => handlePageChange(search.id, 'all', Math.max(1, currentPageNum - 1))}
+                      className={cn("cursor-pointer hover:bg-muted/50", currentPageNum === 1 && "pointer-events-none opacity-50")}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) pageNum = i + 1;
+                    else if (currentPageNum <= 3) pageNum = i + 1;
+                    else if (currentPageNum >= totalPages - 2) pageNum = totalPages - 4 + i;
+                    else pageNum = currentPageNum - 2 + i;
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink onClick={() => handlePageChange(search.id, 'all', pageNum)} isActive={currentPageNum === pageNum} className="cursor-pointer">
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => handlePageChange(search.id, 'all', Math.min(totalPages, currentPageNum + 1))}
+                      className={cn("cursor-pointer hover:bg-muted/50", currentPageNum === totalPages && "pointer-events-none opacity-50")}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </div>
+        );
       }
+
+      // Active tab for people enrichment
+      const activeTab = activeCompanyTab[search.id] || 'enriched';
+      const activeContacts = activeTab === 'enriched' ? enrichedContacts : missingContacts;
+      const pageKey = getPageKey(search.id, activeTab);
+      const totalPages = getTotalPages(activeContacts);
+      const currentPageNum = currentPage[pageKey] || 1;
 
       return (
         <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h4 className="text-sm font-semibold text-foreground">
-              Enriched Contacts <span className="text-muted-foreground font-normal">({allContacts.length} total)</span>
-            </h4>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Export
-                  <ChevronDown className="h-4 w-4 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
-                <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Combined Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Segregated Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <h4 className="text-sm font-semibold text-foreground">People Enrichment Results</h4>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleExportPeopleEnrichment(search.id)}
+              className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Excel
+            </Button>
           </div>
 
-          {renderContactsTable(search.id, 'all', allContacts)}
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => {
+              setActiveCompanyTab(prev => ({ ...prev, [search.id]: value }));
+              const newPageKey = getPageKey(search.id, value);
+              if (!currentPage[newPageKey]) {
+                setCurrentPage(prev => ({ ...prev, [newPageKey]: 1 }));
+              }
+            }}
+          >
+            <TabsList className="mb-4 bg-muted/30 p-1 rounded-lg">
+              <TabsTrigger 
+                value="enriched" 
+                className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
+              >
+                People Enriched <span className="ml-1 text-muted-foreground">({enrichedContacts.length})</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="missing" 
+                className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
+              >
+                People not found <span className="ml-1 text-muted-foreground">({missingContacts.length})</span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="enriched">
+              {renderContactsTable(search.id, 'enriched', enrichedContacts)}
+            </TabsContent>
+            <TabsContent value="missing">
+              {renderContactsTable(search.id, 'missing', missingContacts)}
+            </TabsContent>
+          </Tabs>
 
           {totalPages > 1 && (
             <Pagination className="mt-4">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={() => handlePageChange(search.id, 'all', Math.max(1, currentPageNum - 1))}
-                    className={cn(
-                      "cursor-pointer hover:bg-muted/50",
-                      currentPageNum === 1 && "pointer-events-none opacity-50"
-                    )}
+                    onClick={() => handlePageChange(search.id, activeTab, Math.max(1, currentPageNum - 1))}
+                    className={cn("cursor-pointer hover:bg-muted/50", currentPageNum === 1 && "pointer-events-none opacity-50")}
                   />
                 </PaginationItem>
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPageNum <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPageNum >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPageNum - 2 + i;
-                  }
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPageNum <= 3) pageNum = i + 1;
+                  else if (currentPageNum >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPageNum - 2 + i;
                   return (
                     <PaginationItem key={pageNum}>
-                      <PaginationLink
-                        onClick={() => handlePageChange(search.id, 'all', pageNum)}
-                        isActive={currentPageNum === pageNum}
-                        className="cursor-pointer"
-                      >
+                      <PaginationLink onClick={() => handlePageChange(search.id, activeTab, pageNum)} isActive={currentPageNum === pageNum} className="cursor-pointer">
                         {pageNum}
                       </PaginationLink>
                     </PaginationItem>
@@ -594,11 +729,8 @@ const Results = () => {
                 })}
                 <PaginationItem>
                   <PaginationNext
-                    onClick={() => handlePageChange(search.id, 'all', Math.min(totalPages, currentPageNum + 1))}
-                    className={cn(
-                      "cursor-pointer hover:bg-muted/50",
-                      currentPageNum === totalPages && "pointer-events-none opacity-50"
-                    )}
+                    onClick={() => handlePageChange(search.id, activeTab, Math.min(totalPages, currentPageNum + 1))}
+                    className={cn("cursor-pointer hover:bg-muted/50", currentPageNum === totalPages && "pointer-events-none opacity-50")}
                   />
                 </PaginationItem>
               </PaginationContent>
