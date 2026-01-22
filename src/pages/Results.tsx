@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, Trash2, CalendarIcon, Info, ChevronDown, ChevronRight, FileSpreadsheet } from "lucide-react";
+import {
+  Download,
+  RefreshCw,
+  Trash2,
+  CalendarIcon,
+  Info,
+  ChevronDown,
+  ChevronRight,
+  FileSpreadsheet,
+  Copy,
+  Phone,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
 import {
@@ -54,6 +65,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -99,6 +118,15 @@ interface SearchResult {
   contact_data: Contact[];
   result_type?: string;
 }
+
+const getPhoneNumbers = (contact: Partial<Contact>): string[] => {
+  const raw = [contact.Phone_Number_1, contact.Phone_Number_2]
+    .map((p) => (typeof p === "string" ? p.trim() : ""))
+    .filter(Boolean);
+
+  // Dedupe while preserving order
+  return Array.from(new Set(raw));
+};
 
 const CONTACTS_PER_PAGE = 10;
 
@@ -889,6 +917,95 @@ const Results = () => {
   const renderContactsTable = (searchId: string, companyName: string, contacts: Contact[]) => {
     const paginatedContacts = getPaginatedContacts(searchId, companyName, contacts);
 
+    const PhoneCell = ({ contact }: { contact: Contact }) => {
+      const phones = useMemo(() => getPhoneNumbers(contact), [contact]);
+
+      const handleCopy = async (value: string) => {
+        try {
+          await navigator.clipboard.writeText(value);
+          toast({
+            title: "Copied",
+            description: "Phone number copied to clipboard",
+          });
+        } catch {
+          toast({
+            title: "Copy failed",
+            description: "Couldn't copy the phone number",
+            variant: "destructive",
+          });
+        }
+      };
+
+      if (phones.length === 0) {
+        return <span className="text-muted-foreground">-</span>;
+      }
+
+      if (phones.length === 1) {
+        return <span className="text-muted-foreground">{phones[0]}</span>;
+      }
+
+      const primary = phones[0];
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground truncate max-w-[10rem]" title={primary}>
+            {primary}
+          </span>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 px-2 bg-card border-border/50"
+              >
+                View ({phones.length})
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Phone numbers
+                </DialogTitle>
+                <DialogDescription>
+                  {contact.First_Name || contact.Last_Name
+                    ? `For ${[contact.First_Name, contact.Last_Name].filter(Boolean).join(" ")}`
+                    : "All available phone numbers"}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-2">
+                {phones.map((p, i) => (
+                  <div
+                    key={`${p}-${i}`}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border/50 bg-card p-3"
+                  >
+                    <a
+                      href={`tel:${p}`}
+                      className="text-sm font-medium text-foreground hover:text-accent transition-colors break-all"
+                    >
+                      {p}
+                    </a>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => handleCopy(p)}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      );
+    };
+
     if (paginatedContacts.length === 0) {
       return <p className="text-sm text-muted-foreground">No contacts available.</p>;
     }
@@ -919,7 +1036,9 @@ const Results = () => {
                     </a>
                   ) : "-"}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{contact.Phone_Number_1 || "-"}</TableCell>
+                <TableCell className="text-sm">
+                  <PhoneCell contact={contact} />
+                </TableCell>
                 <TableCell className="text-sm">
                   {contact.LinkedIn ? (
                     <a href={contact.LinkedIn} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-secondary transition-colors">
