@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogIn, Loader2, Mail, Lock } from "lucide-react";
 import { z } from "zod";
-import emploioLogo from "@/assets/emploio-logo.svg";
+import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -74,9 +74,9 @@ const Auth = () => {
             {/* Logo without border */}
             <div className="bg-gradient-to-br from-primary/20 to-accent/10 rounded-2xl p-6 shadow-glow">
               <img 
-                src={emploioLogo} 
-                alt="emploio" 
-                className="h-10 md:h-12 w-auto animate-fade-in" 
+                src={bravoroLogo} 
+                alt="Bravoro" 
+                className="h-8 md:h-10 w-auto animate-fade-in" 
               />
             </div>
           </div>
