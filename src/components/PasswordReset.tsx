@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Lock, CheckCircle2 } from "lucide-react";
 import { z } from "zod";
-import emploioLogo from "@/assets/emploio-logo.svg";
+import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 const passwordSchema = z
   .string()
@@ -87,7 +87,7 @@ export const PasswordReset = ({ userId, onComplete }: PasswordResetProps) => {
       <Card className="w-full max-w-md shadow-strong border-border/40 bg-card/90 backdrop-blur-xl relative z-10">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
-            <img src={emploioLogo} alt="emploio" className="h-10 w-auto" />
+            <img src={bravoroLogo} alt="Bravoro" className="h-8 w-auto" />
           </div>
           <div className="mx-auto mb-4 w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
             <Lock className="h-6 w-6 text-primary" />

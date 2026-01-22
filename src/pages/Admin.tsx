@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles, Edit, Target } from "lucide-react";
 import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
-import emploioLogo from "@/assets/emploio-logo.svg";
+import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 const createUserSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -339,7 +339,7 @@ const Admin = () => {
                 <p className="text-sm text-muted-foreground">Manage users and permissions</p>
               </div>
             </div>
-            <img src={emploioLogo} alt="emploio" className="h-6 w-auto hidden md:block" />
+            <img src={bravoroLogo} alt="Bravoro" className="h-6 w-auto hidden md:block" />
           </div>
 
           {/* Create User Card */}

@@ -11,7 +11,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { EnrichmentCard } from "@/components/EnrichmentCard";
 import { Search, Upload, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import emploioLogo from "@/assets/emploio-logo.svg";
+import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 type EnrichmentType = "manual" | "bulk" | "people_enrichment" | null;
 
@@ -186,7 +186,7 @@ const Dashboard = () => {
         <div className="relative z-10">
           {/* Logo in top right */}
           <div className="absolute top-6 right-6 md:top-8 md:right-8">
-            <img src={emploioLogo} alt="emploio" className="h-6 md:h-7 w-auto" />
+            <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
           </div>
 
           {!selectedType ? (
