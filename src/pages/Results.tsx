@@ -945,21 +945,21 @@ const Results = () => {
       }
 
       const primary = phones[0];
+      const additionalCount = phones.length - 1;
       return (
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground truncate max-w-[10rem]" title={primary}>
-            {primary}
-          </span>
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground">{primary}</span>
+          <span className="text-muted-foreground">,</span>
 
           <Dialog>
             <DialogTrigger asChild>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="h-8 px-2 bg-card border-border/50"
+                className="h-6 px-1.5 text-xs font-medium text-primary hover:text-primary/80 hover:bg-primary/10"
               >
-                View ({phones.length})
+                +{additionalCount}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
