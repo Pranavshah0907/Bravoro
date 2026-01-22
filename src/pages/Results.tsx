@@ -801,29 +801,41 @@ const Results = () => {
       <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h4 className="text-sm font-semibold text-foreground">Contact Results</h4>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Export
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
-              <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
-                <Download className="h-4 w-4 mr-2" />
-                Combined Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Segregated Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {search.search_type === "manual" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleExportSegregatedExcel(search.id)}
+              className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Excel
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
+                <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Combined Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Segregated Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {results.length > 1 ? (
