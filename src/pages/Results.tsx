@@ -297,37 +297,6 @@ const Results = () => {
     navigate("/auth");
   };
 
-  const handleDownload = async (path: string) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from("results")
-        .download(path);
-
-      if (error) throw error;
-
-      const blob = data;
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = path.split("/").pop() || "result.xlsx";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Download Started",
-        description: "Your file is being downloaded",
-      });
-    } catch (error) {
-      console.error("Download error:", error);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download the file",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleExportToExcel = (searchId: string) => {
     const results = searchResults[searchId];
@@ -1303,18 +1272,7 @@ const Results = () => {
                           </TableCell>
                           <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
                           <TableCell className="text-right">
-                            {search.status === "completed" && search.result_url ? (
-                              <Button
-                                size="sm"
-                                onClick={() => handleDownload(search.result_url!)}
-                                className="btn-gradient text-primary-foreground h-8"
-                              >
-                                <Download className="h-4 w-4 mr-1" />
-                                Download
-                              </Button>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">-</span>
-                            )}
+                            <span className="text-sm text-muted-foreground">-</span>
                           </TableCell>
                         </TableRow>
                         {expandedRows.has(search.id) && (

@@ -5,47 +5,142 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Download, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface ProcessingStatusProps {
   searchId: string;
   onReset: () => void;
 }
 
+interface Contact {
+  First_Name: string;
+  Last_Name: string;
+  Domain: string;
+  Organization: string;
+  Title: string;
+  Email: string;
+  LinkedIn: string;
+  Phone_Number_1: string;
+  Phone_Number_2: string;
+}
+
+interface SearchResult {
+  id: string;
+  search_id: string;
+  company_name: string;
+  domain: string | null;
+  contact_data: Contact[];
+  result_type?: string;
+}
+
 export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) => {
   const { toast } = useToast();
   const [status, setStatus] = useState<"processing" | "completed" | "error">("processing");
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  const handleDownload = async (path: string) => {
+  const handleExportExcel = async () => {
+    setExporting(true);
     try {
-      const { data, error } = await supabase.storage
-        .from("results")
-        .download(path);
+      // Fetch results from search_results table
+      const { data: results, error: resultsError } = await supabase
+        .from("search_results")
+        .select("*")
+        .eq("search_id", searchId);
 
-      if (error) throw error;
+      if (resultsError) throw resultsError;
 
-      const blob = data;
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = path.split("/").pop() || "leap_results.xlsx";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-      
+      if (!results || results.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No results found to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get search info for company name (for manual type)
+      const { data: search } = await supabase
+        .from("searches")
+        .select("company_name, search_type")
+        .eq("id", searchId)
+        .single();
+
+      const searchResults: SearchResult[] = results.map(item => ({
+        ...item,
+        contact_data: Array.isArray(item.contact_data) ? item.contact_data as unknown as Contact[] : []
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const usedSheetNames = new Set<string>();
+
+      // For manual type, use company name as sheet name (segregated logic)
+      searchResults.forEach(result => {
+        const sheetData = result.contact_data.map(contact => ({
+          First_Name: contact.First_Name,
+          Last_Name: contact.Last_Name,
+          Domain: result.domain || contact.Domain,
+          Organization: result.company_name,
+          Title: contact.Title,
+          Email: contact.Email,
+          LinkedIn: contact.LinkedIn,
+          Phone_Number_1: contact.Phone_Number_1,
+          Phone_Number_2: contact.Phone_Number_2,
+        }));
+
+        if (sheetData.length === 0) return;
+
+        const ws = XLSX.utils.json_to_sheet(sheetData);
+
+        // Sanitize sheet name (Excel has 31 char limit, no special chars)
+        let sheetName = (result.company_name || 'Unknown')
+          .replace(/[\\/*?:\[\]]/g, '')
+          .trim()
+          .substring(0, 31);
+        
+        if (!sheetName) sheetName = 'Company';
+
+        // Ensure unique sheet names
+        let finalName = sheetName;
+        let counter = 1;
+        while (usedSheetNames.has(finalName)) {
+          const suffix = `_${counter}`;
+          finalName = sheetName.substring(0, 31 - suffix.length) + suffix;
+          counter++;
+        }
+        usedSheetNames.add(finalName);
+
+        XLSX.utils.book_append_sheet(wb, ws, finalName);
+      });
+
+      if (wb.SheetNames.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No contacts found to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fileName = search?.company_name 
+        ? `${search.company_name.replace(/[\\/*?:\[\]]/g, '').substring(0, 50)}_results.xlsx`
+        : `search_results_${searchId.slice(0, 8)}.xlsx`;
+
+      XLSX.writeFile(wb, fileName);
+
       toast({
-        title: "Report Downloaded Successfully!",
-        description: "Your enriched data has been downloaded",
+        title: "Export Complete",
+        description: "Your enriched data has been exported to Excel",
       });
     } catch (error) {
-      console.error("Download error:", error);
+      console.error("Export error:", error);
       toast({
-        title: "Download Failed",
-        description: "Failed to download the file. Please try again.",
+        title: "Export Failed",
+        description: "Failed to export the results. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -66,13 +161,10 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
           setStatus(newStatus);
           
           if (newStatus === "completed") {
-            const url = payload.new.result_url;
-            setResultUrl(url);
-            
-            // Auto-trigger download
-            if (url) {
-              handleDownload(url);
-            }
+            toast({
+              title: "Processing Complete!",
+              description: "Your enriched data is ready to export",
+            });
           } else if (newStatus === "error") {
             setErrorMessage(payload.new.error_message);
             toast({
@@ -89,19 +181,14 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
     const checkStatus = async () => {
       const { data } = await supabase
         .from("searches")
-        .select("status, result_url, error_message")
+        .select("status, error_message")
         .eq("id", searchId)
         .single();
 
       if (data) {
         const searchStatus = data.status as "processing" | "completed" | "error";
         setStatus(searchStatus);
-        if (searchStatus === "completed" && data.result_url) {
-          setResultUrl(data.result_url);
-          
-          // Auto-trigger download if already completed
-          handleDownload(data.result_url);
-        } else if (searchStatus === "error") {
+        if (searchStatus === "error") {
           setErrorMessage(data.error_message);
         }
       }
@@ -136,11 +223,20 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
             <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
             <h3 className="text-lg font-medium mb-2">Processing Complete!</h3>
             <p className="text-sm text-muted-foreground text-center mb-6">
-              Your enriched data is ready to download
+              Your enriched data is ready to export
             </p>
-            <Button onClick={() => resultUrl && handleDownload(resultUrl)} size="lg" className="mb-4">
-              <Download className="mr-2 h-5 w-5" />
-              Download Results
+            <Button 
+              onClick={handleExportExcel} 
+              size="lg" 
+              className="mb-4"
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-5 w-5" />
+              )}
+              Export Excel
             </Button>
           </div>
         )}

@@ -18,7 +18,12 @@ export type Database = {
         Row: {
           aleads_credits: number
           apollo_credits: number
+          apollo_email_credits: number
+          apollo_phone_credits: number
+          contacts_count: number
           created_at: string
+          enriched_contacts_count: number
+          grand_total_credits: number
           id: string
           lusha_credits: number
           search_id: string | null
@@ -28,7 +33,12 @@ export type Database = {
         Insert: {
           aleads_credits?: number
           apollo_credits?: number
+          apollo_email_credits?: number
+          apollo_phone_credits?: number
+          contacts_count?: number
           created_at?: string
+          enriched_contacts_count?: number
+          grand_total_credits?: number
           id?: string
           lusha_credits?: number
           search_id?: string | null
@@ -38,7 +48,12 @@ export type Database = {
         Update: {
           aleads_credits?: number
           apollo_credits?: number
+          apollo_email_credits?: number
+          apollo_phone_credits?: number
+          contacts_count?: number
           created_at?: string
+          enriched_contacts_count?: number
+          grand_total_credits?: number
           id?: string
           lusha_credits?: number
           search_id?: string | null
