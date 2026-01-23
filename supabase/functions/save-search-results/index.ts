@@ -47,6 +47,9 @@ interface RequestBody {
   // Fields for people enrichment with success/failure categorization
   enriched_contacts_data?: Contact[];
   missing_contacts?: Contact[];
+  // Error handling fields
+  status?: 'error' | 'completed';
+  error_message?: string;
 }
 
 // Generate a unique request ID for tracking
@@ -248,8 +251,6 @@ serve(async (req: Request) => {
       );
     }
 
-    const hasAnyCredits = apolloCredits > 0 || aleadsCredits > 0 || lushaCredits > 0;
-
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(search_id)) {
@@ -259,6 +260,48 @@ serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Check if this is an error payload from n8n
+    const isErrorPayload = bodyAny?.status === 'error' || (bodyAny?.error_message && !companies.length && !isPeopleEnrichmentPayload);
+
+    if (isErrorPayload) {
+      const errorMessage = (bodyAny?.error_message as string) || 'Unknown error occurred';
+      
+      console.log(`[${requestId}] Received error payload for search_id: ${search_id}`);
+      console.log(`[${requestId}] Error message: ${errorMessage}`);
+      
+      // Update the search status to 'error' with the error message
+      const { error: updateError } = await supabase
+        .from('searches')
+        .update({ 
+          status: 'error', 
+          error_message: errorMessage,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', search_id);
+
+      if (updateError) {
+        console.error(`[${requestId}] Error updating search status:`, updateError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to update search status', request_id: requestId }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`[${requestId}] Successfully recorded error status for search_id: ${search_id}`);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Error status recorded',
+          search_id,
+          request_id: requestId 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const hasAnyCredits = apolloCredits > 0 || aleadsCredits > 0 || lushaCredits > 0;
 
     // Delete existing results for this search (for re-runs)
     const { error: deleteError } = await supabase
