@@ -1282,7 +1282,55 @@ const Results = () => {
                           </TableCell>
                           <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
                           <TableCell className="text-right">
-                            <span className="text-sm text-muted-foreground">-</span>
+                            {search.status === "completed" ? (
+                              search.search_type === "bulk_people_enrichment" ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleExportPeopleEnrichment(search.id)}
+                                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Export
+                                </Button>
+                              ) : search.search_type === "manual" ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleExportSegregatedExcel(search.id)}
+                                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Export
+                                </Button>
+                              ) : (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                                    >
+                                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                      Export
+                                      <ChevronDown className="h-4 w-4 ml-1" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
+                                    <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Combined Excel
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
+                                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                      Segregated Excel
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
                           </TableCell>
                         </TableRow>
                         {expandedRows.has(search.id) && (
