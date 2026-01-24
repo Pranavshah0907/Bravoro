@@ -17,12 +17,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -521,16 +516,31 @@ const Results = () => {
           <div className="flex items-center gap-2">
             <Badge variant="destructive" className="font-medium">Error</Badge>
             {errorMessage && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-destructive cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-card border-border shadow-medium">
-                    <p className="max-w-xs text-sm">{errorMessage}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                    aria-label="View error details"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Error Details</DialogTitle>
+                    <DialogDescription>
+                      Full error message from processing
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[60vh] w-full rounded-md border p-4">
+                    <div className="whitespace-pre-wrap break-words text-sm text-foreground">
+                      {errorMessage}
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
         );
