@@ -1288,7 +1288,7 @@ const Results = () => {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleExportPeopleEnrichment(search.id)}
-                                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10 w-24"
                                 >
                                   <Download className="h-4 w-4 mr-2" />
                                   Export
@@ -1298,7 +1298,7 @@ const Results = () => {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleExportSegregatedExcel(search.id)}
-                                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10 w-24"
                                 >
                                   <Download className="h-4 w-4 mr-2" />
                                   Export
@@ -1309,11 +1309,10 @@ const Results = () => {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                                      className="hover-lift border-primary/30 text-primary hover:bg-primary/10 w-24"
                                     >
-                                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                      <Download className="h-4 w-4 mr-2" />
                                       Export
-                                      <ChevronDown className="h-4 w-4 ml-1" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
