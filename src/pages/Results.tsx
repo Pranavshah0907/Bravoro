@@ -297,8 +297,12 @@ const Results = () => {
     const results = searchResults[searchId];
     if (!results || results.length === 0) return;
 
+    // Separate company results from missing companies
+    const companyResults = results.filter(r => r.result_type !== 'missing_company');
+    const missingCompanyResults = results.filter(r => r.result_type === 'missing_company');
+
     const allContacts: any[] = [];
-    results.forEach(result => {
+    companyResults.forEach(result => {
       result.contact_data.forEach(contact => {
         allContacts.push({
           Company: result.company_name,
@@ -314,9 +318,22 @@ const Results = () => {
       });
     });
 
-    const ws = XLSX.utils.json_to_sheet(allContacts);
     const wb = XLSX.utils.book_new();
+    
+    // Add Contacts sheet
+    const ws = XLSX.utils.json_to_sheet(allContacts);
     XLSX.utils.book_append_sheet(wb, ws, "Contacts");
+
+    // Add Missing_Companies sheet if there are any
+    if (missingCompanyResults.length > 0) {
+      const missingData = missingCompanyResults.map(mc => ({
+        Company_Name: mc.company_name,
+        Domain: mc.domain || ''
+      }));
+      const wsMissing = XLSX.utils.json_to_sheet(missingData);
+      XLSX.utils.book_append_sheet(wb, wsMissing, "Missing_Companies");
+    }
+
     XLSX.writeFile(wb, `search_results_${searchId.slice(0, 8)}.xlsx`);
 
     toast({
@@ -329,10 +346,14 @@ const Results = () => {
     const results = searchResults[searchId];
     if (!results || results.length === 0) return;
 
+    // Separate company results from missing companies
+    const companyResults = results.filter(r => r.result_type !== 'missing_company');
+    const missingCompanyResults = results.filter(r => r.result_type === 'missing_company');
+
     const wb = XLSX.utils.book_new();
     const usedSheetNames = new Set<string>();
 
-    results.forEach(result => {
+    companyResults.forEach(result => {
       // Create sheet data for this company
       const sheetData = result.contact_data.map(contact => ({
         First_Name: contact.First_Name,
@@ -372,6 +393,16 @@ const Results = () => {
 
       XLSX.utils.book_append_sheet(wb, ws, finalName);
     });
+
+    // Add Missing_Companies sheet if there are any
+    if (missingCompanyResults.length > 0) {
+      const missingData = missingCompanyResults.map(mc => ({
+        Company_Name: mc.company_name,
+        Domain: mc.domain || ''
+      }));
+      const wsMissing = XLSX.utils.json_to_sheet(missingData);
+      XLSX.utils.book_append_sheet(wb, wsMissing, "Missing_Companies");
+    }
 
     if (wb.SheetNames.length === 0) {
       toast({
@@ -768,13 +799,43 @@ const Results = () => {
     }
 
     // Original logic for manual entry and bulk upload with company tabs
-    const activeCompany = activeCompanyTab[search.id] || results[0].company_name;
-    const activeResult = results.find(r => r.company_name === activeCompany);
+    // Separate company results from missing companies for bulk search
+    const companyResults = results.filter(r => r.result_type !== 'missing_company');
+    const missingCompanyResults = results.filter(r => r.result_type === 'missing_company');
+    
+    const activeCompany = activeCompanyTab[search.id] || (companyResults[0]?.company_name || 'missing_companies');
+    const activeResult = activeCompany === 'missing_companies' ? null : companyResults.find(r => r.company_name === activeCompany);
     const contacts = activeResult?.contact_data || [];
-    const paginatedContacts = getPaginatedContacts(search.id, activeCompany, contacts);
-    const totalPages = getTotalPages(contacts);
+    const totalPages = activeCompany === 'missing_companies' ? 1 : getTotalPages(contacts);
     const pageKey = getPageKey(search.id, activeCompany);
     const currentPageNum = currentPage[pageKey] || 1;
+
+    // Render missing companies table
+    const renderMissingCompaniesTable = () => {
+      if (missingCompanyResults.length === 0) {
+        return <p className="text-sm text-muted-foreground">No missing companies.</p>;
+      }
+      return (
+        <div className="overflow-x-auto rounded-lg border border-border/40 bg-card/80">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="text-xs font-semibold text-foreground">Company Name</TableHead>
+                <TableHead className="text-xs font-semibold text-foreground">Domain</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {missingCompanyResults.map((mc, idx) => (
+                <TableRow key={idx} className="hover:bg-muted/10 transition-colors">
+                  <TableCell className="text-sm font-medium">{mc.company_name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{mc.domain || '-'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      );
+    };
 
     return (
       <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
@@ -817,7 +878,7 @@ const Results = () => {
           )}
         </div>
 
-        {results.length > 1 ? (
+        {companyResults.length > 1 || missingCompanyResults.length > 0 ? (
           <Tabs
             value={activeCompany}
             onValueChange={(value) => {
@@ -829,7 +890,7 @@ const Results = () => {
             }}
           >
             <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/30 p-1 rounded-lg">
-              {results.map(result => (
+              {companyResults.map(result => (
                 <TabsTrigger 
                   key={result.company_name} 
                   value={result.company_name} 
@@ -838,20 +899,35 @@ const Results = () => {
                   {result.company_name} <span className="ml-1 text-muted-foreground">({result.contact_data.length})</span>
                 </TabsTrigger>
               ))}
+              {missingCompanyResults.length > 0 && (
+                <TabsTrigger 
+                  value="missing_companies" 
+                  className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
+                >
+                  Missing Companies <span className="ml-1 text-muted-foreground">({missingCompanyResults.length})</span>
+                </TabsTrigger>
+              )}
             </TabsList>
-            {results.map(result => (
+            {companyResults.map(result => (
               <TabsContent key={result.company_name} value={result.company_name}>
                 {renderContactsTable(search.id, result.company_name, result.contact_data)}
               </TabsContent>
             ))}
+            {missingCompanyResults.length > 0 && (
+              <TabsContent value="missing_companies">
+                {renderMissingCompaniesTable()}
+              </TabsContent>
+            )}
           </Tabs>
-        ) : (
+        ) : companyResults.length === 1 ? (
           <div>
             <p className="text-sm text-muted-foreground mb-3">
-              <span className="font-medium text-foreground">{results[0].company_name}</span> · {contacts.length} contacts
+              <span className="font-medium text-foreground">{companyResults[0].company_name}</span> · {contacts.length} contacts
             </p>
-            {renderContactsTable(search.id, results[0].company_name, contacts)}
+            {renderContactsTable(search.id, companyResults[0].company_name, contacts)}
           </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No results found.</p>
         )}
 
         {totalPages > 1 && (
