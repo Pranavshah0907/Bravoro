@@ -250,8 +250,11 @@ const Results = () => {
           setActiveCompanyTab(prev => ({ ...prev, [searchId]: 'enriched' }));
           setCurrentPage(prev => ({ ...prev, [`${searchId}-enriched`]: 1 }));
         } else {
-          setActiveCompanyTab(prev => ({ ...prev, [searchId]: results[0].company_name }));
-          setCurrentPage(prev => ({ ...prev, [`${searchId}-${results[0].company_name}`]: 1 }));
+          // For bulk searches, check if there are missing companies and default to that tab
+          const hasMissingCompanies = results.some(r => r.result_type === 'missing_company');
+          const defaultTab = hasMissingCompanies ? 'missing_companies' : results[0].company_name;
+          setActiveCompanyTab(prev => ({ ...prev, [searchId]: defaultTab }));
+          setCurrentPage(prev => ({ ...prev, [`${searchId}-${defaultTab}`]: 1 }));
         }
       }
     } catch (error) {
@@ -890,6 +893,14 @@ const Results = () => {
             }}
           >
             <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/30 p-1 rounded-lg">
+              {missingCompanyResults.length > 0 && (
+                <TabsTrigger 
+                  value="missing_companies" 
+                  className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
+                >
+                  Missing Companies <span className="ml-1 text-muted-foreground">({missingCompanyResults.length})</span>
+                </TabsTrigger>
+              )}
               {companyResults.map(result => (
                 <TabsTrigger 
                   key={result.company_name} 
@@ -899,14 +910,6 @@ const Results = () => {
                   {result.company_name} <span className="ml-1 text-muted-foreground">({result.contact_data.length})</span>
                 </TabsTrigger>
               ))}
-              {missingCompanyResults.length > 0 && (
-                <TabsTrigger 
-                  value="missing_companies" 
-                  className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
-                >
-                  Missing Companies <span className="ml-1 text-muted-foreground">({missingCompanyResults.length})</span>
-                </TabsTrigger>
-              )}
             </TabsList>
             {companyResults.map(result => (
               <TabsContent key={result.company_name} value={result.company_name}>
