@@ -35,9 +35,16 @@ interface CreditCounter {
   grand_total_credits?: number;
 }
 
+// Missing company structure for bulk search (companies not found)
+interface MissingCompany {
+  organization_name: string;
+  domain: string | null;
+}
+
 interface RequestBody {
   search_id: string;
   companies?: Company[];
+  missing_companies?: MissingCompany[]; // NEW: companies not found during bulk search
   credit_counter?: CreditCounter;
   // Legacy fields (for backward compatibility)
   apollo_credits?: number | string | null;
@@ -390,6 +397,33 @@ serve(async (req: Request) => {
 
       results = await Promise.all(insertPromises);
       totalContacts = results.reduce((sum, r) => sum + r.contacts_count, 0);
+
+      // Handle missing companies for bulk search (companies not found)
+      const missingCompanies: MissingCompany[] = Array.isArray(bodyAny?.missing_companies) 
+        ? (bodyAny.missing_companies as MissingCompany[])
+        : [];
+
+      if (missingCompanies.length > 0) {
+        console.log(`[${requestId}] Processing ${missingCompanies.length} missing companies`);
+        
+        for (const mc of missingCompanies) {
+          const { error: mcError } = await supabase
+            .from('search_results')
+            .insert({
+              search_id,
+              company_name: mc.organization_name || 'Unknown',
+              domain: mc.domain || null,
+              contact_data: [],
+              result_type: 'missing_company'
+            });
+
+          if (mcError) {
+            console.error(`[${requestId}] Error inserting missing company:`, mcError);
+          }
+        }
+        
+        console.log(`[${requestId}] Inserted ${missingCompanies.length} missing companies`);
+      }
     }
 
     console.log(`[${requestId}] Successfully saved ${results.length} companies with ${totalContacts} total contacts`);
