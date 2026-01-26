@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,11 @@ const UsageAnalytics = () => {
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [enrichmentData, setEnrichmentData] = useState<EnrichmentData>({ enrichment_limit: 0, enrichment_used: 0 });
+
+  const dateRangeRef = useRef<DateRange | undefined>(dateRange);
+  useEffect(() => {
+    dateRangeRef.current = dateRange;
+  }, [dateRange]);
 
   const onPieEnter = useCallback((_: any, index: number) => {
     setActivePieIndex(index);
@@ -690,9 +695,31 @@ const UsageAnalytics = () => {
                             mode="range"
                             defaultMonth={dateRange?.from}
                             selected={dateRange}
-                            onSelect={(range) => {
-                              setDateRange(range);
-                              if (range?.from && range?.to) {
+                            onSelect={(_range, selectedDay) => {
+                              if (!selectedDay) return;
+
+                              const prev = dateRangeRef.current;
+                              const prevFrom = prev?.from;
+                              const prevTo = prev?.to;
+
+                              let nextRange: DateRange;
+
+                              // Start a fresh selection if there's no start date yet
+                              // OR if a full range is already selected.
+                              if (!prevFrom || (prevFrom && prevTo)) {
+                                nextRange = { from: selectedDay, to: undefined };
+                              } else if (selectedDay < prevFrom) {
+                                // If the "to" click is earlier than "from", treat it as a new "from".
+                                nextRange = { from: selectedDay, to: undefined };
+                              } else {
+                                // Complete the range.
+                                nextRange = { from: prevFrom, to: selectedDay };
+                              }
+
+                              setDateRange(nextRange);
+
+                              // Only close after the second click that completes the range.
+                              if (prevFrom && !prevTo && selectedDay >= prevFrom) {
                                 setIsCalendarOpen(false);
                               }
                             }}
