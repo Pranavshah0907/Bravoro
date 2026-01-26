@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -89,6 +89,11 @@ const Admin = () => {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
+
+  const analyticsDateRangeRef = useRef<DateRange | undefined>(analyticsDateRange);
+  useEffect(() => {
+    analyticsDateRangeRef.current = analyticsDateRange;
+  }, [analyticsDateRange]);
 
   useEffect(() => {
     checkAdminAccess();
@@ -882,18 +887,39 @@ const Admin = () => {
                               )}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-popover border-border" align="end">
+                           <PopoverContent className="w-auto p-0 bg-popover border-border rounded-lg" align="end">
                             <Calendar
                               initialFocus
                               mode="range"
                               defaultMonth={analyticsDateRange?.from}
                               selected={analyticsDateRange}
-                              onSelect={(range) => {
-                                setAnalyticsDateRange(range);
-                                if (range?.from && range?.to) {
-                                  setIsCalendarOpen(false);
-                                }
-                              }}
+                               onSelect={(_range, selectedDay) => {
+                                 if (!selectedDay) return;
+
+                                 const prev = analyticsDateRangeRef.current;
+                                 const prevFrom = prev?.from;
+                                 const prevTo = prev?.to;
+
+                                 let nextRange: DateRange;
+
+                                 // Start fresh if no start date yet OR a full range is already selected.
+                                 if (!prevFrom || (prevFrom && prevTo)) {
+                                   nextRange = { from: selectedDay, to: undefined };
+                                 } else if (selectedDay < prevFrom) {
+                                   // If the "to" click is earlier than "from", treat it as a new "from".
+                                   nextRange = { from: selectedDay, to: undefined };
+                                 } else {
+                                   // Complete the range.
+                                   nextRange = { from: prevFrom, to: selectedDay };
+                                 }
+
+                                 setAnalyticsDateRange(nextRange);
+
+                                 // Only close after the second click that completes the range.
+                                 if (prevFrom && !prevTo && selectedDay >= prevFrom) {
+                                   setIsCalendarOpen(false);
+                                 }
+                               }}
                               numberOfMonths={2}
                               disabled={(date) => date > new Date()}
                               className="pointer-events-auto"
