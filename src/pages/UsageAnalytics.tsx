@@ -28,6 +28,13 @@ interface EnrichmentData {
   enrichment_used: number;
 }
 
+// Helper function to get platform names based on admin status
+const getPlatformNames = (isAdmin: boolean) => ({
+  apollo: isAdmin ? "Apollo" : "Platform A",
+  aleads: isAdmin ? "A-Leads" : "Platform B",
+  lusha: isAdmin ? "Lusha" : "Platform C",
+});
+
 const COLORS = {
   apollo: "hsl(var(--chart-1))",
   aleads: "hsl(var(--chart-2))",
@@ -176,12 +183,14 @@ const UsageAnalytics = () => {
     );
   };
 
+  const platformNames = getPlatformNames(isAdmin);
+
   const getPieChartData = () => {
     const totals = getTotalCredits();
     return [
-      { name: "Apollo", value: totals.apollo, color: COLORS.apollo },
-      { name: "A-Leads", value: totals.aleads, color: COLORS.aleads },
-      { name: "Lusha", value: totals.lusha, color: COLORS.lusha },
+      { name: platformNames.apollo, value: totals.apollo, color: COLORS.apollo },
+      { name: platformNames.aleads, value: totals.aleads, color: COLORS.aleads },
+      { name: platformNames.lusha, value: totals.lusha, color: COLORS.lusha },
     ];
   };
 
@@ -503,9 +512,9 @@ const UsageAnalytics = () => {
             </Card>
             
             {[
-              { name: "Apollo", value: totals.apollo, color: COLORS.apollo, icon: Zap },
-              { name: "A-Leads", value: totals.aleads, color: COLORS.aleads, icon: Activity },
-              { name: "Lusha", value: totals.lusha, color: COLORS.lusha, icon: TrendingUp },
+              { name: platformNames.apollo, value: totals.apollo, color: COLORS.apollo, icon: Zap },
+              { name: platformNames.aleads, value: totals.aleads, color: COLORS.aleads, icon: Activity },
+              { name: platformNames.lusha, value: totals.lusha, color: COLORS.lusha, icon: TrendingUp },
             ].map((item, index) => (
               <Card 
                 key={item.name} 
@@ -590,9 +599,9 @@ const UsageAnalytics = () => {
                   {/* Legend */}
                   <div className="space-y-2">
                     {[
-                      { name: "Apollo", value: totals.apollo, color: COLORS.apollo },
-                      { name: "A-Leads", value: totals.aleads, color: COLORS.aleads },
-                      { name: "Lusha", value: totals.lusha, color: COLORS.lusha },
+                      { name: platformNames.apollo, value: totals.apollo, color: COLORS.apollo },
+                      { name: platformNames.aleads, value: totals.aleads, color: COLORS.aleads },
+                      { name: platformNames.lusha, value: totals.lusha, color: COLORS.lusha },
                     ].map((item, index) => {
                       const percentage = grandTotal > 0 ? ((item.value / grandTotal) * 100).toFixed(1) : "0";
                       return (
@@ -710,9 +719,9 @@ const UsageAnalytics = () => {
                   <div className="h-4 w-px bg-border/50 hidden sm:block" />
                   <div className="flex items-center gap-3 flex-wrap">
                     {[
-                      { name: "Apollo", value: periodTotals.apollo, color: COLORS.apollo },
-                      { name: "A-Leads", value: periodTotals.aleads, color: COLORS.aleads },
-                      { name: "Lusha", value: periodTotals.lusha, color: COLORS.lusha },
+                      { name: platformNames.apollo, value: periodTotals.apollo, color: COLORS.apollo },
+                      { name: platformNames.aleads, value: periodTotals.aleads, color: COLORS.aleads },
+                      { name: platformNames.lusha, value: periodTotals.lusha, color: COLORS.lusha },
                     ].map((item) => (
                       <div key={item.name} className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
@@ -780,22 +789,32 @@ const UsageAnalytics = () => {
                         wrapperStyle={{ paddingTop: "12px" }}
                         iconType="circle"
                         iconSize={6}
-                        formatter={(value) => <span className="text-xs text-foreground ml-0.5">{value}</span>}
+                        formatter={(value) => {
+                          const nameMap: Record<string, string> = {
+                            "Apollo": platformNames.apollo,
+                            "A-Leads": platformNames.aleads,
+                            "Lusha": platformNames.lusha,
+                          };
+                          return <span className="text-xs text-foreground ml-0.5">{nameMap[value] || value}</span>;
+                        }}
                       />
                       <Bar 
-                        dataKey="Apollo" 
+                        dataKey="Apollo"
+                        name={platformNames.apollo}
                         stackId="a" 
                         fill="url(#apolloGradient)" 
                         radius={[0, 0, 0, 0]}
                       />
                       <Bar 
-                        dataKey="A-Leads" 
+                        dataKey="A-Leads"
+                        name={platformNames.aleads}
                         stackId="a" 
                         fill="url(#aleadsGradient)" 
                         radius={[0, 0, 0, 0]}
                       />
                       <Bar 
-                        dataKey="Lusha" 
+                        dataKey="Lusha"
+                        name={platformNames.lusha}
                         stackId="a" 
                         fill="url(#lushaGradient)" 
                         radius={[3, 3, 0, 0]}
