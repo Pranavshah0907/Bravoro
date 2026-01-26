@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles, Edit, Target, BarChart3, CalendarIcon, Activity } from "lucide-react";
+import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles, Edit, Target, BarChart3, CalendarIcon, Activity, Search } from "lucide-react";
 import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
@@ -88,6 +88,7 @@ const Admin = () => {
   });
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
 
   useEffect(() => {
     checkAdminAccess();
@@ -267,6 +268,29 @@ const Admin = () => {
     );
   }, [getFilteredCreditData]);
 
+  // Calculate table totals for displaying at bottom of detailed usage
+  const tableTotals = useMemo(() => {
+    return groupedAnalyticsData.reduce(
+      (acc, curr) => ({
+        apollo: acc.apollo + curr.apollo,
+        aleads: acc.aleads + curr.aleads,
+        lusha: acc.lusha + curr.lusha,
+        total: acc.total + curr.total,
+      }),
+      { apollo: 0, aleads: 0, lusha: 0, total: 0 }
+    );
+  }, [groupedAnalyticsData]);
+
+  // Filter users based on search
+  const filteredUsers = useMemo(() => {
+    if (!userSearch.trim()) return users;
+    const searchLower = userSearch.toLowerCase();
+    return users.filter(u => 
+      u.email.toLowerCase().includes(searchLower) || 
+      (u.full_name?.toLowerCase().includes(searchLower))
+    );
+  }, [users, userSearch]);
+
   const formatDateLabel = (dateStr: string) => {
     const date = new Date(dateStr);
     switch (analyticsTimePeriod) {
@@ -274,7 +298,9 @@ const Admin = () => {
       case "custom":
         return format(date, "MMM d, yyyy");
       case "weekly":
-        return `Week of ${format(date, "MMM d, yyyy")}`;
+        const weekEnd = new Date(date);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        return `${format(date, "MMM d, yyyy")} to ${format(weekEnd, "MMM d, yyyy")}`;
       case "monthly":
         return format(date, "MMM yyyy");
       default:
@@ -753,18 +779,67 @@ const Admin = () => {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 space-y-2">
                       <Label className="text-foreground font-medium">Select User</Label>
-                      <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                        <SelectTrigger className="bg-muted/30 border-border/50 text-foreground">
-                          <SelectValue placeholder="Choose a user to view analytics" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {users.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.email} {user.full_name ? `(${user.full_name})` : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between bg-muted/30 border-border/50 text-foreground"
+                          >
+                            {selectedUserId ? (
+                              <span className="truncate">
+                                {users.find(u => u.id === selectedUserId)?.email || "Select user"}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">Choose a user to view analytics</span>
+                            )}
+                            <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[400px] p-0 bg-popover border-border" align="start">
+                          <div className="p-2 border-b border-border">
+                            <div className="flex items-center gap-2 px-2">
+                              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <Input
+                                placeholder="Search users..."
+                                value={userSearch}
+                                onChange={(e) => setUserSearch(e.target.value)}
+                                className="h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-[300px] overflow-y-auto">
+                            {filteredUsers.length === 0 ? (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                No users found
+                              </div>
+                            ) : (
+                              filteredUsers.map((user) => (
+                                <button
+                                  key={user.id}
+                                  onClick={() => {
+                                    setSelectedUserId(user.id);
+                                    setUserSearch("");
+                                  }}
+                                  className={cn(
+                                    "w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between",
+                                    selectedUserId === user.id && "bg-muted/50"
+                                  )}
+                                >
+                                  <div className="truncate">
+                                    <span className="font-medium">{user.email}</span>
+                                    {user.full_name && (
+                                      <span className="text-muted-foreground ml-2">({user.full_name})</span>
+                                    )}
+                                  </div>
+                                  {selectedUserId === user.id && (
+                                    <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                                  )}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     
                     <div className="flex gap-2 items-end">
@@ -944,6 +1019,22 @@ const Admin = () => {
                                       </TableCell>
                                     </TableRow>
                                   ))}
+                                  {/* Total Row */}
+                                  <TableRow className="bg-muted/40 border-t-2 border-border hover:bg-muted/50">
+                                    <TableCell className="font-bold text-foreground">Total</TableCell>
+                                    <TableCell className="text-right font-bold text-foreground">
+                                      {tableTotals.apollo.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold text-foreground">
+                                      {tableTotals.aleads.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold text-foreground">
+                                      {tableTotals.lusha.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold text-primary">
+                                      {tableTotals.total.toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
                                 </TableBody>
                               </Table>
                             </div>
