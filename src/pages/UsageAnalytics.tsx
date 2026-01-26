@@ -684,7 +684,7 @@ const UsageAnalytics = () => {
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
+                        <PopoverContent className="w-auto p-0 bg-popover border-border rounded-lg" align="end">
                           <Calendar
                             initialFocus
                             mode="range"
