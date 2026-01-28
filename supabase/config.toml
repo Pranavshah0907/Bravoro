@@ -2,3 +2,6 @@ project_id = "okiragtncugfnuetjoqt"
 
 [functions.save-search-results]
 verify_jwt = false
+
+[functions.release-api-slot]
+verify_jwt = false

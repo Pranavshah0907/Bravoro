@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Download, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Download, RefreshCw, CheckCircle2, XCircle, Clock } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface ProcessingStatusProps {
@@ -35,9 +35,10 @@ interface SearchResult {
 
 export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) => {
   const { toast } = useToast();
-  const [status, setStatus] = useState<"processing" | "completed" | "error">("processing");
+  const [status, setStatus] = useState<"processing" | "completed" | "error" | "queued">("processing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [queuePosition, setQueuePosition] = useState<number>(0);
 
   const handleExportExcel = async () => {
     setExporting(true);
@@ -144,8 +145,16 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
     }
   };
 
+  // Fetch queue position
+  const fetchQueuePosition = async () => {
+    const { data } = await supabase.rpc('get_queue_position', { p_search_id: searchId });
+    if (data !== null && data !== undefined) {
+      setQueuePosition(data);
+    }
+  };
+
   useEffect(() => {
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates for search status
     const channel = supabase
       .channel("search-updates")
       .on(
@@ -157,7 +166,7 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
           filter: `id=eq.${searchId}`,
         },
         (payload) => {
-          const newStatus = payload.new.status as "processing" | "completed" | "error";
+          const newStatus = payload.new.status as "processing" | "completed" | "error" | "queued";
           setStatus(newStatus);
           
           if (newStatus === "completed") {
@@ -172,12 +181,33 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
               description: payload.new.error_message || "An error occurred",
               variant: "destructive",
             });
+          } else if (newStatus === "queued") {
+            fetchQueuePosition();
           }
         }
       )
       .subscribe();
 
-    // Also check current status
+    // Subscribe to queue changes for position updates
+    const queueChannel = supabase
+      .channel("queue-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "request_queue",
+        },
+        () => {
+          // Recalculate position when queue changes
+          if (status === "queued") {
+            fetchQueuePosition();
+          }
+        }
+      )
+      .subscribe();
+
+    // Check current status
     const checkStatus = async () => {
       const { data } = await supabase
         .from("searches")
@@ -186,10 +216,13 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
         .single();
 
       if (data) {
-        const searchStatus = data.status as "processing" | "completed" | "error";
+        const searchStatus = data.status as "processing" | "completed" | "error" | "queued";
         setStatus(searchStatus);
         if (searchStatus === "error") {
           setErrorMessage(data.error_message);
+        }
+        if (searchStatus === "queued") {
+          fetchQueuePosition();
         }
       }
     };
@@ -198,8 +231,9 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(queueChannel);
     };
-  }, [searchId, toast]);
+  }, [searchId, toast, status]);
 
   return (
     <Card className="shadow-soft">
@@ -208,6 +242,24 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
         <CardDescription>Track the progress of your lead enrichment request</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {status === "queued" && (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Clock className="h-16 w-16 text-amber-500 mb-4" />
+            <h3 className="text-lg font-medium mb-2">In Queue</h3>
+            <p className="text-sm text-muted-foreground text-center mb-2">
+              Your request is waiting for an available processing slot.
+            </p>
+            {queuePosition > 0 && (
+              <div className="bg-amber-500/10 text-amber-600 px-4 py-2 rounded-full text-sm font-medium">
+                Position in queue: {queuePosition}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              Your request will be processed automatically when a slot becomes available.
+            </p>
+          </div>
+        )}
+
         {status === "processing" && (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />

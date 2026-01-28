@@ -60,7 +60,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const [geography, setGeography] = useState("");
   const [resultsPerFunction, setResultsPerFunction] = useState<number>(10);
   const [searchId, setSearchId] = useState<string | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | "queued" | null>(null);
 
   const handleFunctionToggle = (func: string) => {
     setSelectedFunctions((prev) =>

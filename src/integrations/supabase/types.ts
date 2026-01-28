@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_slots: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_locked: boolean
+          locked_at: string | null
+          locked_by_search_id: string | null
+          slot_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by_search_id?: string | null
+          slot_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by_search_id?: string | null
+          slot_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_slots_locked_by_search_id_fkey"
+            columns: ["locked_by_search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_usage: {
         Row: {
           aleads_credits: number
@@ -135,6 +170,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      request_queue: {
+        Row: {
+          created_at: string | null
+          entry_type: string
+          id: string
+          search_data: Json
+          search_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          entry_type: string
+          id?: string
+          search_data: Json
+          search_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          entry_type?: string
+          id?: string
+          search_data?: Json
+          search_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_queue_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       search_results: {
         Row: {
@@ -281,6 +351,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_api_slot: { Args: { p_search_id: string }; Returns: string }
+      get_queue_position: { Args: { p_search_id: string }; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -295,6 +367,14 @@ export type Database = {
       increment_enrichment_used: {
         Args: { p_count: number; p_user_id: string }
         Returns: undefined
+      }
+      release_api_slot: {
+        Args: { p_search_id: string; p_slot_name: string }
+        Returns: {
+          next_entry_type: string
+          next_search_data: Json
+          next_search_id: string
+        }[]
       }
     }
     Enums: {
