@@ -158,7 +158,59 @@ serve(async (req) => {
       };
     }
 
-    console.log(`[${requestId}] Sending payload to n8n webhook with enrichment_remaining: ${enrichmentRemaining}, enrichment_limit: ${enrichmentLimit}`);
+    // ========== SLOT ACQUISITION LOGIC ==========
+    // Attempt to acquire an API slot atomically using the database function
+    console.log(`[${requestId}] Attempting to acquire API slot...`);
+    
+    const { data: slotName, error: slotError } = await supabase
+      .rpc('acquire_api_slot', { p_search_id: searchId });
+
+    if (slotError) {
+      console.error(`[${requestId}] Slot acquisition error:`, slotError);
+      throw slotError;
+    }
+
+    if (!slotName) {
+      // No slot available - add to queue
+      console.log(`[${requestId}] No slot available, adding to queue`);
+      
+      const { error: queueError } = await supabase
+        .from('request_queue')
+        .insert({
+          search_id: searchId,
+          entry_type: entryType || 'manual_entry',
+          search_data: payloadToSend,
+          status: 'queued'
+        });
+      
+      if (queueError) {
+        console.error(`[${requestId}] Queue insertion error:`, queueError);
+        throw queueError;
+      }
+      
+      // Update search status to queued
+      const { error: updateError } = await supabase
+        .from('searches')
+        .update({ status: 'queued', updated_at: new Date().toISOString() })
+        .eq('id', searchId);
+      
+      if (updateError) {
+        console.error(`[${requestId}] Status update error:`, updateError);
+      }
+      
+      console.log(`[${requestId}] Request queued successfully`);
+      
+      return new Response(
+        JSON.stringify({ success: true, queued: true, request_id: requestId }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Slot acquired - add to payload
+    payloadToSend.api_to_use = slotName;
+    console.log(`[${requestId}] Acquired slot: ${slotName}`);
+
+    console.log(`[${requestId}] Sending payload to n8n webhook with enrichment_remaining: ${enrichmentRemaining}, enrichment_limit: ${enrichmentLimit}, api_to_use: ${slotName}`);
 
     // Build headers with webhook secret authentication
     const webhookHeaders: Record<string, string> = {
@@ -183,6 +235,11 @@ serve(async (req) => {
         `[${requestId}] N8N webhook failed`,
         JSON.stringify({ status: response.status, statusText: response.statusText, body: responseText })
       );
+      
+      // Release the slot on failure
+      await supabase.rpc('release_api_slot', { p_slot_name: slotName, p_search_id: searchId });
+      console.log(`[${requestId}] Released slot ${slotName} due to webhook failure`);
+      
       throw new Error(`N8N webhook failed: ${response.status}`);
     }
 
@@ -249,7 +306,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, request_id: requestId }),
+      JSON.stringify({ success: true, request_id: requestId, slot_used: slotName }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

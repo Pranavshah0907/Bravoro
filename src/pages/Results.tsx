@@ -543,6 +543,8 @@ const Results = () => {
         return <Badge variant="secondary" className="bg-muted text-muted-foreground font-medium">Pending</Badge>;
       case "processing":
         return <Badge variant="default" className="bg-secondary text-secondary-foreground font-medium">Processing</Badge>;
+      case "queued":
+        return <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 font-medium">In Queue</Badge>;
       case "completed":
         return <Badge className="bg-primary text-primary-foreground font-medium">Completed</Badge>;
       case "error":
