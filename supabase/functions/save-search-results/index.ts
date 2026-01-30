@@ -351,15 +351,17 @@ serve(async (req: Request) => {
       console.log(`[${requestId}] Received error payload for search_id: ${search_id}`);
       console.log(`[${requestId}] Error message: ${errorMessage}`);
       
-      // Update the search status to 'error' with the error message
-      const { error: updateError } = await supabase
+      // Update the search status to 'error' with the error message and get user info
+      const { data: searchData, error: updateError } = await supabase
         .from('searches')
         .update({ 
           status: 'error', 
           error_message: errorMessage,
           updated_at: new Date().toISOString() 
         })
-        .eq('id', search_id);
+        .eq('id', search_id)
+        .select('user_id, search_type')
+        .single();
 
       if (updateError) {
         console.error(`[${requestId}] Error updating search status:`, updateError);
@@ -370,6 +372,40 @@ serve(async (req: Request) => {
       }
 
       console.log(`[${requestId}] Successfully recorded error status for search_id: ${search_id}`);
+
+      // Send error email notification
+      if (searchData?.user_id) {
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', searchData.user_id)
+            .single();
+          
+          if (profileData?.email) {
+            const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+            const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+            
+            await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({
+                type: 'error',
+                userEmail: profileData.email,
+                searchType: searchData.search_type || 'enrichment',
+                errorMessage: errorMessage,
+              }),
+            });
+            console.log(`[${requestId}] Error email sent to: ${profileData.email}`);
+          }
+        } catch (emailError) {
+          console.error(`[${requestId}] Failed to send error email:`, emailError);
+          // Don't fail the request if email fails
+        }
+      }
 
       // ========== HANDLE FLAG ACTION (ERROR PATH) ==========
       await handleFlagAction(supabase, requestId, search_id, bodyAny?.flag_action as string | undefined);
@@ -505,7 +541,7 @@ serve(async (req: Request) => {
 
     console.log(`[${requestId}] Successfully saved ${results.length} companies with ${totalContacts} total contacts`);
 
-    // Update the search status to 'completed' (clear result_url as we no longer use storage)
+    // Get user data for sending email notification
     const { data: searchData, error: updateError } = await supabase
       .from('searches')
       .update({ 
@@ -514,11 +550,47 @@ serve(async (req: Request) => {
         updated_at: new Date().toISOString() 
       })
       .eq('id', search_id)
-      .select('user_id')
+      .select('user_id, search_type')
       .single();
 
     if (updateError) {
       console.error(`[${requestId}] Error updating search status:`, updateError);
+    }
+
+    // Get user email for notification
+    let userEmail: string | null = null;
+    if (searchData?.user_id) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', searchData.user_id)
+        .single();
+      userEmail = profileData?.email || null;
+    }
+
+    // Send success email notification
+    if (userEmail) {
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        
+        await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            type: 'success',
+            userEmail: userEmail,
+            searchType: searchData?.search_type || 'enrichment',
+          }),
+        });
+        console.log(`[${requestId}] Success email sent to: ${userEmail}`);
+      } catch (emailError) {
+        console.error(`[${requestId}] Failed to send success email:`, emailError);
+        // Don't fail the request if email fails
+      }
     }
 
     // Update enrichment_used if enriched_contacts_count was provided

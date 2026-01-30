@@ -170,41 +170,31 @@ Deno.serve(async (req) => {
 
       console.log(`[${requestId}] User created successfully with role:`, role, 'enrichmentLimit:', enrichmentLimit);
 
-      // Send welcome email via n8n webhook
-      const origin = req.headers.get('origin') || supabaseUrl;
-      console.log(`[${requestId}] Calling n8n webhook to send welcome email`);
+      // Send welcome email via unified send-email function
+      console.log(`[${requestId}] Sending welcome email via send-email function`);
       
       try {
-        // Build headers with webhook secret authentication
-        const webhookHeaders: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         
-        // Add webhook secret if configured
-        if (n8nWebhookSecret) {
-          webhookHeaders['X-Webhook-Secret'] = n8nWebhookSecret;
-        }
-
-        const webhookResponse = await fetch('https://n8n.srv1081444.hstgr.cloud/webhook/newuser_emailsender', {
+        const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
           method: 'POST',
-          headers: webhookHeaders,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
           body: JSON.stringify({
+            type: 'welcome',
             email: email,
             fullName: fullName,
             tempPassword: tempPassword,
-            websiteUrl: origin,
           }),
         });
 
-        console.log(`[${requestId}] n8n webhook response status: ${webhookResponse.status}`);
+        const emailResult = await emailResponse.json();
+        console.log(`[${requestId}] send-email response:`, emailResult);
 
-        // Check if n8n responded with content (Respond to Webhook node executed)
-        const responseText = await webhookResponse.text();
-        console.log(`[${requestId}] n8n webhook response body: ${responseText}`);
-
-        // If empty response or non-OK status, n8n workflow didn't complete
-        if (!webhookResponse.ok || !responseText) {
-          console.error(`[${requestId}] n8n webhook failed - empty response or error status, rolling back user creation`);
+        if (!emailResponse.ok || !emailResult.success) {
+          console.error(`[${requestId}] send-email failed, rolling back user creation`);
 
           // Roll back created user so the email can be reused on retry
           if (authData.user) {
@@ -215,7 +205,7 @@ Deno.serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               success: false, 
-              error: 'Failed to send welcome email',
+              error: emailResult.error || 'Failed to send welcome email',
               userCreated: false,
               request_id: requestId,
             }),
@@ -236,8 +226,8 @@ Deno.serve(async (req) => {
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-      } catch (webhookError) {
-        console.error(`[${requestId}] Error calling n8n webhook, rolling back user creation:`, webhookError);
+      } catch (emailError) {
+        console.error(`[${requestId}] Error calling send-email, rolling back user creation:`, emailError);
 
         // Roll back created user on any unexpected error so email can be retried cleanly
         if (authData.user) {
