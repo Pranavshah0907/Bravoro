@@ -352,6 +352,10 @@ export type Database = {
     }
     Functions: {
       acquire_api_slot: { Args: { p_search_id: string }; Returns: string }
+      acquire_processing_flag: {
+        Args: { p_search_id: string }
+        Returns: boolean
+      }
       get_queue_position: { Args: { p_search_id: string }; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
@@ -370,6 +374,14 @@ export type Database = {
       }
       release_api_slot: {
         Args: { p_search_id: string; p_slot_name: string }
+        Returns: {
+          next_entry_type: string
+          next_search_data: Json
+          next_search_id: string
+        }[]
+      }
+      release_processing_flag: {
+        Args: { p_search_id: string }
         Returns: {
           next_entry_type: string
           next_search_data: Json
