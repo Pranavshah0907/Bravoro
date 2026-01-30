@@ -7,9 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
 };
 
-// Schema for release request
+// Simplified schema - only needs search_id now
 const releaseSchema = z.object({
-  slot_name: z.string().min(1, "slot_name is required"),
   search_id: z.string().uuid("search_id must be a valid UUID"),
 });
 
@@ -50,8 +49,8 @@ serve(async (req) => {
       );
     }
 
-    const { slot_name, search_id } = validationResult.data;
-    console.log(`[${requestId}] Releasing slot ${slot_name} for search ${search_id}`);
+    const { search_id } = validationResult.data;
+    console.log(`[${requestId}] Releasing processing flag for search ${search_id}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -60,17 +59,14 @@ serve(async (req) => {
 
     // Call the release function which also checks for queued items
     const { data: nextItems, error: releaseError } = await supabase
-      .rpc('release_api_slot', { 
-        p_slot_name: slot_name, 
-        p_search_id: search_id 
-      });
+      .rpc('release_processing_flag', { p_search_id: search_id });
 
     if (releaseError) {
       console.error(`[${requestId}] Release error:`, releaseError);
       throw releaseError;
     }
 
-    console.log(`[${requestId}] Slot ${slot_name} released. Next items:`, nextItems?.length || 0);
+    console.log(`[${requestId}] Processing flag released. Next items:`, nextItems?.length || 0);
 
     // If there's a queued item to process, send it to n8n
     if (nextItems && nextItems.length > 0) {
@@ -94,7 +90,7 @@ serve(async (req) => {
         webhookHeaders['x-webhook-secret'] = n8nWebhookSecret;
       }
 
-      // Send to n8n (the search_data already has api_to_use embedded by the database function)
+      // Send to n8n (payload is already complete in search_data)
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: webhookHeaders,
@@ -119,11 +115,8 @@ serve(async (req) => {
           })
           .eq('id', nextItem.next_search_id);
         
-        // Release the slot since we failed
-        await supabase.rpc('release_api_slot', { 
-          p_slot_name: nextItem.next_search_data.api_to_use, 
-          p_search_id: nextItem.next_search_id 
-        });
+        // Release the flag since we failed
+        await supabase.rpc('release_processing_flag', { p_search_id: nextItem.next_search_id });
       } else {
         console.log(`[${requestId}] Queued item sent to n8n successfully`);
       }
@@ -133,16 +126,15 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         request_id: requestId,
-        slot_released: slot_name,
         queued_item_processed: nextItems && nextItems.length > 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error(`[${requestId}] Error releasing slot:`, error);
+    console.error(`[${requestId}] Error releasing processing flag:`, error);
     
     return new Response(
-      JSON.stringify({ error: 'Failed to release slot', request_id: requestId }),
+      JSON.stringify({ error: 'Failed to release processing flag', request_id: requestId }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

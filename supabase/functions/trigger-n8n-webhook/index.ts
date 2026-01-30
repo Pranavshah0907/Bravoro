@@ -128,14 +128,13 @@ serve(async (req) => {
     console.log(`[${requestId}] User email retrieved:`, !!userEmail);
 
     // Select webhook URL based on entry type
-    // NOTE: n8n expects an `authorization` header (no Bearer prefix) for these webhooks.
     const n8nWebhookUrl = entryType === 'bulk_people_enrichment'
       ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
       : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
 
     console.log(`[${requestId}] Using webhook URL for entry type:`, entryType);
 
-    // Build payload based on entry type
+    // Build payload based on entry type (NO api_to_use field anymore)
     let payloadToSend: Record<string, unknown>;
 
     if (entryType === 'bulk_upload' || entryType === 'bulk_people_enrichment') {
@@ -158,21 +157,21 @@ serve(async (req) => {
       };
     }
 
-    // ========== SLOT ACQUISITION LOGIC ==========
-    // Attempt to acquire an API slot atomically using the database function
-    console.log(`[${requestId}] Attempting to acquire API slot...`);
+    // ========== SINGLE FLAG ACQUISITION LOGIC ==========
+    // Attempt to acquire the processing flag atomically
+    console.log(`[${requestId}] Attempting to acquire processing flag...`);
     
-    const { data: slotName, error: slotError } = await supabase
-      .rpc('acquire_api_slot', { p_search_id: searchId });
+    const { data: flagAcquired, error: flagError } = await supabase
+      .rpc('acquire_processing_flag', { p_search_id: searchId });
 
-    if (slotError) {
-      console.error(`[${requestId}] Slot acquisition error:`, slotError);
-      throw slotError;
+    if (flagError) {
+      console.error(`[${requestId}] Flag acquisition error:`, flagError);
+      throw flagError;
     }
 
-    if (!slotName) {
-      // No slot available - add to queue
-      console.log(`[${requestId}] No slot available, adding to queue`);
+    if (!flagAcquired) {
+      // Flag is occupied - add to queue
+      console.log(`[${requestId}] Processing flag occupied, adding to queue`);
       
       const { error: queueError } = await supabase
         .from('request_queue')
@@ -206,11 +205,9 @@ serve(async (req) => {
       );
     }
 
-    // Slot acquired - add to payload
-    payloadToSend.api_to_use = slotName;
-    console.log(`[${requestId}] Acquired slot: ${slotName}`);
-
-    console.log(`[${requestId}] Sending payload to n8n webhook with enrichment_remaining: ${enrichmentRemaining}, enrichment_limit: ${enrichmentLimit}, api_to_use: ${slotName}`);
+    // Flag acquired - proceed to send to n8n
+    console.log(`[${requestId}] Processing flag acquired, sending to n8n`);
+    console.log(`[${requestId}] Sending payload to n8n webhook with enrichment_remaining: ${enrichmentRemaining}, enrichment_limit: ${enrichmentLimit}`);
 
     // Build headers with webhook secret authentication
     const webhookHeaders: Record<string, string> = {
@@ -236,9 +233,9 @@ serve(async (req) => {
         JSON.stringify({ status: response.status, statusText: response.statusText, body: responseText })
       );
       
-      // Release the slot on failure
-      await supabase.rpc('release_api_slot', { p_slot_name: slotName, p_search_id: searchId });
-      console.log(`[${requestId}] Released slot ${slotName} due to webhook failure`);
+      // Release the flag on failure
+      await supabase.rpc('release_processing_flag', { p_search_id: searchId });
+      console.log(`[${requestId}] Released processing flag due to webhook failure`);
       
       throw new Error(`N8N webhook failed: ${response.status}`);
     }
@@ -306,7 +303,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, request_id: requestId, slot_used: slotName }),
+      JSON.stringify({ success: true, request_id: requestId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
