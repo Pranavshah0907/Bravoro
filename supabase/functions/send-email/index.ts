@@ -48,63 +48,117 @@ function getWelcomeEmailHtml(fullName: string, email: string, tempPassword: stri
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to Bravoro</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-width: 100%; background-color: #f4f4f5;">
+<body style="margin: 0; padding: 0; background-color: #e8eeee; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-width: 100%; background-color: #e8eeee;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
+        <!-- Logo above card -->
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px;">
           <tr>
-            <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); border-radius: 12px 12px 0 0;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">Welcome to Bravoro</h1>
+            <td align="center" style="padding-bottom: 32px;">
+              <img src="https://leapleadsai.lovable.app/lovable-uploads/bravoro-logo-dark.png" alt="Bravoro" height="32" style="height: 32px; width: auto;" />
             </td>
           </tr>
-          <!-- Body -->
+        </table>
+        
+        <!-- Main Card -->
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
+          <!-- Header Banner -->
           <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                Hi ${fullName || 'there'},
-              </p>
-              <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                Your Bravoro account has been created. Here are your login credentials:
-              </p>
-              <!-- Credentials Box -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px; margin: 24px 0;">
+            <td style="background: linear-gradient(135deg, #0d222e 0%, #00686d 50%, #58dddd 100%); padding: 48px 40px; text-align: center; position: relative;">
+              <!-- Decorative elements -->
+              <div style="position: absolute; top: 10px; left: 20px; width: 8px; height: 8px; background: rgba(255,255,255,0.3); border-radius: 50%;"></div>
+              <div style="position: absolute; top: 30px; right: 60px; width: 6px; height: 6px; background: rgba(255,255,255,0.4); border-radius: 50%;"></div>
+              <div style="position: absolute; bottom: 20px; left: 80px; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%;"></div>
+              <!-- Logo circle -->
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
                 <tr>
-                  <td style="padding: 20px;">
-                    <p style="margin: 0 0 12px 0; color: #374151; font-size: 14px;">
-                      <strong>Login Email:</strong><br>
-                      <span style="color: #0d9488; font-size: 16px;">${email}</span>
-                    </p>
-                    <p style="margin: 0; color: #374151; font-size: 14px;">
-                      <strong>Temporary Password:</strong><br>
-                      <span style="color: #0d9488; font-size: 16px; font-family: monospace;">${tempPassword}</span>
-                    </p>
+                  <td style="background-color: rgba(255, 255, 255, 0.15); border-radius: 50%; padding: 20px; backdrop-filter: blur(10px);">
+                    <img src="https://leapleadsai.lovable.app/lovable-uploads/bravoro-icon.png" alt="B" width="48" height="48" style="display: block; width: 48px; height: 48px;" />
                   </td>
                 </tr>
               </table>
-              <p style="margin: 0 0 24px 0; color: #dc2626; font-size: 14px; font-weight: 500;">
-                ⚠️ Important: For security reasons, you will be required to set a new password on your first login.
+            </td>
+          </tr>
+          
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 48px 48px 32px 48px;">
+              <h1 style="margin: 0 0 24px 0; color: #0d222e; font-size: 28px; font-weight: 700; text-align: center; letter-spacing: -0.5px;">
+                Welcome to Bravoro!
+              </h1>
+              <p style="margin: 0 0 24px 0; color: #4b5563; font-size: 16px; line-height: 1.7;">
+                Hi ${fullName || 'there'},<br><br>
+                Your account is ready! You can now start using Bravoro to enrich your leads and supercharge your prospecting.
               </p>
-              <!-- CTA Button -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              
+              <!-- Credentials Section -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 32px 0; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;">
                 <tr>
-                  <td align="center">
-                    <a href="https://app.bravoro.com/auth" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
-                      Sign In to Bravoro
+                  <td style="padding: 24px 0;">
+                    <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                      Here's your login information:
+                    </p>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 16px;">
+                      <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 140px;">Email</td>
+                        <td style="padding: 8px 0; color: #0d222e; font-size: 14px; font-weight: 500;">${email}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 140px;">Temporary Password</td>
+                        <td style="padding: 8px 0; color: #0d222e; font-size: 14px; font-weight: 600; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; background-color: #f3f4f6; padding: 8px 12px; border-radius: 6px; display: inline-block;">${tempPassword}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 8px 0 32px 0;">
+                <tr>
+                  <td>
+                    <a href="https://app.bravoro.com/auth" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px; transition: all 0.2s;">
+                      Log In Now
                     </a>
                   </td>
                 </tr>
               </table>
+              
+              <!-- Divider and signature -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-top: 1px solid #e5e7eb;">
+                <tr>
+                  <td style="padding-top: 24px;">
+                    <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.6;">
+                      Thanks for choosing Bravoro.<br>
+                      <span style="color: #6b7280;">– The Bravoro Team</span>
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-          <!-- Footer -->
+        </table>
+        
+        <!-- Footer -->
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; margin-top: 32px;">
           <tr>
-            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px; text-align: center;">
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                Best regards,<br>
-                <strong>The Bravoro Team</strong>
+            <td align="center">
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 13px; font-weight: 600;">
+                Questions?
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 13px;">
+                Get in touch with us at <a href="mailto:support@bravoro.com" style="color: #009da5; text-decoration: none;">support@bravoro.com</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top: 24px;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                Bravoro · Lead Enrichment Platform
               </p>
             </td>
           </tr>
