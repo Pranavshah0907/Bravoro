@@ -240,7 +240,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
       setCurrentStep('creating');
 
-      // Step 3: Insert search record into Supabase with pending status
+      // Step 3: Insert search record into Supabase
       console.log('Creating search record...');
       const { data: search, error: searchError } = await supabase
         .from("searches")
@@ -248,7 +248,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
           user_id: userId,
           search_type: "bulk_people_enrichment",
           excel_file_name: selectedFile.name,
-          status: "pending",
+          status: "processing",
         })
         .select()
         .single();
