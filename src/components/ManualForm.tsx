@@ -104,7 +104,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
       setLoading(true);
 
-      // Create search record
+      // Create search record with pending status
       const { data: search, error: searchError } = await supabase
         .from("searches")
         .insert({
@@ -116,14 +116,14 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
           seniority: selectedSeniority,
           geography,
           results_per_function: resultsPerFunction,
-          status: "processing",
+          status: "pending",
         })
         .select()
         .single();
 
       if (searchError) throw searchError;
 
-      // Immediately show processing status
+      // Show processing status immediately (will be updated by backend)
       setSearchId(search.id);
       setProcessingStatus("processing");
 

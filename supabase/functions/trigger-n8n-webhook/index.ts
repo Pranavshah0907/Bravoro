@@ -205,8 +205,19 @@ serve(async (req) => {
       );
     }
 
-    // Flag acquired - proceed to send to n8n
-    console.log(`[${requestId}] Processing flag acquired, sending to n8n`);
+    // Flag acquired - update status to processing and proceed to send to n8n
+    console.log(`[${requestId}] Processing flag acquired, updating status and sending to n8n`);
+    
+    // Update search status to processing
+    const { error: processingStatusError } = await supabase
+      .from('searches')
+      .update({ status: 'processing', updated_at: new Date().toISOString() })
+      .eq('id', searchId);
+    
+    if (processingStatusError) {
+      console.error(`[${requestId}] Error updating status to processing:`, processingStatusError);
+    }
+    
     console.log(`[${requestId}] Sending payload to n8n webhook with enrichment_remaining: ${enrichmentRemaining}, enrichment_limit: ${enrichmentLimit}`);
 
     // Build headers with webhook secret authentication
