@@ -1,255 +1,205 @@
 
 
-# Simplified Single-Flag Queue System Implementation
+# Add Flag Control Parameter to save-search-results
 
-## Summary
+## Understanding the Requirement
 
-Replace the 10-slot Apollo system with a single processing flag. When a request is made, if the flag is "free" (0), the request proceeds immediately. If "occupied" (1), it goes into the queue. n8n will call back when ready for the next request to release the flag.
+You need explicit control over the processing flag from n8n's side when calling `save-search-results`. The three options:
 
-## What Changes
+| Value | Behavior | Use Case |
+|-------|----------|----------|
+| `"release"` | Release the flag and trigger next queued item | n8n is done and ready for next |
+| `"hold"` | Keep the flag locked | n8n needs more time, don't send next yet |
+| `"none"` (or omit) | Don't touch the flag at all | Let `release-api-slot` handle it separately |
 
-### Database Changes
+## New Payload Field
 
-**1. Modify `api_slots` table data:**
-- Delete all 10 Apollo slots
-- Insert a single row with `slot_name = 'processing'`
-
-**2. Create new function `acquire_processing_flag`:**
-- Simpler logic - just check if the single flag is available
-- Returns boolean (true = acquired, false = busy)
-
-**3. Create new function `release_processing_flag`:**
-- Takes only `p_search_id` (no slot_name needed)
-- Releases the flag and checks queue for next item
-- If queue has items, claims flag for next and returns its data
-
-**4. Keep existing (no changes):**
-- `request_queue` table - already works perfectly
-- `get_queue_position` function - already works for position display
-
-### Edge Function Changes
-
-**1. `trigger-n8n-webhook` (modify):**
-- Change from `acquire_api_slot` to `acquire_processing_flag`
-- Remove `api_to_use` from payload sent to n8n
-- Remove slot release on failure (now uses search_id only)
-- Remove `slot_used` from response
-
-**2. `release-api-slot` (modify):**
-- Simplify payload validation - only needs `search_id`
-- Change from `release_api_slot` to `release_processing_flag`
-- Remove `slot_name` handling
-- Update response to not include `slot_released`
-
-### Frontend Changes
-
-**None required!** The frontend already:
-- Handles "queued" status with position display
-- Uses real-time updates for queue position
-- Shows "In Queue" badge in Results.tsx
-
----
-
-## Technical Details
-
-### New Database Function: `acquire_processing_flag`
-
-```sql
-CREATE OR REPLACE FUNCTION public.acquire_processing_flag(p_search_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_acquired boolean := false;
-BEGIN
-  -- Atomically try to acquire the processing flag
-  UPDATE api_slots 
-  SET is_locked = true, 
-      locked_by_search_id = p_search_id,
-      locked_at = now()
-  WHERE slot_name = 'processing' 
-    AND is_locked = false;
-  
-  -- Check if we acquired it
-  GET DIAGNOSTICS v_acquired = ROW_COUNT;
-  
-  RETURN v_acquired > 0;
-END;
-$$;
-```
-
-### New Database Function: `release_processing_flag`
-
-```sql
-CREATE OR REPLACE FUNCTION public.release_processing_flag(p_search_id uuid)
-RETURNS TABLE(
-  next_search_id uuid,
-  next_entry_type text,
-  next_search_data jsonb
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_queue_item record;
-BEGIN
-  -- Release the flag
-  UPDATE api_slots
-  SET is_locked = false,
-      locked_by_search_id = NULL,
-      locked_at = NULL
-  WHERE slot_name = 'processing'
-    AND locked_by_search_id = p_search_id;
-  
-  -- Check if there's a queued item
-  SELECT rq.id, rq.search_id, rq.entry_type, rq.search_data
-  INTO v_queue_item
-  FROM request_queue rq
-  WHERE rq.status = 'queued'
-  ORDER BY rq.created_at
-  LIMIT 1
-  FOR UPDATE SKIP LOCKED;
-  
-  IF v_queue_item IS NULL THEN
-    -- No queued items, flag stays free
-    RETURN;
-  END IF;
-  
-  -- Claim the flag for the queued item
-  UPDATE api_slots 
-  SET is_locked = true, 
-      locked_by_search_id = v_queue_item.search_id,
-      locked_at = now()
-  WHERE slot_name = 'processing';
-  
-  -- Update queue item status
-  UPDATE request_queue
-  SET status = 'processing'
-  WHERE id = v_queue_item.id;
-  
-  -- Update search status back to processing
-  UPDATE searches
-  SET status = 'processing',
-      updated_at = now()
-  WHERE id = v_queue_item.search_id;
-  
-  -- Return the next item to process
-  RETURN QUERY SELECT 
-    v_queue_item.search_id,
-    v_queue_item.entry_type,
-    v_queue_item.search_data;
-END;
-$$;
-```
-
----
-
-## n8n Integration Changes
-
-### What n8n receives (simplified - NO api_to_use):
+Add a new optional field `flag_action` to the `save-search-results` payload:
 
 ```json
 {
   "search_id": "uuid",
-  "user_email": "user@example.com",
-  "enrichment_remaining": 500,
-  "enrichment_limit": 1000,
-  "data": { ... }
+  "companies": [...],
+  "credit_counter": {...},
+  "flag_action": "release"  // or "hold" or "none" or omit entirely
 }
 ```
 
-### What n8n sends back (simplified - NO slot_name):
+## Implementation
 
-```
-POST https://okiragtncugfnuetjoqt.supabase.co/functions/v1/release-api-slot
-Headers:
-  x-webhook-secret: [N8N_WEBHOOK_SECRET]
-  Content-Type: application/json
-Body:
-{
-  "search_id": "uuid-of-search-that-is-ready-for-next"
+### 1. Modify `save-search-results` Edge Function
+
+Add to the `RequestBody` interface:
+
+```typescript
+interface RequestBody {
+  // ... existing fields ...
+  flag_action?: 'release' | 'hold' | 'none';  // NEW
 }
 ```
 
-This can be called **mid-processing** when n8n is ready to accept the next request.
+Add flag handling logic before the final return statements (both success and error paths):
+
+```typescript
+// ========== HANDLE FLAG ACTION ==========
+const flagAction = bodyAny?.flag_action as string | undefined;
+console.log(`[${requestId}] Flag action requested: ${flagAction || 'none (default)'}`);
+
+if (flagAction === 'release') {
+  try {
+    console.log(`[${requestId}] Releasing processing flag for search ${search_id}`);
+    
+    const { data: nextItems, error: releaseError } = await supabase
+      .rpc('release_processing_flag', { p_search_id: search_id });
+
+    if (releaseError) {
+      console.error(`[${requestId}] Error releasing flag:`, releaseError);
+    } else {
+      console.log(`[${requestId}] Flag released. Next items in queue:`, nextItems?.length || 0);
+      
+      // If there's a queued item, trigger n8n webhook
+      if (nextItems && nextItems.length > 0) {
+        const nextItem = nextItems[0];
+        const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
+        
+        const n8nWebhookUrl = nextItem.next_entry_type === 'bulk_people_enrichment'
+          ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
+          : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+
+        const webhookHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'type_of_entry': nextItem.next_entry_type,
+        };
+        if (n8nWebhookSecret) {
+          webhookHeaders['x-webhook-secret'] = n8nWebhookSecret;
+        }
+
+        const response = await fetch(n8nWebhookUrl, {
+          method: 'POST',
+          headers: webhookHeaders,
+          body: JSON.stringify(nextItem.next_search_data),
+        });
+
+        if (!response.ok) {
+          console.error(`[${requestId}] Failed to trigger next queued item`);
+          await supabase.from('searches').update({
+            status: 'error',
+            error_message: 'Failed to process queued request',
+            updated_at: new Date().toISOString()
+          }).eq('id', nextItem.next_search_id);
+          
+          await supabase.rpc('release_processing_flag', { 
+            p_search_id: nextItem.next_search_id 
+          });
+        } else {
+          console.log(`[${requestId}] Next queued item triggered successfully`);
+        }
+      }
+    }
+  } catch (flagError) {
+    console.error(`[${requestId}] Flag release error:`, flagError);
+  }
+} else if (flagAction === 'hold') {
+  console.log(`[${requestId}] Flag action is 'hold' - keeping flag locked`);
+  // Do nothing - flag stays locked
+} else {
+  console.log(`[${requestId}] Flag action is 'none' or not specified - not touching flag`);
+  // Do nothing - let release-api-slot handle it
+}
+```
 
 ---
 
-## Flow Diagram
+## Flow Diagram with Flag Control
 
 ```text
-Request comes in
-       |
-       v
-Is processing flag free?
-       |
-  +----+----+
-  |         |
- YES        NO
-  |         |
-  v         v
-Set flag   Add to request_queue
-to 1       Set search status = "queued"
-  |         |
-  v         v
-Send to    Return success
-n8n        (queued: true)
-  |
-  v
-n8n calls release-api-slot
-when ready for next
-       |
-       v
-Is queue empty?
-       |
-  +----+----+
-  |         |
- YES        NO
-  |         |
-  v         v
-Set flag   Keep flag = 1
-to 0       Send next queued item to n8n
-(free)     Update search status to "processing"
+n8n Processing Flow:
+                        
+Request sent to n8n (flag locked)
+        |
+        v
+n8n processes the request
+        |
+        +---> [Path A] n8n calls release-api-slot mid-processing
+        |         |
+        |         v
+        |     Flag released, next item sent
+        |     (search continues independently)
+        |
+        +---> [Path B] n8n calls save-search-results at end
+                  |
+                  v
+              Check flag_action parameter
+                  |
+         +--------+---------+--------+
+         |        |         |        |
+   "release"   "hold"    "none"   (omitted)
+         |        |         |        |
+         v        v         v        v
+    Release    Keep flag   Do       Do
+    flag &     locked      nothing  nothing
+    trigger
+    next
+```
+
+---
+
+## n8n Payload Examples
+
+### Example 1: Release flag after completion
+```json
+{
+  "search_id": "uuid",
+  "companies": [...],
+  "credit_counter": { ... },
+  "flag_action": "release"
+}
+```
+
+### Example 2: Keep flag held (waiting for something else)
+```json
+{
+  "search_id": "uuid",
+  "companies": [...],
+  "credit_counter": { ... },
+  "flag_action": "hold"
+}
+```
+
+### Example 3: Let release-api-slot handle it (default behavior)
+```json
+{
+  "search_id": "uuid",
+  "companies": [...],
+  "credit_counter": { ... }
+}
+```
+
+### Example 4: Error with flag release
+```json
+{
+  "search_id": "uuid",
+  "status": "error",
+  "error_message": "Something went wrong",
+  "flag_action": "release"
+}
 ```
 
 ---
 
 ## Files to Modify
 
-| File | Action | Changes |
-|------|--------|---------|
-| Database Migration | Create | Delete Apollo slots, insert single flag, create new functions |
-| `trigger-n8n-webhook/index.ts` | Modify | Use `acquire_processing_flag`, remove `api_to_use` |
-| `release-api-slot/index.ts` | Modify | Use `release_processing_flag`, remove `slot_name` |
-
-### Files NOT Changed (reused as-is):
-- `ProcessingStatus.tsx` - Already handles queued status
-- `Results.tsx` - Already has "In Queue" badge
-- `ManualForm.tsx` - Already has queued type
-- `request_queue` table - Already exists
-- `get_queue_position` function - Already works
+| File | Changes |
+|------|---------|
+| `supabase/functions/save-search-results/index.ts` | Add `flag_action` field to interface, add flag handling logic before return statements |
 
 ---
 
-## Credit Efficiency
+## Summary
 
-- **Reusing**: `request_queue` table, `get_queue_position` function, all frontend queue handling
-- **Modifying**: 2 edge functions (simplifying ~50 lines total)
-- **Creating**: 1 small migration (delete/insert + 2 new functions)
-- **No frontend changes needed**
+- **`flag_action: "release"`** - Release the flag and trigger next queued item
+- **`flag_action: "hold"`** - Keep the flag locked (explicitly do nothing)
+- **`flag_action: "none"` or omit** - Don't touch the flag (default, backward compatible)
 
----
-
-## Current State
-
-The database currently has:
-- 10 Apollo slots (5 locked, 5 free)
-- Empty request_queue table
-
-After implementation:
-- 1 processing flag (initially unlocked)
-- Same request_queue table (ready to use)
+This gives you full control from n8n's side on when the queue advances!
 
