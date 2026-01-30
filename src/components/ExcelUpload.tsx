@@ -170,7 +170,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       
       setCurrentStep('creating');
       
-      // Step 2: Insert search record into Supabase with pending status
+      // Step 2: Insert search record into Supabase
       console.log('Creating search record...');
       const { data: search, error: searchError } = await supabase
         .from("searches")
@@ -178,7 +178,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
           user_id: userId,
           search_type: "bulk",
           excel_file_name: selectedFile.name,
-          status: "pending",
+          status: "processing",
         })
         .select()
         .single();
