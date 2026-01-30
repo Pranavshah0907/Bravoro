@@ -57,6 +57,8 @@ interface RequestBody {
   // Error handling fields
   status?: 'error' | 'completed';
   error_message?: string;
+  // Flag control for queue management
+  flag_action?: 'release' | 'hold' | 'none';
 }
 
 // Generate a unique request ID for tracking
@@ -83,6 +85,78 @@ function pickFirst(obj: Record<string, unknown> | undefined, keys: string[]): un
     if (v !== undefined && v !== null && v !== '') return v;
   }
   return undefined;
+}
+
+// Helper function to handle flag_action parameter
+async function handleFlagAction(
+  supabase: any,
+  requestId: string,
+  search_id: string,
+  flagAction: string | undefined
+): Promise<void> {
+  console.log(`[${requestId}] Flag action requested: ${flagAction || 'none (default)'}`);
+
+  if (flagAction === 'release') {
+    try {
+      console.log(`[${requestId}] Releasing processing flag for search ${search_id}`);
+      
+      const { data: nextItems, error: releaseError } = await supabase
+        .rpc('release_processing_flag', { p_search_id: search_id }) as { data: any[] | null, error: any };
+
+      if (releaseError) {
+        console.error(`[${requestId}] Error releasing flag:`, releaseError);
+      } else {
+        console.log(`[${requestId}] Flag released. Next items in queue:`, nextItems?.length || 0);
+        
+        // If there's a queued item, trigger n8n webhook
+        if (nextItems && nextItems.length > 0) {
+          const nextItem = nextItems[0] as { next_entry_type: string; next_search_data: any; next_search_id: string };
+          const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
+          
+          const n8nWebhookUrl = nextItem.next_entry_type === 'bulk_people_enrichment'
+            ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
+            : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+
+          const webhookHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'type_of_entry': nextItem.next_entry_type,
+          };
+          if (n8nWebhookSecret) {
+            webhookHeaders['x-webhook-secret'] = n8nWebhookSecret;
+          }
+
+          const response = await fetch(n8nWebhookUrl, {
+            method: 'POST',
+            headers: webhookHeaders,
+            body: JSON.stringify(nextItem.next_search_data),
+          });
+
+          if (!response.ok) {
+            console.error(`[${requestId}] Failed to trigger next queued item`);
+            await supabase.from('searches').update({
+              status: 'error',
+              error_message: 'Failed to process queued request',
+              updated_at: new Date().toISOString()
+            }).eq('id', nextItem.next_search_id);
+            
+            await supabase.rpc('release_processing_flag', { 
+              p_search_id: nextItem.next_search_id 
+            });
+          } else {
+            console.log(`[${requestId}] Next queued item triggered successfully`);
+          }
+        }
+      }
+    } catch (flagError) {
+      console.error(`[${requestId}] Flag release error:`, flagError);
+    }
+  } else if (flagAction === 'hold') {
+    console.log(`[${requestId}] Flag action is 'hold' - keeping flag locked`);
+    // Do nothing - flag stays locked
+  } else {
+    console.log(`[${requestId}] Flag action is 'none' or not specified - not touching flag`);
+    // Do nothing - let release-api-slot handle it
+  }
 }
 
 serve(async (req: Request) => {
@@ -296,6 +370,9 @@ serve(async (req: Request) => {
       }
 
       console.log(`[${requestId}] Successfully recorded error status for search_id: ${search_id}`);
+
+      // ========== HANDLE FLAG ACTION (ERROR PATH) ==========
+      await handleFlagAction(supabase, requestId, search_id, bodyAny?.flag_action as string | undefined);
 
       return new Response(
         JSON.stringify({ 
@@ -545,6 +622,9 @@ serve(async (req: Request) => {
         `[${requestId}] No credits to save or user_id not found. user_id: ${searchData?.user_id}, apollo: ${apolloCredits}, aleads: ${aleadsCredits}, lusha: ${lushaCredits}`,
       );
     }
+
+    // ========== HANDLE FLAG ACTION (SUCCESS PATH) ==========
+    await handleFlagAction(supabase, requestId, search_id, bodyAny?.flag_action as string | undefined);
 
     return new Response(
       JSON.stringify({ 
