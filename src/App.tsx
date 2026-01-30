@@ -11,6 +11,7 @@ import Results from "./pages/Results";
 import UsageAnalytics from "./pages/UsageAnalytics";
 import Contact from "./pages/Contact";
 import GoogleSheetsGuide from "./pages/GoogleSheetsGuide";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/analytics" element={<UsageAnalytics />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/google-sheets-guide" element={<GoogleSheetsGuide />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
