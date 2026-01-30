@@ -1,209 +1,89 @@
 
 
-# API Slot Queuing System - Implementation Plan
+# Simplified Single-Flag Queue System Implementation
 
-## Overview
+## Summary
 
-This plan implements a robust 10-slot resource locking system (Apollo1 through Apollo10) with PostgreSQL atomic row-level locking to handle concurrent requests without conflicts. The system uses `SELECT ... FOR UPDATE SKIP LOCKED` to guarantee that even requests arriving at the exact same millisecond will never acquire the same slot.
+Replace the 10-slot Apollo system with a single processing flag. When a request is made, if the flag is "free" (0), the request proceeds immediately. If "occupied" (1), it goes into the queue. n8n will call back when ready for the next request to release the flag.
 
-## Architecture
+## What Changes
 
-```text
-                         Request Flow
-                              |
-                              v
-                   +---------------------+
-                   | Frontend submits    |
-                   | search with status  |
-                   | "processing"        |
-                   +---------------------+
-                              |
-                              v
-                   +---------------------+
-                   | trigger-n8n-webhook |
-                   | attempts to acquire |
-                   | slot using atomic   |
-                   | database function   |
-                   +---------------------+
-                         |         |
-               Slot acquired    No slot free
-                         |         |
-                         v         v
-                +------------+  +-----------------+
-                | Update     |  | Update search   |
-                | search to  |  | status to       |
-                | "processing"|  | "queued"        |
-                | Send to n8n |  | Add to queue    |
-                | with api_   |  | table           |
-                | to_use     |  +-----------------+
-                +------------+          |
-                                        v
-                                +-----------------+
-                                | Realtime shows  |
-                                | "In Queue"      |
-                                | with position   |
-                                +-----------------+
+### Database Changes
 
-                    Release Flow (from n8n)
-                              |
-                              v
-                   +---------------------+
-                   | release-api-slot    |
-                   | edge function       |
-                   +---------------------+
-                              |
-                              v
-                   +---------------------+
-                   | 1. Release the slot |
-                   | 2. Check queue for  |
-                   |    pending requests |
-                   | 3. If queue empty:  |
-                   |    slot stays free  |
-                   | 4. If queue has     |
-                   |    items: claim for |
-                   |    next request,    |
-                   |    send to n8n      |
-                   +---------------------+
-```
+**1. Modify `api_slots` table data:**
+- Delete all 10 Apollo slots
+- Insert a single row with `slot_name = 'processing'`
 
-## Race Condition Prevention
+**2. Create new function `acquire_processing_flag`:**
+- Simpler logic - just check if the single flag is available
+- Returns boolean (true = acquired, false = busy)
 
-PostgreSQL's `SELECT ... FOR UPDATE SKIP LOCKED` provides hardware-level guarantee:
+**3. Create new function `release_processing_flag`:**
+- Takes only `p_search_id` (no slot_name needed)
+- Releases the flag and checks queue for next item
+- If queue has items, claims flag for next and returns its data
 
-1. Transaction A locks row for `Apollo1`
-2. Transaction B's query skips locked rows, gets `Apollo2`
-3. No conflicts possible, even at nanosecond timing
+**4. Keep existing (no changes):**
+- `request_queue` table - already works perfectly
+- `get_queue_position` function - already works for position display
 
-If all 10 slots are locked:
-- Query returns no rows
-- Request is added to the queue table
-- Search status is updated to "queued"
-- User sees queue position in real-time
+### Edge Function Changes
+
+**1. `trigger-n8n-webhook` (modify):**
+- Change from `acquire_api_slot` to `acquire_processing_flag`
+- Remove `api_to_use` from payload sent to n8n
+- Remove slot release on failure (now uses search_id only)
+- Remove `slot_used` from response
+
+**2. `release-api-slot` (modify):**
+- Simplify payload validation - only needs `search_id`
+- Change from `release_api_slot` to `release_processing_flag`
+- Remove `slot_name` handling
+- Update response to not include `slot_released`
+
+### Frontend Changes
+
+**None required!** The frontend already:
+- Handles "queued" status with position display
+- Uses real-time updates for queue position
+- Shows "In Queue" badge in Results.tsx
 
 ---
 
-## Database Changes
+## Technical Details
 
-### New Table: `api_slots`
-
-Stores the 10 API key slots and their lock status.
+### New Database Function: `acquire_processing_flag`
 
 ```sql
-CREATE TABLE IF NOT EXISTS public.api_slots (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slot_name text NOT NULL UNIQUE,
-  is_locked boolean NOT NULL DEFAULT false,
-  locked_by_search_id uuid REFERENCES public.searches(id) ON DELETE SET NULL,
-  locked_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now()
-);
-
--- Insert the 10 slots
-INSERT INTO public.api_slots (slot_name) VALUES
-  ('Apollo1'), ('Apollo2'), ('Apollo3'), ('Apollo4'), ('Apollo5'),
-  ('Apollo6'), ('Apollo7'), ('Apollo8'), ('Apollo9'), ('Apollo10');
-
--- Index for fast lookup
-CREATE INDEX idx_api_slots_is_locked ON public.api_slots(is_locked);
-
--- Enable RLS
-ALTER TABLE public.api_slots ENABLE ROW LEVEL SECURITY;
-
--- Service role can manage slots
-CREATE POLICY "Service role full access"
-ON public.api_slots
-FOR ALL
-USING (true)
-WITH CHECK (true);
-```
-
-### New Table: `request_queue`
-
-Stores pending requests when all slots are occupied.
-
-```sql
-CREATE TABLE IF NOT EXISTS public.request_queue (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  search_id uuid NOT NULL REFERENCES public.searches(id) ON DELETE CASCADE,
-  entry_type text NOT NULL,
-  search_data jsonb NOT NULL,
-  status text NOT NULL DEFAULT 'queued',
-  created_at timestamp with time zone DEFAULT now()
-);
-
--- Index for queue ordering
-CREATE INDEX idx_request_queue_status_created ON public.request_queue(status, created_at);
-
--- Enable RLS
-ALTER TABLE public.request_queue ENABLE ROW LEVEL SECURITY;
-
--- Service role can manage queue
-CREATE POLICY "Service role full access"
-ON public.request_queue
-FOR ALL
-USING (true)
-WITH CHECK (true);
-
--- Users can view their own queue entries
-CREATE POLICY "Users can view own queue entries"
-ON public.request_queue
-FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM public.searches
-    WHERE searches.id = request_queue.search_id
-    AND searches.user_id = auth.uid()
-  )
-);
-```
-
-### Database Function: `acquire_api_slot`
-
-Atomic slot acquisition with race condition prevention.
-
-```sql
-CREATE OR REPLACE FUNCTION public.acquire_api_slot(p_search_id uuid)
-RETURNS text
+CREATE OR REPLACE FUNCTION public.acquire_processing_flag(p_search_id uuid)
+RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_slot_id uuid;
-  v_slot_name text;
+  v_acquired boolean := false;
 BEGIN
-  -- Atomically find and lock an available slot
-  -- FOR UPDATE SKIP LOCKED ensures no race conditions
-  SELECT id, slot_name INTO v_slot_id, v_slot_name
-  FROM api_slots
-  WHERE is_locked = false
-  ORDER BY slot_name
-  LIMIT 1
-  FOR UPDATE SKIP LOCKED;
-  
-  -- If no slot available, return null
-  IF v_slot_id IS NULL THEN
-    RETURN NULL;
-  END IF;
-  
-  -- Mark slot as locked
+  -- Atomically try to acquire the processing flag
   UPDATE api_slots 
   SET is_locked = true, 
       locked_by_search_id = p_search_id,
       locked_at = now()
-  WHERE id = v_slot_id;
+  WHERE slot_name = 'processing' 
+    AND is_locked = false;
   
-  RETURN v_slot_name;
+  -- Check if we acquired it
+  GET DIAGNOSTICS v_acquired = ROW_COUNT;
+  
+  RETURN v_acquired > 0;
 END;
 $$;
 ```
 
-### Database Function: `release_api_slot`
-
-Releases a slot and returns next queued item if any.
+### New Database Function: `release_processing_flag`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.release_api_slot(p_slot_name text, p_search_id uuid)
+CREATE OR REPLACE FUNCTION public.release_processing_flag(p_search_id uuid)
 RETURNS TABLE(
   next_search_id uuid,
   next_entry_type text,
@@ -215,14 +95,13 @@ SET search_path = public
 AS $$
 DECLARE
   v_queue_item record;
-  v_new_slot_name text;
 BEGIN
-  -- Release the slot
+  -- Release the flag
   UPDATE api_slots
   SET is_locked = false,
       locked_by_search_id = NULL,
       locked_at = NULL
-  WHERE slot_name = p_slot_name
+  WHERE slot_name = 'processing'
     AND locked_by_search_id = p_search_id;
   
   -- Check if there's a queued item
@@ -235,17 +114,16 @@ BEGIN
   FOR UPDATE SKIP LOCKED;
   
   IF v_queue_item IS NULL THEN
-    -- No queued items
+    -- No queued items, flag stays free
     RETURN;
   END IF;
   
-  -- Try to acquire a slot for the queued item
-  SELECT acquire_api_slot(v_queue_item.search_id) INTO v_new_slot_name;
-  
-  IF v_new_slot_name IS NULL THEN
-    -- Slot was taken by another process (rare edge case)
-    RETURN;
-  END IF;
+  -- Claim the flag for the queued item
+  UPDATE api_slots 
+  SET is_locked = true, 
+      locked_by_search_id = v_queue_item.search_id,
+      locked_at = now()
+  WHERE slot_name = 'processing';
   
   -- Update queue item status
   UPDATE request_queue
@@ -258,149 +136,33 @@ BEGIN
       updated_at = now()
   WHERE id = v_queue_item.search_id;
   
-  -- Return the next item to process with the slot name embedded
+  -- Return the next item to process
   RETURN QUERY SELECT 
     v_queue_item.search_id,
     v_queue_item.entry_type,
-    jsonb_set(v_queue_item.search_data, '{api_to_use}', to_jsonb(v_new_slot_name));
+    v_queue_item.search_data;
 END;
 $$;
 ```
 
-### Database Function: `get_queue_position`
-
-Returns a user's position in the queue.
-
-```sql
-CREATE OR REPLACE FUNCTION public.get_queue_position(p_search_id uuid)
-RETURNS integer
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT COUNT(*)::integer + 1
-  FROM request_queue
-  WHERE status = 'queued'
-    AND created_at < (
-      SELECT created_at FROM request_queue WHERE search_id = p_search_id
-    );
-$$;
-```
-
-### Modify `searches` Table
-
-Add "queued" as a valid status by updating the places that check status.
-
 ---
 
-## Edge Function Changes
+## n8n Integration Changes
 
-### Modified: `trigger-n8n-webhook`
+### What n8n receives (simplified - NO api_to_use):
 
-Updated to attempt slot acquisition before sending to n8n.
-
-**Key Changes:**
-1. Call `acquire_api_slot` RPC before sending request
-2. If slot acquired: add `api_to_use` to payload, send to n8n
-3. If no slot: create queue entry, update search status to "queued"
-4. Return success immediately (non-blocking for user)
-
-**New Payload Field:**
-```json
-{
-  "search_id": "xxx",
-  "user_email": "user@example.com",
-  "api_to_use": "Apollo3",
-  "enrichment_remaining": 500,
-  "data": { ... }
-}
-```
-
-### New: `release-api-slot`
-
-Endpoint for n8n to call when processing completes.
-
-**Payload from n8n:**
-```json
-{
-  "slot_name": "Apollo3",
-  "search_id": "uuid-of-completed-search"
-}
-```
-
-**Logic:**
-1. Validate webhook secret
-2. Call `release_api_slot` database function
-3. If queue has pending items, automatically process next one
-4. If next item exists, send it to n8n webhook with acquired slot
-5. Return success
-
----
-
-## Frontend Changes
-
-### Modified: `ProcessingStatus.tsx`
-
-Add support for "queued" status with queue position display.
-
-**New Status Display:**
-- Show queue icon
-- Display "In Queue - Position X"
-- Real-time position updates via Supabase Realtime
-
-### Modified: `Results.tsx`
-
-Update `getStatusBadge` function to include "queued" status.
-
-**New Badge:**
-```tsx
-case "queued":
-  return (
-    <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 font-medium">
-      In Queue
-    </Badge>
-  );
-```
-
-### Modified: `ManualForm.tsx`, `ExcelUpload.tsx`, `BulkPeopleEnrichment.tsx`
-
-Update `processingStatus` type to include "queued".
-
----
-
-## Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| Database Migration | Create | Create `api_slots`, `request_queue` tables and functions |
-| `supabase/functions/trigger-n8n-webhook/index.ts` | Modify | Add slot acquisition logic |
-| `supabase/functions/release-api-slot/index.ts` | Create | New endpoint for n8n callbacks |
-| `supabase/config.toml` | Modify | Add release-api-slot function |
-| `src/components/ProcessingStatus.tsx` | Modify | Add "queued" status with position |
-| `src/pages/Results.tsx` | Modify | Add "queued" status badge |
-| `src/components/ManualForm.tsx` | Modify | Update processingStatus type |
-| `src/components/ExcelUpload.tsx` | Modify | Update for queued state |
-| `src/components/BulkPeopleEnrichment.tsx` | Modify | Update for queued state |
-| `src/integrations/supabase/types.ts` | Auto-updated | New tables reflected |
-
----
-
-## n8n Integration Requirements
-
-**What n8n receives (new field in payload):**
 ```json
 {
   "search_id": "uuid",
   "user_email": "user@example.com",
-  "api_to_use": "Apollo3",
   "enrichment_remaining": 500,
   "enrichment_limit": 1000,
   "data": { ... }
 }
 ```
 
-**What n8n must send back (new endpoint to call when done):**
+### What n8n sends back (simplified - NO slot_name):
+
 ```
 POST https://okiragtncugfnuetjoqt.supabase.co/functions/v1/release-api-slot
 Headers:
@@ -408,105 +170,86 @@ Headers:
   Content-Type: application/json
 Body:
 {
-  "slot_name": "Apollo3",
-  "search_id": "uuid-of-completed-search"
+  "search_id": "uuid-of-search-that-is-ready-for-next"
 }
 ```
 
-This call should be made after n8n has finished processing (either success or error), so the slot can be released for the next request.
+This can be called **mid-processing** when n8n is ready to accept the next request.
 
 ---
 
-## Technical Details
+## Flow Diagram
 
-### Slot Acquisition in Edge Function
-
-```typescript
-// Attempt to acquire a slot atomically
-const { data: slotName, error: slotError } = await supabase
-  .rpc('acquire_api_slot', { p_search_id: searchId });
-
-if (slotError) {
-  console.error(`[${requestId}] Slot acquisition error:`, slotError);
-  throw slotError;
-}
-
-if (!slotName) {
-  // No slot available - add to queue
-  console.log(`[${requestId}] No slot available, adding to queue`);
-  
-  const { error: queueError } = await supabase
-    .from('request_queue')
-    .insert({
-      search_id: searchId,
-      entry_type: entryType,
-      search_data: payloadToSend,
-      status: 'queued'
-    });
-  
-  if (queueError) throw queueError;
-  
-  // Update search status to queued
-  await supabase
-    .from('searches')
-    .update({ status: 'queued', updated_at: new Date().toISOString() })
-    .eq('id', searchId);
-  
-  return new Response(
-    JSON.stringify({ success: true, queued: true, request_id: requestId }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
-}
-
-// Slot acquired - add to payload
-payloadToSend.api_to_use = slotName;
-console.log(`[${requestId}] Acquired slot: ${slotName}`);
-```
-
-### Queue Position Realtime Updates
-
-The frontend subscribes to changes on the `request_queue` table to get real-time position updates:
-
-```typescript
-// Subscribe to queue changes
-const queueChannel = supabase
-  .channel('queue-updates')
-  .on(
-    'postgres_changes',
-    {
-      event: '*',
-      schema: 'public',
-      table: 'request_queue',
-    },
-    async () => {
-      // Recalculate position when queue changes
-      const { data } = await supabase.rpc('get_queue_position', { p_search_id: searchId });
-      setQueuePosition(data);
-    }
-  )
-  .subscribe();
+```text
+Request comes in
+       |
+       v
+Is processing flag free?
+       |
+  +----+----+
+  |         |
+ YES        NO
+  |         |
+  v         v
+Set flag   Add to request_queue
+to 1       Set search status = "queued"
+  |         |
+  v         v
+Send to    Return success
+n8n        (queued: true)
+  |
+  v
+n8n calls release-api-slot
+when ready for next
+       |
+       v
+Is queue empty?
+       |
+  +----+----+
+  |         |
+ YES        NO
+  |         |
+  v         v
+Set flag   Keep flag = 1
+to 0       Send next queued item to n8n
+(free)     Update search status to "processing"
 ```
 
 ---
 
-## Security Considerations
+## Files to Modify
 
-1. **Webhook Secret Validation**: `release-api-slot` validates the `x-webhook-secret` header
-2. **Slot Ownership**: Only the search that locked a slot can release it (verified by `locked_by_search_id`)
-3. **RLS Policies**: Users can only see their own queue entries
-4. **Service Role**: All slot management uses service role key for atomic operations
+| File | Action | Changes |
+|------|--------|---------|
+| Database Migration | Create | Delete Apollo slots, insert single flag, create new functions |
+| `trigger-n8n-webhook/index.ts` | Modify | Use `acquire_processing_flag`, remove `api_to_use` |
+| `release-api-slot/index.ts` | Modify | Use `release_processing_flag`, remove `slot_name` |
+
+### Files NOT Changed (reused as-is):
+- `ProcessingStatus.tsx` - Already handles queued status
+- `Results.tsx` - Already has "In Queue" badge
+- `ManualForm.tsx` - Already has queued type
+- `request_queue` table - Already exists
+- `get_queue_position` function - Already works
 
 ---
 
-## Summary
+## Credit Efficiency
 
-1. **Create** `api_slots` table with 10 slots (Apollo1-Apollo10)
-2. **Create** `request_queue` table for pending requests
-3. **Create** database functions for atomic slot operations
-4. **Modify** `trigger-n8n-webhook` to acquire slots or queue requests
-5. **Create** `release-api-slot` edge function for n8n callbacks
-6. **Update** frontend components to show "queued" status with position
-7. **n8n** must call `release-api-slot` when done processing
+- **Reusing**: `request_queue` table, `get_queue_position` function, all frontend queue handling
+- **Modifying**: 2 edge functions (simplifying ~50 lines total)
+- **Creating**: 1 small migration (delete/insert + 2 new functions)
+- **No frontend changes needed**
 
-This guarantees no two requests ever get the same slot, even under heavy concurrent load.
+---
+
+## Current State
+
+The database currently has:
+- 10 Apollo slots (5 locked, 5 free)
+- Empty request_queue table
+
+After implementation:
+- 1 processing flag (initially unlocked)
+- Same request_queue table (ready to use)
 
