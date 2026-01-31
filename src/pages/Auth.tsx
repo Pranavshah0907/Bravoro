@@ -152,10 +152,6 @@ const Auth = () => {
               Don't have an account?{" "}
               <a href="/contact" className="text-accent hover:text-primary font-medium transition-colors underline-offset-4 hover:underline">
                 Contact us
-              </a>{" "}
-              or email{" "}
-              <a href="mailto:support@emploio.com" className="text-accent hover:text-primary font-medium transition-colors underline-offset-4 hover:underline">
-                support@emploio.com
               </a>
             </p>
           </div>
