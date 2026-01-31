@@ -578,8 +578,8 @@ serve(async (req: Request): Promise<Response> => {
           );
         }
 
-        // Always use the production Bravoro URL for reset links
-        const resetLink = `https://leapleadsai.lovable.app/reset-password?token=${token}`;
+        // Use the production Bravoro custom domain for reset links
+        const resetLink = `https://app.bravoro.com/reset-password?token=${token}`;
 
         emailResponse = await resend.emails.send({
           from: "Bravoro <service@mail.bravoro.com>",
