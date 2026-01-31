@@ -40,6 +40,7 @@ export const ForgotPasswordDialog = () => {
         body: {
           type: 'password-reset',
           resetEmail: email.trim(),
+          origin: window.location.origin,
         },
       });
 

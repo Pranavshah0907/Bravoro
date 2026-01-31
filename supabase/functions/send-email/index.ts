@@ -23,6 +23,8 @@ interface SendEmailRequest {
   errorMessage?: string;
   // For password reset
   resetEmail?: string;
+  // Origin URL for generating reset links
+  origin?: string;
 }
 
 // Generate a unique request ID for tracking
@@ -576,7 +578,9 @@ serve(async (req: Request): Promise<Response> => {
           );
         }
 
-        const resetLink = `https://app.bravoro.com/reset-password?token=${token}`;
+        // Use provided origin or fall back to production URL
+        const baseUrl = body.origin || 'https://leapleadsai.lovable.app';
+        const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
         emailResponse = await resend.emails.send({
           from: "Bravoro <service@mail.bravoro.com>",
