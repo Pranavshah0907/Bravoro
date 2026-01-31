@@ -40,11 +40,13 @@ export const ForgotPasswordDialog = () => {
         body: {
           type: 'password-reset',
           resetEmail: email.trim(),
-          origin: window.location.origin,
         },
       });
 
-      if (error) throw error;
+      // Check for invoke error OR if the response indicates failure
+      if (error || (data && data.success === false)) {
+        throw new Error(data?.error || error?.message || 'Failed to send reset email');
+      }
 
       setSubmitted(true);
       toast({

@@ -578,9 +578,8 @@ serve(async (req: Request): Promise<Response> => {
           );
         }
 
-        // Use provided origin or fall back to production URL
-        const baseUrl = body.origin || 'https://leapleadsai.lovable.app';
-        const resetLink = `${baseUrl}/reset-password?token=${token}`;
+        // Always use the production Bravoro URL for reset links
+        const resetLink = `https://leapleadsai.lovable.app/reset-password?token=${token}`;
 
         emailResponse = await resend.emails.send({
           from: "Bravoro <service@mail.bravoro.com>",
