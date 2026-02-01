@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 interface Contact {
+  person_id?: string;       // Unique identifier from n8n (primary dedup key)
   First_Name: string;
   Last_Name: string;
   Domain: string;
@@ -85,6 +86,159 @@ function pickFirst(obj: Record<string, unknown> | undefined, keys: string[]): un
     if (v !== undefined && v !== null && v !== '') return v;
   }
   return undefined;
+}
+
+// Helper function to upsert contacts to master_contacts table
+async function upsertToMasterContacts(
+  supabase: any,
+  requestId: string,
+  contacts: Contact[],
+  searchId: string,
+  userId: string
+): Promise<void> {
+  if (!contacts || contacts.length === 0) {
+    console.log(`[${requestId}] No contacts to upsert to master_contacts`);
+    return;
+  }
+
+  console.log(`[${requestId}] Upserting ${contacts.length} contacts to master_contacts`);
+
+  for (const contact of contacts) {
+    try {
+      const personId = contact.person_id?.trim() || null;
+      const email = contact.Email?.trim() || null;
+      const linkedin = contact.LinkedIn?.trim() || null;
+      const firstName = contact.First_Name?.trim() || null;
+      const lastName = contact.Last_Name?.trim() || null;
+      const organization = contact.Organization?.trim() || null;
+      const domain = contact.Domain?.trim() || null;
+      const phone1 = contact.Phone_Number_1?.trim() || null;
+      const phone2 = contact.Phone_Number_2?.trim() || null;
+      const title = contact.Title?.trim() || null;
+
+      // Find existing record using multiple matching strategies
+      let existingRecord = null;
+
+      // Strategy 1: Match by person_id (most reliable)
+      if (personId) {
+        const { data } = await supabase
+          .from('master_contacts')
+          .select('*')
+          .eq('person_id', personId)
+          .maybeSingle();
+        existingRecord = data;
+      }
+
+      // Strategy 2: Match by LinkedIn URL
+      if (!existingRecord && linkedin) {
+        const { data } = await supabase
+          .from('master_contacts')
+          .select('*')
+          .eq('linkedin', linkedin)
+          .maybeSingle();
+        existingRecord = data;
+      }
+
+      // Strategy 3: Match by email
+      if (!existingRecord && email) {
+        const { data } = await supabase
+          .from('master_contacts')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+        existingRecord = data;
+      }
+
+      // Strategy 4: Match by first_name + last_name + organization
+      if (!existingRecord && firstName && lastName && organization) {
+        const { data } = await supabase
+          .from('master_contacts')
+          .select('*')
+          .eq('first_name', firstName)
+          .eq('last_name', lastName)
+          .eq('organization', organization)
+          .maybeSingle();
+        existingRecord = data;
+      }
+
+      if (existingRecord) {
+        // Update existing record - merge data intelligently
+        const updates: Record<string, any> = {
+          last_updated_at: new Date().toISOString(),
+        };
+
+        // Update person_id if we have one now and didn't before
+        if (personId && !existingRecord.person_id) {
+          updates.person_id = personId;
+        }
+
+        // Handle email - add to email_2 if different
+        if (email && email !== existingRecord.email && email !== existingRecord.email_2) {
+          if (!existingRecord.email) {
+            updates.email = email;
+          } else if (!existingRecord.email_2) {
+            updates.email_2 = email;
+          }
+        }
+
+        // Handle phone - add to phone_2 if different
+        if (phone1 && phone1 !== existingRecord.phone_1 && phone1 !== existingRecord.phone_2) {
+          if (!existingRecord.phone_1) {
+            updates.phone_1 = phone1;
+          } else if (!existingRecord.phone_2) {
+            updates.phone_2 = phone1;
+          }
+        }
+        if (phone2 && phone2 !== existingRecord.phone_1 && phone2 !== existingRecord.phone_2) {
+          if (!existingRecord.phone_2) {
+            updates.phone_2 = phone2;
+          }
+        }
+
+        // Update other fields if we have new data
+        if (linkedin && !existingRecord.linkedin) updates.linkedin = linkedin;
+        if (title && !existingRecord.title) updates.title = title;
+        if (domain && !existingRecord.domain) updates.domain = domain;
+
+        const { error } = await supabase
+          .from('master_contacts')
+          .update(updates)
+          .eq('id', existingRecord.id);
+
+        if (error) {
+          console.error(`[${requestId}] Error updating master_contacts:`, error);
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('master_contacts')
+          .insert({
+            person_id: personId,
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone_1: phone1,
+            phone_2: phone2,
+            linkedin: linkedin,
+            title: title,
+            organization: organization,
+            domain: domain,
+            source_search_id: searchId,
+            source_user_id: userId,
+            first_seen_at: new Date().toISOString(),
+            last_updated_at: new Date().toISOString(),
+          });
+
+        if (error) {
+          console.error(`[${requestId}] Error inserting to master_contacts:`, error);
+        }
+      }
+    } catch (err) {
+      console.error(`[${requestId}] Error processing contact for master_contacts:`, err);
+    }
+  }
+
+  console.log(`[${requestId}] Completed upserting to master_contacts`);
 }
 
 // Helper function to handle flag_action parameter
@@ -555,6 +709,26 @@ serve(async (req: Request) => {
 
     if (updateError) {
       console.error(`[${requestId}] Error updating search status:`, updateError);
+    }
+
+    // Upsert contacts to master_contacts for deduplication and central storage
+    if (searchData?.user_id) {
+      // Collect all contacts from the payload
+      const allContacts: Contact[] = [];
+      
+      if (isPeopleEnrichmentPayload) {
+        allContacts.push(...enrichedContactsData);
+      } else {
+        companies.forEach((company) => {
+          if (company.contacts && Array.isArray(company.contacts)) {
+            allContacts.push(...company.contacts);
+          }
+        });
+      }
+
+      // Upsert to master_contacts in background (don't await to avoid slowing response)
+      upsertToMasterContacts(supabase, requestId, allContacts, search_id, searchData.user_id)
+        .catch((err) => console.error(`[${requestId}] Master contacts upsert failed:`, err));
     }
 
     // Get user email for notification
