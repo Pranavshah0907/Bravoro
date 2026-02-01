@@ -138,6 +138,63 @@ export type Database = {
         }
         Relationships: []
       }
+      master_contacts: {
+        Row: {
+          domain: string | null
+          email: string | null
+          email_2: string | null
+          first_name: string | null
+          first_seen_at: string
+          id: string
+          last_name: string | null
+          last_updated_at: string
+          linkedin: string | null
+          organization: string | null
+          person_id: string | null
+          phone_1: string | null
+          phone_2: string | null
+          source_search_id: string | null
+          source_user_id: string | null
+          title: string | null
+        }
+        Insert: {
+          domain?: string | null
+          email?: string | null
+          email_2?: string | null
+          first_name?: string | null
+          first_seen_at?: string
+          id?: string
+          last_name?: string | null
+          last_updated_at?: string
+          linkedin?: string | null
+          organization?: string | null
+          person_id?: string | null
+          phone_1?: string | null
+          phone_2?: string | null
+          source_search_id?: string | null
+          source_user_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          domain?: string | null
+          email?: string | null
+          email_2?: string | null
+          first_name?: string | null
+          first_seen_at?: string
+          id?: string
+          last_name?: string | null
+          last_updated_at?: string
+          linkedin?: string | null
+          organization?: string | null
+          person_id?: string | null
+          phone_1?: string | null
+          phone_2?: string | null
+          source_search_id?: string | null
+          source_user_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           created_at: string

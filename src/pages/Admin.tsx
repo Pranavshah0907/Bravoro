@@ -15,7 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles, Edit, Target, BarChart3, CalendarIcon, Activity, Search } from "lucide-react";
+import { UserPlus, Loader2, Shield, Users, Shuffle, Trash2, Sparkles, Edit, Target, BarChart3, CalendarIcon, Activity, Search, Database } from "lucide-react";
+import MasterDatabaseTab from "@/components/MasterDatabaseTab";
 import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
@@ -76,7 +77,7 @@ const Admin = () => {
   const [updatingLimit, setUpdatingLimit] = useState(false);
 
   // Admin tab state
-  const [adminTab, setAdminTab] = useState<"management" | "analytics">("management");
+  const [adminTab, setAdminTab] = useState<"management" | "analytics" | "master-database">("management");
 
   // User Analytics state
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -539,8 +540,8 @@ const Admin = () => {
           </div>
 
           {/* Admin Tabs */}
-          <Tabs value={adminTab} onValueChange={(v) => setAdminTab(v as "management" | "analytics")} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted/50">
+          <Tabs value={adminTab} onValueChange={(v) => setAdminTab(v as "management" | "analytics" | "master-database")} className="w-full">
+            <TabsList className="grid w-full max-w-2xl grid-cols-3 bg-muted/50">
               <TabsTrigger value="management" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 User Management
@@ -548,6 +549,10 @@ const Admin = () => {
               <TabsTrigger value="analytics" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 User Analytics
+              </TabsTrigger>
+              <TabsTrigger value="master-database" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Master Database
               </TabsTrigger>
             </TabsList>
 
@@ -1071,6 +1076,11 @@ const Admin = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Master Database Tab */}
+            <TabsContent value="master-database" className="space-y-6 mt-6">
+              <MasterDatabaseTab />
             </TabsContent>
           </Tabs>
         </div>
