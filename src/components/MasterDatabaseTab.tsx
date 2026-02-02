@@ -430,7 +430,7 @@ const MasterDatabaseTab = () => {
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <div className="mt-2 ml-8 mr-2 mb-4 rounded-lg border border-border/40 overflow-hidden bg-background/50">
+                      <div className="mt-2 mx-4 mb-4 rounded-lg border border-border/40 overflow-hidden bg-background/50">
                         {loadingContacts === company.organization ? (
                           <div className="flex items-center justify-center py-8">
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
