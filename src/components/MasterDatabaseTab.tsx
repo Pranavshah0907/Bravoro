@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,15 +12,14 @@ import {
   Search, 
   Download, 
   Building2, 
-  Users, 
   Loader2, 
-  ChevronRight,
+  ChevronDown,
   ExternalLink,
   Clock,
   X,
   AlertTriangle
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import {
   DropdownMenu,
@@ -38,6 +37,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface MasterContact {
   id: string;
@@ -65,9 +69,9 @@ const MasterDatabaseTab = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
-  const [contacts, setContacts] = useState<MasterContact[]>([]);
-  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
+  const [companyContacts, setCompanyContacts] = useState<Record<string, MasterContact[]>>({});
+  const [loadingContacts, setLoadingContacts] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<CompanySummary[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -75,7 +79,6 @@ const MasterDatabaseTab = () => {
   const [totalContacts, setTotalContacts] = useState(0);
   const [exporting, setExporting] = useState(false);
 
-  // Load companies on mount
   useEffect(() => {
     loadCompanies();
   }, []);
@@ -83,8 +86,6 @@ const MasterDatabaseTab = () => {
   const loadCompanies = async () => {
     setLoading(true);
     try {
-      // Get unique organizations with count - using raw query via RPC would be ideal
-      // but for now we'll fetch all and aggregate client-side
       const { data, error } = await supabase
         .from("master_contacts")
         .select("organization")
@@ -92,7 +93,6 @@ const MasterDatabaseTab = () => {
 
       if (error) throw error;
 
-      // Aggregate by organization
       const orgCounts: Record<string, number> = {};
       (data || []).forEach((item) => {
         const org = item.organization || "Unknown";
@@ -118,7 +118,9 @@ const MasterDatabaseTab = () => {
   };
 
   const loadContacts = async (company: string) => {
-    setLoadingContacts(true);
+    if (companyContacts[company]) return; // Already loaded
+    
+    setLoadingContacts(company);
     try {
       const { data, error } = await supabase
         .from("master_contacts")
@@ -128,7 +130,10 @@ const MasterDatabaseTab = () => {
 
       if (error) throw error;
 
-      setContacts((data as MasterContact[]) || []);
+      setCompanyContacts((prev) => ({
+        ...prev,
+        [company]: (data as MasterContact[]) || [],
+      }));
     } catch (error) {
       console.error("Error loading contacts:", error);
       toast({
@@ -137,13 +142,17 @@ const MasterDatabaseTab = () => {
         variant: "destructive",
       });
     } finally {
-      setLoadingContacts(false);
+      setLoadingContacts(null);
     }
   };
 
-  const handleCompanyClick = (company: string) => {
-    setSelectedCompany(company);
-    loadContacts(company);
+  const handleCompanyToggle = (company: string) => {
+    if (expandedCompany === company) {
+      setExpandedCompany(null);
+    } else {
+      setExpandedCompany(company);
+      loadContacts(company);
+    }
   };
 
   const handleSearch = useCallback((query: string) => {
@@ -235,7 +244,6 @@ const MasterDatabaseTab = () => {
 
       const allContacts = (data as MasterContact[]) || [];
       
-      // Group by organization
       const byOrg: Record<string, MasterContact[]> = {};
       allContacts.forEach((c) => {
         const org = c.organization || "Unknown";
@@ -245,7 +253,6 @@ const MasterDatabaseTab = () => {
 
       const wb = XLSX.utils.book_new();
 
-      // Add summary sheet
       const summaryData = Object.entries(byOrg).map(([org, contacts]) => ({
         "Company": org,
         "Contact Count": contacts.length,
@@ -255,7 +262,6 @@ const MasterDatabaseTab = () => {
       const summaryWs = XLSX.utils.json_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
 
-      // Add sheet for each company (limit sheet name to 31 chars)
       Object.entries(byOrg).forEach(([org, orgContacts]) => {
         const exportData = orgContacts.map((c) => ({
           "First Name": c.first_name || "",
@@ -344,10 +350,10 @@ const MasterDatabaseTab = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {selectedCompany && (
-                  <DropdownMenuItem onClick={() => exportCompanyToExcel(selectedCompany)}>
+                {expandedCompany && (
+                  <DropdownMenuItem onClick={() => exportCompanyToExcel(expandedCompany)}>
                     <Building2 className="h-4 w-4 mr-2" />
-                    Export "{selectedCompany}"
+                    Export "{expandedCompany}"
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={handleExportEntireDatabase}>
@@ -381,148 +387,140 @@ const MasterDatabaseTab = () => {
         </CardHeader>
 
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Company List */}
-            <div className="lg:col-span-1">
-              <div className="text-sm font-medium text-muted-foreground mb-2">
-                Companies ({displayedCompanies.length})
+          <div className="text-sm font-medium text-muted-foreground mb-3">
+            Companies ({displayedCompanies.length})
+          </div>
+          <ScrollArea className="h-[600px] rounded-md border border-border/40 bg-muted/10">
+            {displayedCompanies.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                {isSearching ? "No companies match your search" : "No companies found"}
               </div>
-              <ScrollArea className="h-[500px] rounded-md border border-border/40 bg-muted/10">
-                {displayedCompanies.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">
-                    {isSearching ? "No companies match your search" : "No companies found"}
-                  </div>
-                ) : (
-                  <div className="p-2">
-                    {displayedCompanies.map((company) => (
-                      <button
-                        key={company.organization}
-                        onClick={() => handleCompanyClick(company.organization)}
-                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
-                          selectedCompany === company.organization
+            ) : (
+              <div className="p-2 space-y-1">
+                {displayedCompanies.map((company) => (
+                  <Collapsible
+                    key={company.organization}
+                    open={expandedCompany === company.organization}
+                    onOpenChange={() => handleCompanyToggle(company.organization)}
+                  >
+                    <CollapsibleTrigger className="w-full">
+                      <div
+                        className={`flex items-center justify-between p-4 rounded-lg text-left transition-colors ${
+                          expandedCompany === company.organization
                             ? "bg-primary/10 border border-primary/30"
-                            : "hover:bg-muted/50"
+                            : "hover:bg-muted/50 border border-transparent"
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Building2 className="h-5 w-5 text-muted-foreground shrink-0" />
                           <span className="text-sm font-medium text-foreground truncate">
                             {company.organization}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-3 shrink-0">
                           <Badge variant="secondary" className="text-xs">
-                            {company.contact_count}
+                            {company.contact_count} {company.contact_count === 1 ? "contact" : "contacts"}
                           </Badge>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <ChevronDown
+                            className={`h-4 w-4 text-muted-foreground transition-transform ${
+                              expandedCompany === company.organization ? "rotate-180" : ""
+                            }`}
+                          />
                         </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-
-            {/* Contacts Table */}
-            <div className="lg:col-span-2">
-              {!selectedCompany ? (
-                <div className="flex flex-col items-center justify-center h-[500px] rounded-md border border-border/40 bg-muted/10">
-                  <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">Select a company to view contacts</p>
-                </div>
-              ) : loadingContacts ? (
-                <div className="flex items-center justify-center h-[500px] rounded-md border border-border/40 bg-muted/10">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <div className="rounded-md border border-border/40 overflow-hidden">
-                  <div className="bg-muted/30 px-4 py-3 border-b border-border/40">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-foreground">{selectedCompany}</h3>
-                      <Badge variant="outline">{contacts.length} contacts</Badge>
-                    </div>
-                  </div>
-                  <ScrollArea className="h-[452px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/20">
-                          <TableHead className="font-semibold">Name</TableHead>
-                          <TableHead className="font-semibold">Title</TableHead>
-                          <TableHead className="font-semibold">Email</TableHead>
-                          <TableHead className="font-semibold">Phone</TableHead>
-                          <TableHead className="font-semibold">LinkedIn</TableHead>
-                          <TableHead className="font-semibold">Last Updated</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {contacts.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                              No contacts found
-                            </TableCell>
-                          </TableRow>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 ml-8 mr-2 mb-4 rounded-lg border border-border/40 overflow-hidden bg-background/50">
+                        {loadingContacts === company.organization ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          </div>
                         ) : (
-                          contacts.map((contact) => (
-                            <TableRow key={contact.id} className="hover:bg-muted/20">
-                              <TableCell className="font-medium">
-                                {contact.first_name || ""} {contact.last_name || ""}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {contact.title || "-"}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  {contact.email && (
-                                    <span className="text-sm">{contact.email}</span>
-                                  )}
-                                  {contact.email_2 && (
-                                    <span className="text-xs text-muted-foreground">{contact.email_2}</span>
-                                  )}
-                                  {!contact.email && !contact.email_2 && "-"}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  {contact.phone_1 && (
-                                    <span className="text-sm">{contact.phone_1}</span>
-                                  )}
-                                  {contact.phone_2 && (
-                                    <span className="text-xs text-muted-foreground">{contact.phone_2}</span>
-                                  )}
-                                  {!contact.phone_1 && !contact.phone_2 && "-"}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {contact.linkedin ? (
-                                  <a
-                                    href={contact.linkedin}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline flex items-center gap-1"
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                    View
-                                  </a>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="bg-muted/30">
+                                  <TableHead className="font-semibold">Name</TableHead>
+                                  <TableHead className="font-semibold">Title</TableHead>
+                                  <TableHead className="font-semibold">Email</TableHead>
+                                  <TableHead className="font-semibold">Phone</TableHead>
+                                  <TableHead className="font-semibold">LinkedIn</TableHead>
+                                  <TableHead className="font-semibold">Last Updated</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {(companyContacts[company.organization] || []).length === 0 ? (
+                                  <TableRow>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                      No contacts found
+                                    </TableCell>
+                                  </TableRow>
                                 ) : (
-                                  "-"
+                                  (companyContacts[company.organization] || []).map((contact) => (
+                                    <TableRow key={contact.id} className="hover:bg-muted/20">
+                                      <TableCell className="font-medium">
+                                        {contact.first_name || ""} {contact.last_name || ""}
+                                      </TableCell>
+                                      <TableCell className="text-muted-foreground">
+                                        {contact.title || "-"}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex flex-col">
+                                          {contact.email && (
+                                            <span className="text-sm">{contact.email}</span>
+                                          )}
+                                          {contact.email_2 && (
+                                            <span className="text-xs text-muted-foreground">{contact.email_2}</span>
+                                          )}
+                                          {!contact.email && !contact.email_2 && "-"}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex flex-col">
+                                          {contact.phone_1 && (
+                                            <span className="text-sm">{contact.phone_1}</span>
+                                          )}
+                                          {contact.phone_2 && (
+                                            <span className="text-xs text-muted-foreground">{contact.phone_2}</span>
+                                          )}
+                                          {!contact.phone_1 && !contact.phone_2 && "-"}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        {contact.linkedin ? (
+                                          <a
+                                            href={contact.linkedin}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline flex items-center gap-1"
+                                          >
+                                            <ExternalLink className="h-3 w-3" />
+                                            View
+                                          </a>
+                                        ) : (
+                                          "-"
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                          <Clock className="h-3 w-3" />
+                                          {format(new Date(contact.last_updated_at), "MMM d, yyyy")}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
                                 )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <Clock className="h-3 w-3" />
-                                  {formatDistanceToNow(new Date(contact.last_updated_at), { addSuffix: true })}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                              </TableBody>
+                            </Table>
+                          </div>
                         )}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                </div>
-              )}
-            </div>
-          </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
         </CardContent>
       </Card>
 
