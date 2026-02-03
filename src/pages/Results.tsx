@@ -94,6 +94,7 @@ interface Search {
 }
 
 interface Contact {
+  Record_ID?: string;       // User-provided record ID for people enrichment
   First_Name: string;
   Last_Name: string;
   Domain: string;
@@ -438,9 +439,10 @@ const Results = () => {
       r.result_type === 'missing' || r.company_name === 'People not found'
     );
 
-    // Sheet 1: Output (enriched contacts)
+    // Sheet 1: Output (enriched contacts) - includes Record_ID if present
     if (enrichedResult?.contact_data?.length > 0) {
       const enrichedData = enrichedResult.contact_data.map(c => ({
+        Record_ID: c.Record_ID || '',
         First_Name: c.First_Name,
         Last_Name: c.Last_Name,
         Domain: c.Domain,
@@ -455,9 +457,10 @@ const Results = () => {
       XLSX.utils.book_append_sheet(wb, ws1, "Output");
     }
 
-    // Sheet 2: Missing_contacts
+    // Sheet 2: Missing_contacts - includes Record_ID if present
     if (missingResult?.contact_data?.length > 0) {
       const missingData = missingResult.contact_data.map(c => ({
+        Record_ID: c.Record_ID || '',
         First_Name: c.First_Name,
         Last_Name: c.Last_Name,
         Domain: c.Domain || '',

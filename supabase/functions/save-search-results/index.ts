@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface Contact {
   person_id?: string;       // Unique identifier from n8n (primary dedup key)
+  Record_ID?: string;       // User-provided record ID for people enrichment (passed through from input)
   First_Name: string;
   Last_Name: string;
   Domain: string;
