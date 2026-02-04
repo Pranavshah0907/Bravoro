@@ -6,8 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen, Users, Check } from "lucide-react";
+import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen, Users, Check, Info, AlertTriangle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as XLSX from 'xlsx';
+
+// Expected headers for People Enrichment template
+const EXPECTED_HEADERS = ['Sr No', 'Record Id', 'First Name', 'Last Name', 'Organization Domain', 'LinkedIn URL'];
 
 interface BulkPeopleEnrichmentProps {
   userId: string;
@@ -124,7 +128,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     fileInputRef.current?.click();
   };
 
-  const parseExcelToJSON = async (file: File): Promise<any> => {
+  const parseExcelToJSON = async (file: File): Promise<{ data: any; headers: string[] }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -134,12 +138,20 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
           const workbook = XLSX.read(data, { type: 'binary' });
           
           const result: any = {};
-          workbook.SheetNames.forEach(sheetName => {
+          let headers: string[] = [];
+          
+          workbook.SheetNames.forEach((sheetName, index) => {
             const worksheet = workbook.Sheets[sheetName];
             result[sheetName] = XLSX.utils.sheet_to_json(worksheet);
+            
+            // Get headers from the first sheet
+            if (index === 0) {
+              const headerRow = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
+              headers = headerRow || [];
+            }
           });
           
-          resolve(result);
+          resolve({ data: result, headers });
         } catch (error) {
           reject(error);
         }
@@ -148,6 +160,18 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsBinaryString(file);
     });
+  };
+
+  const validateHeaders = (headers: string[]): boolean => {
+    const normalizedHeaders = headers.map(h => String(h).trim().toLowerCase());
+    const normalizedExpected = EXPECTED_HEADERS.map(h => h.toLowerCase());
+    
+    for (const expected of normalizedExpected) {
+      if (!normalizedHeaders.includes(expected)) {
+        return false;
+      }
+    }
+    return true;
   };
 
   const validateData = (excelData: any): ValidationError[] => {
@@ -215,7 +239,19 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     try {
       // Step 1: Parse Excel to JSON
       console.log('Parsing Excel file...');
-      const excelData = await parseExcelToJSON(selectedFile);
+      const { data: excelData, headers } = await parseExcelToJSON(selectedFile);
+      
+      // Validate headers first
+      if (!validateHeaders(headers)) {
+        toast({
+          title: "Header Names Mismatch",
+          description: "Please use the same headers as in the template file and try again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        setCurrentStep('idle');
+        return;
+      }
       
       setCurrentStep('validating');
       
@@ -369,11 +405,26 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
         </div>
 
         {/* Required fields note */}
-        <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
+        <div className="p-3 rounded-lg bg-muted/50 border border-border/30 space-y-2">
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">Required fields:</span> First Name, Last Name, Organization Domain
             <br />
-            <span className="font-medium text-foreground">Optional:</span> LinkedIn URL
+            <span className="font-medium text-foreground">Optional:</span> Record ID
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="inline-block h-3.5 w-3.5 ml-1 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>Option to include a unique identifier to track original data with enriched contacts</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            , LinkedIn URL
+          </p>
+          <p className="text-sm flex items-center gap-1.5">
+            <span className="text-amber-500">⚠️</span>
+            <span className="text-muted-foreground">Important: Keep headers unchanged for a successful upload.</span>
           </p>
         </div>
 
