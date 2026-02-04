@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Results from "./pages/Results";
 import UsageAnalytics from "./pages/UsageAnalytics";
+import UserDatabase from "./pages/UserDatabase";
 import Contact from "./pages/Contact";
 import GoogleSheetsGuide from "./pages/GoogleSheetsGuide";
 import ResetPassword from "./pages/ResetPassword";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/results" element={<Results />} />
           <Route path="/analytics" element={<UsageAnalytics />} />
+          <Route path="/database" element={<UserDatabase />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/google-sheets-guide" element={<GoogleSheetsGuide />} />
           <Route path="/reset-password" element={<ResetPassword />} />

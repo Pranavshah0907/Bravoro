@@ -6,7 +6,8 @@ import {
   FileText, 
   Shield, 
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ export const AppSidebar = ({ isAdmin, onSignOut, onHomeClick }: AppSidebarProps)
     },
     { icon: BarChart3, label: "Analytics", path: "/analytics" },
     { icon: FileText, label: "Results", path: "/results" },
+    { icon: Database, label: "Database", path: "/database" },
     { icon: Shield, label: "Admin", path: "/admin", adminOnly: true },
   ];
 
