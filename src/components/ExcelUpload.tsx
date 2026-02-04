@@ -6,8 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen, Check } from "lucide-react";
+import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen, Check, AlertTriangle } from "lucide-react";
 import * as XLSX from 'xlsx';
+
+// Expected headers for Bulk Search template
+const EXPECTED_HEADERS = ['Sr No', 'Organization Name', 'Organization Locations', 'Organization Domains', 'Person Titles', 'Person Seniorities', 'Results per title'];
 
 interface ExcelUploadProps {
   userId: string;
@@ -117,7 +120,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
     fileInputRef.current?.click();
   };
 
-  const parseExcelToJSON = async (file: File): Promise<any> => {
+  const parseExcelToJSON = async (file: File): Promise<{ data: any; headers: string[] }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -127,12 +130,21 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
           const workbook = XLSX.read(data, { type: 'binary' });
           
           const result: any = {};
-          workbook.SheetNames.forEach(sheetName => {
+          let headers: string[] = [];
+          
+          // For Bulk Search, we need to check the Main_Data sheet specifically
+          workbook.SheetNames.forEach((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
             result[sheetName] = XLSX.utils.sheet_to_json(worksheet);
+            
+            // Get headers from Main_Data sheet or the first sheet
+            if (sheetName === 'Main_Data' || (headers.length === 0 && sheetName === workbook.SheetNames[0])) {
+              const headerRow = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
+              headers = headerRow || [];
+            }
           });
           
-          resolve(result);
+          resolve({ data: result, headers });
         } catch (error) {
           reject(error);
         }
@@ -141,6 +153,18 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsBinaryString(file);
     });
+  };
+
+  const validateHeaders = (headers: string[]): boolean => {
+    const normalizedHeaders = headers.map(h => String(h).trim().toLowerCase());
+    const normalizedExpected = EXPECTED_HEADERS.map(h => h.toLowerCase());
+    
+    for (const expected of normalizedExpected) {
+      if (!normalizedHeaders.includes(expected)) {
+        return false;
+      }
+    }
+    return true;
   };
 
   const getCurrentProgress = () => {
@@ -166,7 +190,19 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
     try {
       // Step 1: Parse Excel to JSON
       console.log('Parsing Excel file...');
-      const excelData = await parseExcelToJSON(selectedFile);
+      const { data: excelData, headers } = await parseExcelToJSON(selectedFile);
+      
+      // Validate headers first
+      if (!validateHeaders(headers)) {
+        toast({
+          title: "Header Names Mismatch",
+          description: "Please use the same headers as in the template file and try again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        setCurrentStep('idle');
+        return;
+      }
       
       setCurrentStep('creating');
       
@@ -302,6 +338,14 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
               Make a Copy
             </Button>
           </div>
+        </div>
+
+        {/* Header warning */}
+        <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
+          <p className="text-sm flex items-center gap-1.5">
+            <span className="text-amber-500">⚠️</span>
+            <span className="text-muted-foreground">Important: Keep headers unchanged for a successful upload.</span>
+          </p>
         </div>
 
         <div className="relative">
