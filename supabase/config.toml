@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.release-api-slot]
 verify_jwt = false
+
+[functions.update-job-status]
+verify_jwt = false
+
+[functions.validate-reset-token]
+verify_jwt = false

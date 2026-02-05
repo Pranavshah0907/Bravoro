@@ -5,8 +5,31 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
 };
+
+// Allowed domains for result file URLs (whitelist)
+const ALLOWED_RESULT_DOMAINS = [
+  'n8n.srv1081444.hstgr.cloud',
+  // Add other trusted result storage domains as needed
+];
+
+// Validate that a result URL belongs to an allowed domain
+function validateResultUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Only allow HTTPS URLs
+    if (parsed.protocol !== 'https:') {
+      return false;
+    }
+    // Check if domain is in whitelist
+    return ALLOWED_RESULT_DOMAINS.some(domain =>
+      parsed.hostname === domain || parsed.hostname.endsWith('.' + domain)
+    );
+  } catch {
+    return false;
+  }
+}
 
 const requestSchema = z.object({
   job_id: z.string().uuid({ message: "Invalid job_id: must be a valid UUID" }),
@@ -23,6 +46,28 @@ serve(async (req) => {
   }
 
   try {
+    // Verify webhook secret for authentication (matching save-search-results pattern)
+    const webhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
+    const providedSecret = req.headers.get('x-webhook-secret');
+
+    if (!webhookSecret) {
+      console.error('N8N_WEBHOOK_SECRET not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!providedSecret || providedSecret !== webhookSecret) {
+      console.error('Invalid or missing webhook secret');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Webhook authentication successful');
+
     const body = await req.json();
     const validationResult = requestSchema.safeParse(body);
     
@@ -36,6 +81,17 @@ serve(async (req) => {
 
     const { job_id, status, result_file_path, error_message } = validationResult.data;
     console.log('Updating job status:', { job_id, status, result_file_path });
+
+    // Validate result_file_path domain if provided
+    if (result_file_path) {
+      if (!validateResultUrl(result_file_path)) {
+        console.error('Invalid result URL domain:', result_file_path);
+        return new Response(
+          JSON.stringify({ error: 'Invalid result URL domain. URL must use HTTPS and belong to an allowed domain.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

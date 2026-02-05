@@ -50,12 +50,10 @@ const ResetPassword = () => {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-        // Verify token exists and is valid
-        const { data: tokenData, error } = await supabase
-          .from('password_reset_tokens')
-          .select('id, user_id, expires_at, used_at')
-          .eq('token_hash', tokenHash)
-          .maybeSingle();
+        // Validate token via secure edge function (not direct DB query)
+        const { data: validationResult, error } = await supabase.functions.invoke('validate-reset-token', {
+          body: { token_hash: tokenHash },
+        });
 
         if (error) {
           console.error('Token validation error:', error);
@@ -64,26 +62,13 @@ const ResetPassword = () => {
           return;
         }
 
-        if (!tokenData) {
-          setTokenError("Invalid or expired reset link");
+        if (!validationResult?.valid) {
+          setTokenError(validationResult?.error || "Invalid or expired reset link");
           setValidating(false);
           return;
         }
 
-        if (tokenData.used_at) {
-          setTokenError("This reset link has already been used");
-          setValidating(false);
-          return;
-        }
-
-        const expiresAt = new Date(tokenData.expires_at);
-        if (expiresAt < new Date()) {
-          setTokenError("This reset link has expired");
-          setValidating(false);
-          return;
-        }
-
-        setUserId(tokenData.user_id);
+        setUserId(validationResult.user_id);
         setTokenValid(true);
         setValidating(false);
       } catch (err) {
@@ -115,18 +100,8 @@ const ResetPassword = () => {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-      // Get the user's email from the token record
-      const { data: tokenData, error: tokenError } = await supabase
-        .from('password_reset_tokens')
-        .select('email')
-        .eq('token_hash', tokenHash)
-        .single();
-
-      if (tokenError || !tokenData) {
-        throw new Error("Token validation failed");
-      }
-
       // Use Supabase Admin API via edge function to update password
+      // The edge function handles token validation and email lookup securely
       const { error: updateError } = await supabase.functions.invoke('update-user-password', {
         body: {
           userId: userId,
