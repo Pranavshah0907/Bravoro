@@ -229,59 +229,55 @@ export const CompanyBrowserDialog = ({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6">
-          <ScrollArea className="h-full">
-            <div className="space-y-2 pt-2 pr-4">
-              {filteredCompanies.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No companies found matching "{searchQuery}"
-                </p>
-              ) : (
-                filteredCompanies.map((company) => (
-                  <Collapsible
-                    key={company.company_name}
-                    open={expandedCompanies.has(company.company_name)}
-                    onOpenChange={() => toggleCompany(company.company_name)}
-                  >
-                    <CollapsibleTrigger asChild>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors border border-border/30">
-                        <div className="flex items-center gap-3">
-                          {expandedCompanies.has(company.company_name) ? (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          )}
-                          <span className="font-medium text-sm text-foreground">
-                            {company.company_name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            ({company.contact_data.length} contacts)
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-primary hover:text-primary/80"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectCompany(company.company_name);
-                            onOpenChange(false);
-                          }}
-                        >
-                          View in Results
-                        </Button>
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+          <div className="space-y-2 pt-2">
+            {filteredCompanies.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No companies found matching "{searchQuery}"
+              </p>
+            ) : (
+              filteredCompanies.map((company) => (
+                <Collapsible
+                  key={company.company_name}
+                  open={expandedCompanies.has(company.company_name)}
+                  onOpenChange={() => toggleCompany(company.company_name)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors border border-border/30">
+                      <div className="flex items-center gap-3">
+                        {expandedCompanies.has(company.company_name) ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className="font-medium text-sm text-foreground">
+                          {company.company_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({company.contact_data.length} contacts)
+                        </span>
                       </div>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-2">
-                      <div className="flex justify-center">
-                        {renderContactsTable(company.contact_data)}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))
-              )}
-            </div>
-          </ScrollArea>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-primary hover:text-primary/80"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectCompany(company.company_name);
+                          onOpenChange(false);
+                        }}
+                      >
+                        View in Results
+                      </Button>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2">
+                    {renderContactsTable(company.contact_data)}
+                  </CollapsibleContent>
+                </Collapsible>
+              ))
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
