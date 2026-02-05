@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -14,6 +14,7 @@ import {
   FileSpreadsheet,
   Copy,
   Phone,
+  MoreHorizontal,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -79,6 +80,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { CompanyBrowserDialog } from "@/components/CompanyBrowserDialog";
 
 interface Search {
   id: string;
@@ -143,6 +145,7 @@ const Results = () => {
   const [activeCompanyTab, setActiveCompanyTab] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState<Record<string, number>>({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [companyBrowserOpen, setCompanyBrowserOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     checkAuth();
@@ -887,46 +890,85 @@ const Results = () => {
         </div>
 
         {companyResults.length > 1 || missingCompanyResults.length > 0 ? (
-          <Tabs
-            value={activeCompany}
-            onValueChange={(value) => {
-              setActiveCompanyTab(prev => ({ ...prev, [search.id]: value }));
-              const newPageKey = getPageKey(search.id, value);
-              if (!currentPage[newPageKey]) {
-                setCurrentPage(prev => ({ ...prev, [newPageKey]: 1 }));
-              }
-            }}
-          >
-            <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/30 p-1 rounded-lg">
-              {missingCompanyResults.length > 0 && (
-                <TabsTrigger 
-                  value="missing_companies" 
-                  className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
-                >
-                  Missing Companies <span className="ml-1 text-muted-foreground">({missingCompanyResults.length})</span>
-                </TabsTrigger>
-              )}
-              {companyResults.map(result => (
-                <TabsTrigger 
-                  key={result.company_name} 
-                  value={result.company_name} 
-                  className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
-                >
-                  {result.company_name} <span className="ml-1 text-muted-foreground">({result.contact_data.length})</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {companyResults.map(result => (
-              <TabsContent key={result.company_name} value={result.company_name}>
-                {renderContactsTable(search.id, result.company_name, result.contact_data)}
-              </TabsContent>
-            ))}
-            {missingCompanyResults.length > 0 && (
-              <TabsContent value="missing_companies">
-                {renderMissingCompaniesTable()}
-              </TabsContent>
-            )}
-          </Tabs>
+          (() => {
+            // Determine how many tabs to show before "more" button
+            const MAX_VISIBLE_TABS = 8;
+            const hasMissingCompanies = missingCompanyResults.length > 0;
+            const totalCompanies = companyResults.length + (hasMissingCompanies ? 1 : 0);
+            const showMoreButton = totalCompanies > MAX_VISIBLE_TABS;
+            const visibleCompanyCount = showMoreButton 
+              ? MAX_VISIBLE_TABS - (hasMissingCompanies ? 2 : 1) // Reserve space for missing companies tab and "more" button
+              : companyResults.length;
+            const visibleCompanies = companyResults.slice(0, visibleCompanyCount);
+            const hiddenCount = companyResults.length - visibleCompanyCount;
+
+            return (
+              <Tabs
+                value={activeCompany}
+                onValueChange={(value) => {
+                  setActiveCompanyTab(prev => ({ ...prev, [search.id]: value }));
+                  const newPageKey = getPageKey(search.id, value);
+                  if (!currentPage[newPageKey]) {
+                    setCurrentPage(prev => ({ ...prev, [newPageKey]: 1 }));
+                  }
+                }}
+              >
+                <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/30 p-1 rounded-lg">
+                  {hasMissingCompanies && (
+                    <TabsTrigger 
+                      value="missing_companies" 
+                      className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
+                    >
+                      Missing Companies <span className="ml-1 text-muted-foreground">({missingCompanyResults.length})</span>
+                    </TabsTrigger>
+                  )}
+                  {visibleCompanies.map(result => (
+                    <TabsTrigger 
+                      key={result.company_name} 
+                      value={result.company_name} 
+                      className="text-xs rounded-md data-[state=active]:bg-card data-[state=active]:shadow-soft px-3 py-1.5"
+                    >
+                      {result.company_name} <span className="ml-1 text-muted-foreground">({result.contact_data.length})</span>
+                    </TabsTrigger>
+                  ))}
+                  {showMoreButton && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs px-3 py-1.5 h-auto font-medium text-primary hover:text-primary/80 hover:bg-primary/10"
+                      onClick={() => setCompanyBrowserOpen(prev => ({ ...prev, [search.id]: true }))}
+                    >
+                      <MoreHorizontal className="h-3 w-3 mr-1" />
+                      More ({hiddenCount})
+                    </Button>
+                  )}
+                </TabsList>
+                {companyResults.map(result => (
+                  <TabsContent key={result.company_name} value={result.company_name}>
+                    {renderContactsTable(search.id, result.company_name, result.contact_data)}
+                  </TabsContent>
+                ))}
+                {hasMissingCompanies && (
+                  <TabsContent value="missing_companies">
+                    {renderMissingCompaniesTable()}
+                  </TabsContent>
+                )}
+
+                <CompanyBrowserDialog
+                  open={companyBrowserOpen[search.id] || false}
+                  onOpenChange={(open) => setCompanyBrowserOpen(prev => ({ ...prev, [search.id]: open }))}
+                  companies={companyResults}
+                  onSelectCompany={(companyName) => {
+                    setActiveCompanyTab(prev => ({ ...prev, [search.id]: companyName }));
+                    const newPageKey = getPageKey(search.id, companyName);
+                    if (!currentPage[newPageKey]) {
+                      setCurrentPage(prev => ({ ...prev, [newPageKey]: 1 }));
+                    }
+                  }}
+                />
+              </Tabs>
+            );
+          })()
         ) : companyResults.length === 1 ? (
           <div>
             <p className="text-sm text-muted-foreground mb-3">
