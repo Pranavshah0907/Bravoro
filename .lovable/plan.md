@@ -1,31 +1,32 @@
 
-## Fix UTF-8 Encoding for n8n Webhook Requests
+
+## Fix: Skip Empty Rows in People Enrichment Validation
 
 ### Problem
-German umlauts (e.g., "u") are arriving as mojibake ("Ã¼") in n8n because the `Content-Type` header lacks an explicit charset declaration.
+When uploading a People Enrichment file, empty rows (Row 3 onwards) are being flagged as validation errors for missing First Name, Last Name, and Organization Domain. This happens because the Excel template may contain formatting, formulas, or hidden metadata in those rows, so `XLSX.utils.sheet_to_json()` includes them as data rows. The current validation checks every returned row without considering whether it is actually empty.
+
+### Root Cause
+In `src/components/BulkPeopleEnrichment.tsx`, the `validateData` function (lines 194-214) iterates over all rows and validates mandatory fields on each one. It does not check whether a row is effectively empty before flagging errors.
 
 ### Solution
-Update the `Content-Type` header to `application/json; charset=utf-8` in all outbound webhook calls across two edge functions that send data to n8n.
+Add an "effectively empty" check at the start of the row loop. If all key fields (First Name, Last Name, Organization Domain, LinkedIn URL) are empty or missing, skip that row entirely -- it is not real data.
 
-### Files to Change
+### File to Change
 
-**1. `supabase/functions/trigger-n8n-webhook/index.ts`**
-Two locations where headers are built for the n8n fetch call:
-- Line 207: Change `'Content-Type': 'application/json'` to `'application/json; charset=utf-8'` (direct send path)
+**`src/components/BulkPeopleEnrichment.tsx`** -- `validateData` function (lines 194-214)
 
-**2. `supabase/functions/release-api-slot/index.ts`**
-One location where queued items are forwarded to n8n:
-- Line 85: Change `'Content-Type': 'application/json'` to `'application/json; charset=utf-8'` (queue forwarding path)
-
-### Why This Works
-- `JSON.stringify()` in Deno produces valid UTF-8 strings by default
-- The issue is that n8n interprets the incoming bytes using a fallback encoding (likely Latin-1/ISO-8859-1) when no charset is declared
-- Explicitly declaring `charset=utf-8` tells n8n to decode the body correctly
-
-### Scope
-This covers all 3 search approaches (manual entry, bulk upload, bulk people enrichment) since they all flow through the same `trigger-n8n-webhook` function, and queued re-sends go through `release-api-slot`.
+Add a check after extracting each row's values: if the row has no meaningful data across all relevant columns, skip validation for that row. Additionally, filter out these empty rows from the data before sending to the backend, so n8n does not receive blank entries.
 
 ### Technical Details
-- No changes to payload serialization needed -- `JSON.stringify` already outputs UTF-8
-- No changes to the frontend or other edge functions required
-- Both edge functions will be redeployed automatically after the change
+
+Inside the `data.forEach` loop, before the mandatory field checks:
+
+1. Extract all field values (First Name, Last Name, Domain, LinkedIn URL, Record Id)
+2. Check if ALL of them are empty/undefined/whitespace
+3. If the row is effectively empty, skip it (return early from the forEach callback)
+
+This approach:
+- Preserves validation for rows that have partial data (e.g., First Name filled but Domain missing)
+- Only skips rows where nothing meaningful is entered
+- Matches user expectation that trailing empty rows are not real data
+
