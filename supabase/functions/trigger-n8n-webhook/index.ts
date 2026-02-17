@@ -222,7 +222,7 @@ serve(async (req) => {
 
     // Build headers with webhook secret authentication
     const webhookHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
       'type_of_entry': entryType || 'manual_entry',
     };
 

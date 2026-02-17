@@ -82,8 +82,8 @@ serve(async (req) => {
 
       // Build headers
       const webhookHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'type_of_entry': nextItem.next_entry_type,
+      'Content-Type': 'application/json; charset=utf-8',
+      'type_of_entry': nextItem.next_entry_type,
       };
 
       if (n8nWebhookSecret) {
