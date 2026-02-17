@@ -194,20 +194,26 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     data.forEach((row: any, index: number) => {
       const rowNum = index + 2; // +2 because Excel rows start at 1 and we have a header row
 
-      // Check for First Name (could be "First Name" or "First_Name")
+      // Extract all key fields
       const firstName = row['First Name'] || row['First_Name'] || row['first name'] || row['first_name'];
+      const lastName = row['Last Name'] || row['Last_Name'] || row['last name'] || row['last_name'];
+      const domain = row['Organization Domain'] || row['Organization_Domain'] || row['organization domain'] || row['Domain'] || row['domain'];
+      const linkedinUrl = row['LinkedIn URL'] || row['LinkedIn_URL'] || row['linkedin url'] || row['linkedin_url'];
+      const recordId = row['Record Id'] || row['Record_Id'] || row['record id'] || row['record_id'];
+
+      // Skip effectively empty rows (all key fields are empty/missing)
+      const allEmpty = [firstName, lastName, domain, linkedinUrl, recordId].every(
+        (val) => !val || String(val).trim() === ''
+      );
+      if (allEmpty) return;
+
+      // Validate mandatory fields on non-empty rows
       if (!firstName || String(firstName).trim() === '') {
         errors.push({ row: rowNum, field: 'First Name', message: `Row ${rowNum}: First Name is required` });
       }
-
-      // Check for Last Name
-      const lastName = row['Last Name'] || row['Last_Name'] || row['last name'] || row['last_name'];
       if (!lastName || String(lastName).trim() === '') {
         errors.push({ row: rowNum, field: 'Last Name', message: `Row ${rowNum}: Last Name is required` });
       }
-
-      // Check for Organization Domain (could also be "Domain")
-      const domain = row['Organization Domain'] || row['Organization_Domain'] || row['organization domain'] || row['Domain'] || row['domain'];
       if (!domain || String(domain).trim() === '') {
         errors.push({ row: rowNum, field: 'Organization Domain', message: `Row ${rowNum}: Organization Domain is required` });
       }
