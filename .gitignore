@@ -52,3 +52,6 @@ take-screenshot.mjs
 
 # Supabase temp files
 supabase/.temp/
+
+# Migration data (one-time migration scripts, not part of the app)
+migration_data/
