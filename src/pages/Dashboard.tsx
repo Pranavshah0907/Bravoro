@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -6,14 +6,15 @@ import { useToast } from "@/hooks/use-toast";
 import { ManualForm } from "@/components/ManualForm";
 import { ExcelUpload } from "@/components/ExcelUpload";
 import { BulkPeopleEnrichment } from "@/components/BulkPeopleEnrichment";
+import { AIChatInterface, ConversationMeta, AIChatHandle } from "@/components/AIChatInterface";
 import { PasswordReset } from "@/components/PasswordReset";
 import { AppSidebar } from "@/components/AppSidebar";
 import { EnrichmentCard } from "@/components/EnrichmentCard";
-import { Search, Upload, Users } from "lucide-react";
+import { Search, Upload, Users, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 
-type EnrichmentType = "manual" | "bulk" | "people_enrichment" | null;
+type EnrichmentType = "manual" | "bulk" | "people_enrichment" | "ai_staffing" | null;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,27 +25,40 @@ const Dashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedType, setSelectedType] = useState<EnrichmentType>(null);
 
+  // AI Staffing state lifted to Dashboard for sidebar
+  const [aiConvs, setAiConvs] = useState<ConversationMeta[]>([]);
+  const [aiActiveId, setAiActiveId] = useState<string>("");
+  const aiChatRef = useRef<AIChatHandle>(null);
+  const [isSidebarPinned, setIsSidebarPinned] = useState(false);
+
   const enrichmentOptions = [
     {
       type: "manual" as const,
       title: "Single Search",
       description: "Search and enrich contacts from a single company",
       icon: Search,
-      gradient: "from-primary/15 via-accent/10 to-primary/5",
+      gradient: "from-primary/25 via-accent/15 to-primary/8",
     },
     {
       type: "bulk" as const,
       title: "Bulk Search",
       description: "Upload multiple companies and enrich contacts in batch",
       icon: Upload,
-      gradient: "from-accent/15 via-secondary/10 to-accent/5",
+      gradient: "from-accent/25 via-secondary/15 to-accent/8",
     },
     {
       type: "people_enrichment" as const,
       title: "Bulk People Enrichment",
       description: "Enrich existing contact lists with updated information",
       icon: Users,
-      gradient: "from-secondary/15 via-primary/10 to-secondary/5",
+      gradient: "from-secondary/25 via-primary/15 to-secondary/8",
+    },
+    {
+      type: "ai_staffing" as const,
+      title: "AI-based Staffing",
+      description: "Chat with AI to find and shortlist candidates for your roles",
+      icon: Bot,
+      gradient: "from-caretta/25 via-primary/15 to-caretta/8",
     },
   ];
 
@@ -65,7 +79,7 @@ const Dashboard = () => {
 
   const checkAuthAndProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (session?.user) {
       setUser(session.user);
       await checkProfile(session.user.id);
@@ -111,6 +125,33 @@ const Dashboard = () => {
     setSelectedType(null);
   };
 
+  // AI Staffing handlers
+  const handleConvsChange = (convs: ConversationMeta[], activeId: string) => {
+    setAiConvs(convs);
+    setAiActiveId(activeId);
+  };
+
+  const handleSelectAiConv = (id: string) => {
+    setAiActiveId(id);
+    setSelectedType("ai_staffing");
+  };
+
+  const handlePinChange = (pinned: boolean) => {
+    setIsSidebarPinned(pinned);
+  };
+
+  const handleNewAiChat = () => {
+    aiChatRef.current?.newChat();
+  };
+
+  const handleRenameAiConv = (id: string, title: string) => {
+    aiChatRef.current?.renameConv(id, title);
+  };
+
+  const handleDeleteAiConv = (id: string) => {
+    aiChatRef.current?.deleteConv(id);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -127,12 +168,12 @@ const Dashboard = () => {
 
   if (requiresPasswordReset && user) {
     return (
-      <PasswordReset 
-        userId={user.id} 
+      <PasswordReset
+        userId={user.id}
         onComplete={() => {
           setRequiresPasswordReset(false);
           checkAuthAndProfile();
-        }} 
+        }}
       />
     );
   }
@@ -153,30 +194,41 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <AppSidebar 
-        isAdmin={isAdmin} 
-        onSignOut={handleSignOut} 
+      <AppSidebar
+        isAdmin={isAdmin}
+        onSignOut={handleSignOut}
         onHomeClick={handleHomeClick}
+        selectedType={selectedType}
+        aiConversations={aiConvs}
+        aiActiveId={aiActiveId}
+        onSelectAiConv={handleSelectAiConv}
+        onNewAiChat={handleNewAiChat}
+        onRenameAiConv={handleRenameAiConv}
+        onDeleteAiConv={handleDeleteAiConv}
+        onPinChange={handlePinChange}
       />
 
       {/* Main Content */}
       <main className={cn(
-        "flex-1 ml-16 min-h-screen",
-        "transition-all duration-500"
+        "flex-1 min-h-screen duration-300 ease-out",
+        isSidebarPinned ? "ml-56" : "ml-16"
       )}>
         {/* Background Effects */}
-        <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
-          <div 
-            className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full opacity-30"
+        <div className={cn(
+          "fixed inset-0 pointer-events-none overflow-hidden duration-300 ease-out",
+          isSidebarPinned ? "ml-56" : "ml-16"
+        )}>
+          <div
+            className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full opacity-50"
             style={{
-              background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)",
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.22) 0%, transparent 70%)",
               animation: "float 20s ease-in-out infinite"
             }}
           />
-          <div 
-            className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] rounded-full opacity-20"
+          <div
+            className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] rounded-full opacity-40"
             style={{
-              background: "radial-gradient(circle, hsl(var(--accent) / 0.15) 0%, transparent 70%)",
+              background: "radial-gradient(circle, hsl(var(--accent) / 0.18) 0%, transparent 70%)",
               animation: "float 15s ease-in-out infinite reverse"
             }}
           />
@@ -184,24 +236,41 @@ const Dashboard = () => {
 
         {/* Content */}
         <div className="relative z-10">
-          {/* Logo in top right */}
-          <div className="absolute top-6 right-6 md:top-8 md:right-8">
-            <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
-          </div>
+          {/* Logo in top right — hidden when AI staffing active (shown in chat header instead) */}
+          {selectedType !== "ai_staffing" && (
+            <div className="fixed top-6 right-6 md:top-8 md:right-8 z-40 pointer-events-none">
+              <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
+            </div>
+          )}
 
-          {!selectedType ? (
+          {selectedType === "ai_staffing" ? (
+            /* AI Staffing — full height, no tile sidebar */
+            <div className="p-4 lg:p-5" style={{ paddingTop: "1.5rem", height: "100vh" }}>
+              <AIChatInterface
+                ref={aiChatRef}
+                userId={user?.id || ""}
+                externalActiveId={aiActiveId}
+                onConvsChange={handleConvsChange}
+              />
+            </div>
+          ) : !selectedType ? (
             /* Initial View - 3 Cards */
             <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
               <div className="text-center mb-12 animate-fade-in">
-                <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+                <h1 className="text-4xl md:text-5xl font-bold mb-3" style={{
+                  background: "linear-gradient(135deg, hsl(var(--foreground)) 40%, hsl(var(--accent)) 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}>
                   Welcome back
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-md mx-auto">
+                <p className="text-base text-muted-foreground max-w-md mx-auto">
                   Select an enrichment method to get started
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl w-full items-stretch">
                 {enrichmentOptions.map((option, index) => (
                   <div
                     key={option.type}
@@ -222,13 +291,13 @@ const Dashboard = () => {
           ) : (
             /* Selected View - Left Panel + Form */
             <div className="flex flex-col lg:flex-row min-h-screen">
-              {/* Left Sticky Cards - Responsive sizing */}
+              {/* Left Sticky Cards */}
               <div className="
                 lg:sticky lg:top-0 lg:h-screen
                 w-full lg:w-56 xl:w-64 2xl:w-72
-                shrink-0 
-                flex flex-col justify-center 
-                py-4 lg:py-[12.5vh] 
+                shrink-0
+                flex flex-col justify-center
+                py-4 lg:py-[12.5vh]
                 px-4 lg:px-0 lg:pl-4
               ">
                 <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 xl:gap-4 h-auto lg:h-full overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
@@ -245,34 +314,29 @@ const Dashboard = () => {
                           "p-3 lg:p-4 xl:p-5 rounded-xl lg:rounded-2xl",
                           "bg-gradient-to-br", option.gradient,
                           "border backdrop-blur-sm",
-                          "transition-all duration-300 ease-out",
+                          "duration-300 ease-out",
                           "hover:shadow-lg hover:shadow-primary/10",
                           "focus:outline-none",
-                          isSelected 
-                            ? "border-primary/50 shadow-lg shadow-primary/15" 
+                          isSelected
+                            ? "border-primary/50 shadow-lg shadow-primary/15"
                             : "border-border/30 hover:border-primary/30"
                         )}
                         style={{ animationDelay: `${index * 80}ms` }}
                       >
-                        {/* Active indicator bar */}
                         {isSelected && (
                           <div className="absolute left-0 top-3 bottom-3 lg:top-4 lg:bottom-4 w-1 bg-primary rounded-r-full" />
                         )}
-                        
-                        {/* Icon */}
                         <div className={cn(
                           "p-2.5 lg:p-3 xl:p-4 rounded-lg lg:rounded-xl mb-1.5 lg:mb-3",
-                          "transition-all duration-300",
-                          isSelected 
-                            ? "bg-primary/20 text-primary" 
+                          "duration-300",
+                          isSelected
+                            ? "bg-primary/20 text-primary"
                             : "bg-card/60 text-muted-foreground"
                         )}>
                           <Icon className="h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6" />
                         </div>
-                        
-                        {/* Text */}
                         <h3 className={cn(
-                          "font-semibold text-xs lg:text-sm xl:text-base text-center transition-colors leading-tight",
+                          "font-semibold text-xs lg:text-sm xl:text-base text-center duration-200 leading-tight",
                           isSelected ? "text-primary" : "text-foreground"
                         )}>
                           {option.title}
@@ -286,7 +350,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Gap between left panel and form */}
+              {/* Gap */}
               <div className="hidden lg:block w-3 xl:w-5 2xl:w-6 shrink-0" />
 
               {/* Right Form Area */}
@@ -300,7 +364,7 @@ const Dashboard = () => {
                       {enrichmentOptions.find(o => o.type === selectedType)?.description}
                     </p>
                   </div>
-                  
+
                   <div className="animate-slide-up">
                     {renderForm()}
                   </div>

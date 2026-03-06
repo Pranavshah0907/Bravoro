@@ -1,20 +1,50 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { LogIn, Loader2, Mail, Lock } from "lucide-react";
+import { LogIn, Loader2, Mail, Lock, X, PhoneCall } from "lucide-react";
 import { z } from "zod";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
+import bravoroIcon from "@/assets/Logo_icon_final.png";
 import { ForgotPasswordDialog } from "@/components/ForgotPasswordDialog";
+
+interface Beam {
+  x: number;
+  y: number;
+  width: number;
+  length: number;
+  angle: number;
+  speed: number;
+  opacity: number;
+  pulse: number;
+  pulseSpeed: number;
+  layer: number;
+}
+
+function createBeam(width: number, height: number, layer: number): Beam {
+  const angle = -35 + Math.random() * 10;
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    width: 10 + layer * 6,
+    length: height * 2.5,
+    angle,
+    speed: 0.3 + layer * 0.25 + Math.random() * 0.2,
+    opacity: 0.055 + layer * 0.035 + Math.random() * 0.04,
+    pulse: Math.random() * Math.PI * 2,
+    pulseSpeed: 0.008 + Math.random() * 0.012,
+    layer,
+  };
+}
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
+
+const rotatingWords = ["Search", "Enrich", "Connect"];
+
+type AnimPhase = "idle" | "exit" | "enter";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,141 +52,564 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
+  const [wordIndex, setWordIndex] = useState(0);
+  const [animPhase, setAnimPhase] = useState<AnimPhase>("idle");
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const beamsRef = useRef<Beam[]>([]);
+  const rafRef = useRef<number>(0);
+
+  const LAYERS = 3;
+  const BEAMS_PER_LAYER = 9;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
+      if (session) navigate("/dashboard");
     });
   }, [navigate]);
 
+  // Canvas beam animation
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      beamsRef.current = [];
+      for (let layer = 1; layer <= LAYERS; layer++) {
+        for (let i = 0; i < BEAMS_PER_LAYER; i++) {
+          beamsRef.current.push(createBeam(window.innerWidth, window.innerHeight, layer));
+        }
+      }
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const drawBeam = (beam: Beam) => {
+      ctx.save();
+      ctx.translate(beam.x, beam.y);
+      ctx.rotate((beam.angle * Math.PI) / 180);
+      const po = Math.min(1, beam.opacity * (0.7 + Math.sin(beam.pulse) * 0.5));
+      const g = ctx.createLinearGradient(0, 0, 0, beam.length);
+      g.addColorStop(0, `rgba(0,157,165,0)`);
+      g.addColorStop(0.15, `rgba(88,221,221,${po * 0.4})`);
+      g.addColorStop(0.5, `rgba(88,221,221,${po})`);
+      g.addColorStop(0.85, `rgba(88,221,221,${po * 0.4})`);
+      g.addColorStop(1, `rgba(0,157,165,0)`);
+      ctx.fillStyle = g;
+      ctx.filter = `blur(${2 + beam.layer * 1.5}px)`;
+      ctx.fillRect(-beam.width / 2, 0, beam.width, beam.length);
+      ctx.restore();
+    };
+
+    const animate = () => {
+      const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bg.addColorStop(0, "#09161f");
+      bg.addColorStop(1, "#0f2535");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      beamsRef.current.forEach((beam) => {
+        beam.y -= beam.speed * (beam.layer / LAYERS + 0.5);
+        beam.pulse += beam.pulseSpeed;
+        if (beam.y + beam.length < -50) {
+          beam.y = window.innerHeight + 50;
+          beam.x = Math.random() * window.innerWidth;
+        }
+        drawBeam(beam);
+      });
+
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  // Rotating word — exit → swap → enter
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimPhase("exit");
+      setTimeout(() => {
+        setWordIndex((p) => (p + 1) % rotatingWords.length);
+        setAnimPhase("enter");
+        setTimeout(() => setAnimPhase("idle"), 520);
+      }, 360);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, []);
+
+  const wordClass =
+    animPhase === "exit"
+      ? "auth-word-exit"
+      : animPhase === "enter"
+      ? "auth-word-enter"
+      : "";
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       signInSchema.parse({ email, password });
       setLoading(true);
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
-
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in",
-      });
-
+      toast({ title: "Welcome back!", description: "You have successfully signed in" });
       navigate("/dashboard");
     } catch (error: any) {
-      toast({
-        title: "Sign In Failed",
-        description: error.message || "Invalid credentials",
-        variant: "destructive",
-      });
+      toast({ title: "Sign In Failed", description: error.message || "Invalid credentials", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 md:p-8 relative overflow-hidden bg-background">
-      {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-secondary/8 rounded-full blur-3xl" />
+    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden" }}>
+      {/* Canvas bg */}
+      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, zIndex: 0 }} />
 
-      <Card className="w-full max-w-md relative z-10 animate-scale-in bg-card/80 backdrop-blur-xl border border-border/40 shadow-strong">
-        <CardHeader className="text-center space-y-6 pb-2">
-          <div className="mx-auto flex flex-col items-center gap-6">
-            {/* Logo without border */}
-            <div className="bg-gradient-to-br from-primary/20 to-accent/10 rounded-2xl p-6 shadow-glow">
-              <img 
-                src={bravoroLogo} 
-                alt="Bravoro" 
-                className="h-8 md:h-10 w-auto animate-fade-in" 
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <CardTitle className="text-2xl md:text-3xl font-bold text-foreground">
-              Welcome Back
-            </CardTitle>
-            <CardDescription className="text-base text-muted-foreground">
-              Sign in to access your account
-            </CardDescription>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-6 pt-4">
-          <form onSubmit={handleSignIn} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2 text-foreground font-medium">
-                <Mail className="h-4 w-4 text-accent" />
-                Email Address
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-            </div>
+      {/* Center glow */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+        background: "radial-gradient(ellipse 65% 50% at 50% 40%, rgba(88,221,221,0.06) 0%, transparent 70%)",
+      }} />
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="flex items-center gap-2 text-foreground font-medium">
-                  <Lock className="h-4 w-4 text-accent" />
-                  Password
-                </Label>
-                <ForgotPasswordDialog />
-              </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-12 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-            </div>
+      {/* Hero content */}
+      <div style={{
+        position: "relative", zIndex: 2,
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", height: "100vh",
+        padding: "0 24px", textAlign: "center",
+      }}>
 
-            <Button 
-              type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-primary to-caretta hover:opacity-90 text-primary-foreground font-semibold text-base shadow-glow hover:shadow-strong transition-all duration-300" 
-              disabled={loading}
+        {/* Full Bravoro logo */}
+        <div style={{
+          marginBottom: "clamp(28px, 4vh, 44px)",
+          position: "relative",
+        }}>
+          <div style={{
+            position: "absolute", inset: "-12px",
+            background: "radial-gradient(ellipse, rgba(88,221,221,0.12), transparent 70%)",
+            filter: "blur(16px)",
+            pointerEvents: "none",
+          }} />
+          <img
+            src={bravoroLogo}
+            alt="Bravoro"
+            style={{
+              height: "clamp(28px, 3.8vh, 40px)",
+              width: "auto",
+              position: "relative",
+              filter: "drop-shadow(0 0 18px rgba(88,221,221,0.35))",
+            }}
+          />
+        </div>
+
+        {/* Hero headline */}
+        <div style={{ maxWidth: "820px", marginBottom: "clamp(12px, 2vh, 20px)" }}>
+          <h1 style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontSize: "clamp(2rem, 3.8vw, 3.4rem)",
+            fontWeight: 800,
+            lineHeight: 1.18,
+            letterSpacing: "-0.03em",
+            color: "#e4efef",
+            margin: 0,
+          }}>
+            Your One-Stop Platform to Find
+            <br />
+            <span style={{
+              background: "linear-gradient(135deg, #58dddd 0%, #009da5 55%, #00686d 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>
+              the Right Decision Makers
+            </span>
+          </h1>
+        </div>
+
+        {/* Rotating word — inline reference style */}
+        <div style={{
+          height: "clamp(56px, 8vh, 80px)",
+          overflow: "hidden",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "clamp(30px, 4.5vh, 48px)",
+        }}>
+          <span
+            className={wordClass}
+            style={{
+              display: "block",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 800,
+              fontSize: "clamp(2.2rem, 4.5vw, 4rem)",
+              letterSpacing: "-0.04em",
+              background: "linear-gradient(135deg, #58dddd 0%, #009da5 60%, #277587 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              textShadow: "none",
+              lineHeight: 1,
+            }}
+          >
+            {rotatingWords[wordIndex]}
+          </span>
+        </div>
+
+        {/* CTA Buttons */}
+        <div style={{ display: "flex", flexDirection: "row", gap: "14px", flexWrap: "wrap", justifyContent: "center" }}>
+          <button
+            onClick={() => setShowLogin(true)}
+            className="auth-btn-primary"
+            style={{
+              background: "linear-gradient(135deg, #009da5 0%, #007a80 50%, #00686d 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "12px",
+              padding: "clamp(11px, 1.5vh, 14px) clamp(24px, 3vw, 32px)",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 700,
+              fontSize: "clamp(0.85rem, 1.1vw, 0.95rem)",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", gap: "8px",
+              boxShadow: "0 4px 24px rgba(0,157,165,0.4), 0 1px 0 rgba(255,255,255,0.12) inset",
+              letterSpacing: "0.01em",
+            }}
+          >
+            <LogIn size={15} />
+            Login to Platform
+          </button>
+
+          <a
+            href="/contact"
+            className="auth-btn-secondary"
+            style={{
+              background: "rgba(88,221,221,0.06)",
+              color: "#58dddd",
+              border: "1px solid rgba(88,221,221,0.32)",
+              borderRadius: "12px",
+              padding: "clamp(11px, 1.5vh, 14px) clamp(24px, 3vw, 32px)",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: "clamp(0.85rem, 1.1vw, 0.95rem)",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", gap: "8px",
+              textDecoration: "none",
+              backdropFilter: "blur(10px)",
+              letterSpacing: "0.01em",
+            }}
+          >
+            <PhoneCall size={15} />
+            Contact Us
+          </a>
+        </div>
+
+        {/* Tagline */}
+        <p style={{
+          marginTop: "clamp(20px, 3vh, 32px)",
+          color: "rgba(110,114,114,0.65)",
+          fontSize: "0.7rem",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          letterSpacing: "0.15em",
+          textTransform: "uppercase",
+        }}>
+          Enterprise Lead Intelligence · Trusted by Sales Teams
+        </p>
+      </div>
+
+      {/* Login Modal Overlay */}
+      {showLogin && (
+        <div
+          className="auth-modal-overlay"
+          style={{
+            position: "fixed", inset: 0, zIndex: 50,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(7,21,31,0.82)",
+            backdropFilter: "blur(12px)",
+            padding: "16px",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLogin(false); }}
+        >
+          <div
+            className="auth-modal-card"
+            style={{
+              position: "relative",
+              background: "linear-gradient(160deg, rgba(13,34,46,0.98) 0%, rgba(9,24,34,0.99) 100%)",
+              border: "1px solid rgba(88,221,221,0.18)",
+              borderRadius: "20px",
+              padding: "clamp(28px, 4vh, 40px) clamp(24px, 4vw, 40px)",
+              width: "100%",
+              maxWidth: "420px",
+              boxShadow: "0 0 0 1px rgba(88,221,221,0.06) inset, 0 32px 100px rgba(0,0,0,0.7), 0 0 80px rgba(88,221,221,0.08)",
+            }}
+          >
+            {/* Top edge glow line */}
+            <div style={{
+              position: "absolute", top: 0, left: "20%", right: "20%", height: "1px",
+              background: "linear-gradient(90deg, transparent, rgba(88,221,221,0.5), transparent)",
+              borderRadius: "100px",
+            }} />
+
+            {/* Close */}
+            <button
+              onClick={() => setShowLogin(false)}
+              className="auth-close-btn"
+              style={{
+                position: "absolute", top: "14px", right: "14px",
+                background: "rgba(88,221,221,0.08)",
+                border: "1px solid rgba(88,221,221,0.15)",
+                borderRadius: "8px", width: "30px", height: "30px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "rgba(197,216,215,0.7)",
+              }}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Signing In...
-                </>
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-5 w-5" />
-                  Sign In
-                </>
-              )}
-            </Button>
-          </form>
+              <X size={13} />
+            </button>
 
-          <div className="pt-2 border-t border-border/30">
-            <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <a href="/contact" className="text-accent hover:text-primary font-medium transition-colors underline-offset-4 hover:underline">
-                Contact us
-              </a>
-            </p>
+            {/* Modal header */}
+            <div style={{ textAlign: "center", marginBottom: "clamp(20px, 3vh, 28px)" }}>
+              <div style={{ position: "relative", display: "inline-block", marginBottom: "14px" }}>
+                <div style={{
+                  position: "absolute", inset: "-6px", borderRadius: "16px",
+                  background: "radial-gradient(ellipse, rgba(88,221,221,0.18), transparent 70%)",
+                  filter: "blur(10px)",
+                }} />
+                <img
+                  src={bravoroIcon}
+                  alt="Bravoro"
+                  style={{
+                    height: "44px", width: "44px", borderRadius: "12px",
+                    boxShadow: "0 0 0 1px rgba(88,221,221,0.2), 0 8px 24px rgba(0,0,0,0.4)",
+                    position: "relative",
+                  }}
+                />
+              </div>
+              <h2 style={{
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontWeight: 800, fontSize: "1.45rem", color: "#e4efef",
+                margin: "0 0 5px", letterSpacing: "-0.025em",
+              }}>
+                Welcome Back
+              </h2>
+              <p style={{
+                color: "rgba(110,114,114,0.9)",
+                fontSize: "0.82rem",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                margin: 0,
+              }}>
+                Sign in to access your account
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{
+                  color: "#c5d8d7", fontSize: "0.78rem", fontWeight: 600,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  display: "flex", alignItems: "center", gap: "5px",
+                  letterSpacing: "0.02em", textTransform: "uppercase",
+                }}>
+                  <Mail size={11} style={{ color: "#58dddd" }} />
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="auth-input"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(88,221,221,0.18)",
+                    borderRadius: "10px", padding: "11px 13px",
+                    color: "#e4efef",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.88rem",
+                    outline: "none", width: "100%", boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <label style={{
+                    color: "#c5d8d7", fontSize: "0.78rem", fontWeight: 600,
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    display: "flex", alignItems: "center", gap: "5px",
+                    letterSpacing: "0.02em", textTransform: "uppercase",
+                  }}>
+                    <Lock size={11} style={{ color: "#58dddd" }} />
+                    Password
+                  </label>
+                  <ForgotPasswordDialog />
+                </div>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="auth-input"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(88,221,221,0.18)",
+                    borderRadius: "10px", padding: "11px 13px",
+                    color: "#e4efef",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.88rem",
+                    outline: "none", width: "100%", boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="auth-submit-btn"
+                style={{
+                  background: loading
+                    ? "rgba(0,157,165,0.4)"
+                    : "linear-gradient(135deg, #009da5 0%, #00686d 100%)",
+                  color: "#fff", border: "none", borderRadius: "10px",
+                  padding: "12px",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontWeight: 700, fontSize: "0.9rem",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
+                  marginTop: "4px",
+                  boxShadow: loading ? "none" : "0 4px 20px rgba(0,157,165,0.35)",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={15} style={{ animation: "auth-spin 1s linear infinite" }} />
+                    Signing In...
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={15} />
+                    Sign In
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div style={{
+              marginTop: "18px", paddingTop: "14px",
+              borderTop: "1px solid rgba(88,221,221,0.1)",
+              textAlign: "center",
+            }}>
+              <p style={{
+                color: "rgba(110,114,114,0.85)", fontSize: "0.78rem",
+                fontFamily: "'Plus Jakarta Sans', sans-serif", margin: 0,
+              }}>
+                Don't have an account?{" "}
+                <a href="/contact" style={{ color: "#58dddd", fontWeight: 600, textDecoration: "none" }}>
+                  Contact us
+                </a>
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      <style>{`
+        /* Rotating word animations */
+        .auth-word-exit {
+          animation: auth-word-up 0.36s cubic-bezier(0.4, 0, 1, 1) forwards;
+        }
+        .auth-word-enter {
+          animation: auth-word-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes auth-word-up {
+          from { opacity: 1; transform: translateY(0); }
+          to   { opacity: 0; transform: translateY(-50px); }
+        }
+        @keyframes auth-word-in {
+          from { opacity: 0; transform: translateY(50px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes auth-spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+
+        .auth-modal-overlay {
+          animation: auth-fade-overlay 0.25s ease;
+        }
+        @keyframes auth-fade-overlay {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+
+        .auth-modal-card {
+          animation: auth-slide-modal 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes auth-slide-modal {
+          from { opacity: 0; transform: translateY(20px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .auth-btn-primary {
+          transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+        .auth-btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 36px rgba(0,157,165,0.55) !important;
+          filter: brightness(1.08);
+        }
+        .auth-btn-primary:active { transform: translateY(0); }
+
+        .auth-btn-secondary {
+          transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+        .auth-btn-secondary:hover {
+          transform: translateY(-2px);
+          border-color: rgba(88,221,221,0.6) !important;
+          background: rgba(88,221,221,0.1) !important;
+        }
+        .auth-btn-secondary:active { transform: translateY(0); }
+
+        .auth-close-btn {
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .auth-close-btn:hover {
+          background: rgba(88,221,221,0.16) !important;
+          color: #58dddd !important;
+        }
+
+        .auth-input {
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .auth-input:focus {
+          border-color: rgba(88,221,221,0.5) !important;
+          box-shadow: 0 0 0 3px rgba(88,221,221,0.09) !important;
+        }
+
+        .auth-submit-btn {
+          transition: filter 0.2s ease, transform 0.15s ease;
+        }
+        .auth-submit-btn:hover:not(:disabled) {
+          filter: brightness(1.1);
+          transform: translateY(-1px);
+        }
+        .auth-submit-btn:active:not(:disabled) { transform: translateY(0); }
+      `}</style>
     </div>
   );
 };

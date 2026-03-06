@@ -1,0 +1,9 @@
+id;email;full_name;created_at;updated_at;requires_password_reset;enrichment_limit;enrichment_used
+4272e641-ed75-4390-8100-98e4ed949581;aydin@emploio.de;Zeynel Aydin;2025-11-26 14:18:43.613891+00;2026-02-25 11:01:52.989372+00;false;100000000;1991
+c2546b12-c2a7-44ad-ba71-9a01f75fba5a;aliaydin0261@gmail.com;Zeynel Aydin;2026-02-04 10:49:28.871085+00;2026-02-04 10:50:13.381514+00;false;100;0
+5ee1adb1-82e9-474a-a480-7a801c136549;christoph@salesup.pro;Christoph Koellner;2025-12-23 23:00:33.276629+00;2025-12-23 23:00:33.484204+00;true;0;0
+691e5bb1-0d53-4e3e-84a8-bff377816430;langenscheidt@emploio.de;Loris Langenscheidt;2025-12-23 23:19:41.767847+00;2025-12-23 23:19:42.177816+00;true;0;0
+64f6912f-e055-4fc7-a94c-fd1c395a125f;tobias.holke@entsorgungstalente.de;Tobias Holke;2026-02-04 10:57:47.078797+00;2026-02-06 12:51:08.923533+00;false;10000;30
+bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8;sandy.s9995@gmail.com;Sandeep Sharma;2025-11-26 13:50:48.846855+00;2026-02-16 07:03:17.595352+00;false;1000;2
+b71b9ee5-7c13-403f-b46a-97efa3a316d1;pranavshah0907@gmail.com;;2025-11-04 23:21:38.090705+00;2026-02-17 11:35:17.385356+00;false;10000000;118
+26a051b3-bbfc-43f9-aa42-cdb9a6989199;pranavshah.images@gmail.com;Pranav Shah;2026-01-30 18:56:24.796885+00;2026-02-03 20:03:07.874026+00;false;100000;7

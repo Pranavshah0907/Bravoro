@@ -22,3 +22,33 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables — never commit
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+# Allow the example template
+!.env.example
+
+# Claude Code project metadata
+.claude/
+
+# Lovable IDE metadata
+.lovable/
+
+# Temporary screenshots (generated files)
+temporary screenshots/
+temporary\ screenshots/
+
+# Windows OS junk
+desktop.ini
+**/desktop.ini
+
+# Screenshot utility scripts (local dev only)
+screenshot.mjs
+take-screenshot.mjs
+
+# Supabase temp files
+supabase/.temp/

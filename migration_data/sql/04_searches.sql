@@ -1,0 +1,781 @@
+-- searches (319 rows)
+-- Run AFTER 03_small_tables.sql
+
+SET session_replication_role = 'replica';
+
+INSERT INTO public.searches (id, user_id, search_type, company_name, domain, functions, geography, seniority, status, result_url, error_message, excel_file_name, created_at, updated_at, results_per_function) VALUES
+  ('88f3169d-5267-4ebb-8633-fade5a41d923', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'ACME Corpoaration', NULL, '["Information Technology","Marketing","Product Management"]', 'Canada', '["VP"]', 'processing', NULL, NULL, NULL, '2025-11-04 23:57:13.121886+00', '2025-11-04 23:57:13.121886+00', 10),
+  ('26bf7381-6ad3-404d-8586-ad360f253b61', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'ACME Corpoaration', NULL, '["Healthcare Services","Entrepreneurship","Education","Engineering","Operations","Purchasing","Marketing"]', 'United States', '["Director"]', 'processing', NULL, NULL, NULL, '2025-11-05 00:55:29.17149+00', '2025-11-05 00:55:29.17149+00', 10),
+  ('b2a387c9-b951-40f3-8e88-f2ad397d6090', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'ACME Corporation', 'acme.com', '["Purchasing","Marketing","Sales"]', 'Germany', '["VP","SVP","EVP","Director"]', 'processing', NULL, NULL, NULL, '2025-11-07 16:32:08.080039+00', '2025-11-07 16:32:08.080039+00', 5),
+  ('f37416ee-056a-4939-b267-8a896ee3983d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Arts and Design","Accounting"]', 'Chile', '["Owner","C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-11-14 15:54:25.057106+00', '2025-11-14 15:54:25.057106+00', 10),
+  ('8aa9a756-17c9-490c-99a8-997e43a925e4', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'asdf', 'asdf', '["Arts and Design"]', 'Czech Republic', '["Owner","C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-11-14 15:54:57.82193+00', '2025-11-14 15:54:57.82193+00', 10),
+  ('ed80aac4-69d5-449b-81ec-69a7ee63a2be', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting","Arts and Design"]', 'Czech Republic', '["C-Suite (CXO)","Owner"]', 'processing', NULL, NULL, NULL, '2025-11-14 16:01:05.26696+00', '2025-11-14 16:01:05.26696+00', 10),
+  ('c8674b7a-556b-41b9-8092-92b8ec370680', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting","Arts and Design"]', 'China', '["Owner","C-Suite (CXO)"]', 'error', NULL, 'Unable to generate report. Please check your input data.', NULL, '2025-11-14 16:21:09.569052+00', '2025-11-14 16:21:27.145531+00', 10),
+  ('edf45632-175a-4c26-b64d-a166cf8b7c21', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Information Technology","Marketing"]', 'Denmark', '["Owner","C-Suite (CXO)"]', 'error', NULL, 'Unable to generate report. Please check your input data.', NULL, '2025-11-14 17:14:21.686935+00', '2025-11-14 17:14:37.848853+00', 10),
+  ('524195ae-4d5c-46ae-9759-b9b4e3606010', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'Czech Republic', '["Owner"]', 'processing', NULL, NULL, NULL, '2025-11-14 17:15:56.957149+00', '2025-11-14 17:15:56.957149+00', 10),
+  ('16099623-d956-4a76-aa14-3c63c6a1ca50', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'Colombia', '["Owner"]', 'processing', NULL, NULL, NULL, '2025-11-14 17:16:52.838303+00', '2025-11-14 17:16:52.838303+00', 10),
+  ('28a0bfc0-24eb-4192-b831-1945f01ea129', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'Greece', '["Owner"]', 'processing', NULL, NULL, NULL, '2025-11-14 17:17:56.589452+00', '2025-11-14 17:17:56.589452+00', 10),
+  ('67fbb2b5-2fcb-4121-a3ae-d5fdd82effc6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'Denmark', '["Owner"]', 'error', NULL, 'Unable to generate report. Please check your input data.', NULL, '2025-11-14 17:18:35.182768+00', '2025-11-14 17:18:51.095238+00', 10),
+  ('8656d0ee-73d9-49be-be1a-e4d40cf4295d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'China', '["Owner"]', 'processing', NULL, NULL, NULL, '2025-11-14 17:19:19.685531+00', '2025-11-14 17:19:19.685531+00', 10),
+  ('1c767418-acb4-4cb4-9272-27f2cdbb9424', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'My Company', 'mycompany.com', '["Accounting"]', 'Czech Republic', '["Owner"]', 'completed', '1c767418-acb4-4cb4-9272-27f2cdbb9424_result.xlsx', NULL, NULL, '2025-11-21 09:25:44.726507+00', '2025-11-21 09:25:47.810647+00', 10),
+  ('1dce6fd5-7b1c-4764-8b0a-61955f0299f1', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'My Company', 'mycompany.com', '["Accounting"]', 'China', '["Owner"]', 'completed', '1dce6fd5-7b1c-4764-8b0a-61955f0299f1_result.xlsx', NULL, NULL, '2025-11-21 09:28:31.711702+00', '2025-11-21 09:28:33.938161+00', 10),
+  ('3a73bb38-d8cc-4986-bf8d-011001858272', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'Denmark', '["Owner"]', 'processing', NULL, NULL, NULL, '2025-11-15 01:30:42.055662+00', '2025-11-15 01:30:42.055662+00', 10),
+  ('2f4943a5-a8b8-4636-8087-213429eacadf', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'China', '["Owner"]', 'completed', '2f4943a5-a8b8-4636-8087-213429eacadf_result.xlsx', NULL, NULL, '2025-11-21 09:35:20.080934+00', '2025-11-21 09:35:23.05072+00', 10),
+  ('50e73892-a08e-4a5c-8a0e-f81ded8adf0a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'asdf', 'trial.com', '["Arts and Design","Accounting"]', 'Canada', '["Owner","C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-11-21 07:30:22.926952+00', '2025-11-21 07:30:22.926952+00', 10),
+  ('255f5df2-e865-4720-90c0-e77d89018a2a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-18 02:34:20.362766+00', '2025-11-21 07:59:39.839363+00', 10),
+  ('44ed9009-9247-49d4-b7fa-86e87032d2b5', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_ohne.xlsx', '2025-11-18 02:35:49.485773+00', '2025-11-21 07:59:39.839363+00', 10),
+  ('5fbb9ae1-83c7-4f83-b20f-9ba987f0fff6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_ohne.xlsx', '2025-11-18 02:36:09.764353+00', '2025-11-21 07:59:39.839363+00', 10),
+  ('e35cb9bd-61b3-4dbc-b052-4d60890804f8', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-19 19:15:20.288529+00', '2025-11-21 07:59:39.839363+00', 10),
+  ('63f1bb4f-f057-448b-937c-2df36d72b039', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'My Company', 'mycompany.com', '["Accounting","Arts and Design"]', 'Chile', '["Owner","C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-11-21 08:02:10.979925+00', '2025-11-21 08:02:10.979925+00', 10),
+  ('bdeb477a-a9a4-4ec0-9d61-809a241e24dd', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'bdeb477a-a9a4-4ec0-9d61-809a241e24dd_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 08:00:00.033808+00', '2025-11-21 08:22:29.077798+00', 10),
+  ('11790833-1829-4395-8441-6c280d18e410', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'My Company', 'mycompany.com', '["Accounting"]', 'China', '["Owner"]', 'processing', NULL, NULL, NULL, '2025-11-21 08:13:07.572915+00', '2025-11-21 08:13:07.572915+00', 10),
+  ('aea54a5a-45a4-4078-a8cb-f199ffe9d85f', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'My Company', 'mycompany.com', '["Accounting"]', 'Colombia', '["Owner"]', 'processing', NULL, NULL, NULL, '2025-11-21 08:22:25.960663+00', '2025-11-21 08:22:25.960663+00', 10),
+  ('bc9c6e1c-fb75-4fdc-ba22-6eb3f5419913', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'trial.com', '["Accounting"]', 'Canada', '["Owner"]', 'completed', 'bc9c6e1c-fb75-4fdc-ba22-6eb3f5419913_result.xlsx', NULL, NULL, '2025-11-21 08:24:14.547015+00', '2025-11-21 08:24:16.57919+00', 10),
+  ('f33585d8-451d-4cc8-9486-2c8859329cf6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'My Company', 'mycompany.com', '["Accounting"]', 'Denmark', '["Owner"]', 'completed', 'f33585d8-451d-4cc8-9486-2c8859329cf6_result.xlsx', NULL, NULL, '2025-11-21 08:34:54.06855+00', '2025-11-21 08:34:56.501417+00', 10),
+  ('4ec61bb9-5a41-443b-b265-ede8db091a02', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Bosch', 'bosch.com', '["Engineering","Operations","Sales"]', 'Germany', '["C-Suite (CXO)","VP","EVP","SVP","Director"]', 'processing', NULL, NULL, NULL, '2025-11-21 11:32:48.470016+00', '2025-11-21 11:32:48.470016+00', 10),
+  ('3048f132-30ff-4c08-b4ac-65805b653617', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Bosch', 'bosch.com', '["Accounting","Engineering","Marketing","Operations"]', 'Germany', '["C-Suite (CXO)","SVP","VP","EVP","Director"]', 'completed', '3048f132-30ff-4c08-b4ac-65805b653617_result.xlsx', NULL, NULL, '2025-11-21 11:33:44.377312+00', '2025-11-21 11:33:47.522159+00', 10),
+  ('9d7961ae-5448-456a-b703-78f307047f78', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Bosch', 'bosch.com', '["Engineering","Marketing","Purchasing","Accounting"]', 'Germany', '["C-Suite (CXO)","VP","EVP","Director"]', 'processing', NULL, NULL, NULL, '2025-11-21 12:10:14.671709+00', '2025-11-21 12:10:14.671709+00', 5),
+  ('b4581347-0e61-4898-a386-07b1bf993d9d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-21 13:30:43.696389+00', '2025-11-21 13:30:43.696389+00', 10),
+  ('d61d4ac9-89f3-4c05-888e-08c9355621b4', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-21 16:32:55.21362+00', '2025-11-21 16:32:55.21362+00', 10),
+  ('9e904263-06d0-43e3-97b1-c47818523d88', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-21 16:34:07.584396+00', '2025-11-21 16:34:07.584396+00', 10),
+  ('3914d10b-7be3-4370-9fde-146d4b604814', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-21 16:35:06.645388+00', '2025-11-21 16:35:06.645388+00', 10),
+  ('c4dfc2cc-6271-4d48-b955-5f71a2c67b9a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-21 16:35:59.186488+00', '2025-11-21 16:35:59.186488+00', 10),
+  ('f2ad89f5-5f75-4b8e-94b6-318e1953d6e0', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'f2ad89f5-5f75-4b8e-94b6-318e1953d6e0_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 16:46:29.5796+00', '2025-11-21 16:46:43.166834+00', 10),
+  ('b92047e1-4db4-4b59-a6fa-bc2cc40f5df6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'b92047e1-4db4-4b59-a6fa-bc2cc40f5df6_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 16:53:16.609253+00', '2025-11-21 16:53:27.184516+00', 10),
+  ('150297b8-ad1c-43e8-a3fd-8db2e5a6735f', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '150297b8-ad1c-43e8-a3fd-8db2e5a6735f_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 17:03:08.10897+00', '2025-11-21 17:03:21.261461+00', 10),
+  ('a7861814-caa1-4f6c-9a7c-3a9eee5068d9', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-21 17:16:15.721711+00', '2025-11-21 17:16:15.721711+00', 10),
+  ('d2c6e61a-de66-485d-b8b7-2ae72d868399', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_filled.xlsm', '2025-11-21 17:19:32.580679+00', '2025-11-21 17:19:32.580679+00', 10),
+  ('8c711415-73cf-46ab-8e0a-95596648a72e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '8c711415-73cf-46ab-8e0a-95596648a72e_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 17:22:35.556889+00', '2025-11-21 17:22:52.246205+00', 10),
+  ('c1b73c24-4bd7-41f5-a3e5-57edec93bd2e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'c1b73c24-4bd7-41f5-a3e5-57edec93bd2e_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 17:24:39.54915+00', '2025-11-21 17:24:48.998062+00', 10),
+  ('cb94b092-0914-4441-8426-5e44ce0f12de', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'cb94b092-0914-4441-8426-5e44ce0f12de_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 17:26:32.273321+00', '2025-11-21 17:26:48.440865+00', 10),
+  ('9217fe16-e6db-4f4a-86b3-d0f91fae123a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '9217fe16-e6db-4f4a-86b3-d0f91fae123a_result.xlsx', NULL, 'Final_template_filled.xlsm', '2025-11-21 17:32:25.404216+00', '2025-11-21 17:32:37.501874+00', 10),
+  ('87ede0c4-8bc7-42d1-933b-0f3f70a4e2d3', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '1-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 13:50:03.283008+00', '2026-02-02 13:51:26.208503+00', 10),
+  ('16ecef7f-eeca-4a65-9cc1-08e097c99338', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Bosch', 'bosch.com', '["Accounting","Arts and Design"]', 'Germany', '["Owner","C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-11-23 14:25:52.528181+00', '2025-11-23 14:25:52.528181+00', 5),
+  ('3379b7dd-c487-4339-9dbb-903f560d4a3d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Innosystec', 'innosystec.de', '[]', NULL, '["C-Suite (CXO)"]', 'completed', '3379b7dd-c487-4339-9dbb-903f560d4a3d_result.xlsx', NULL, NULL, '2025-11-26 11:12:33.629767+00', '2025-11-26 11:40:56.80915+00', 2),
+  ('16e9efcd-8327-4e46-90a9-17ede1389c8c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Final_template (2).xlsm', '2025-11-25 22:44:02.436807+00', '2025-11-25 23:45:07.471168+00', 10),
+  ('02841120-d124-40f8-a08c-6aab0ad09f3b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template (2).xlsm', '2025-11-26 01:44:33.048032+00', '2025-11-26 01:44:33.048032+00', 10),
+  ('746a5ece-3386-4cf1-852b-2af37d0e0cca', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template (2).xlsm', '2025-11-26 03:00:50.256574+00', '2025-11-26 03:00:50.256574+00', 10),
+  ('2f582fd6-ef20-49cc-bbeb-44763a3209e3', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template (2).xlsm', '2025-11-26 03:25:49.15935+00', '2025-11-26 03:25:49.15935+00', 10),
+  ('65e507ce-62c7-47dc-b4cb-6a8d11c51911', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Carl Zeiss', 'zeiss.com', '["Engineering","Finance","Sales","Marketing"]', 'Germany', '["C-Suite (CXO)","VP","SVP","EVP","Director","Manager","Senior","Senior Manager"]', 'completed', '65e507ce-62c7-47dc-b4cb-6a8d11c51911_result.xlsx', NULL, NULL, '2025-11-24 10:37:13.054935+00', '2025-11-24 10:46:22.628245+00', 5),
+  ('b254fd74-68d2-4a5a-8f92-3fa50c094161', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Carl Zeiss', 'zeiss.com', '["Finance","Engineering","Marketing","Sales"]', 'Germany', '["VP","EVP","SVP","C-Suite (CXO)","Manager","Senior","Director"]', 'completed', 'b254fd74-68d2-4a5a-8f92-3fa50c094161_result.xlsx', NULL, NULL, '2025-11-24 11:06:02.312084+00', '2025-11-24 11:06:42.287289+00', 5),
+  ('2e517624-d73b-4167-91a9-dbbc6846410a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Carl Zeiss', 'zeiss.com', '["Engineering","Finance","Marketing","Sales"]', 'Germany', '["C-Suite (CXO)","VP","Manager","Director","Senior"]', 'completed', '2e517624-d73b-4167-91a9-dbbc6846410a_result.xlsx', NULL, NULL, '2025-11-24 11:16:44.572983+00', '2025-11-24 11:17:41.791529+00', 5),
+  ('3c43e6db-8a7b-4f11-a373-a3affd90ce51', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Carl Zeiss', 'zeiss.com', '["Engineering","Finance","Marketing","Sales"]', 'Germany', '["C-Suite (CXO)","Director","Manager","Senior","VP"]', 'processing', NULL, NULL, NULL, '2025-11-24 11:25:31.262262+00', '2025-11-24 11:25:31.262262+00', 5),
+  ('8e259aa6-bc4d-493c-97c1-5efe529943e0', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'apollo_credit_error: 422 - {"error":"You have insufficient credits! <a href=''https://app.apollo.io/#/settings/plans/upgrade'' aria-onclick=''close_alert''>Upgrade your plan</a> to increase your number of lead credits."}', 'Final_template (2).xlsm', '2025-11-26 04:28:32.327315+00', '2025-11-26 05:44:08.615587+00', 10),
+  ('e2fe20d8-6656-4c45-b200-845cf1aef32c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'innosystec.de', 'innosystec.de', '[]', NULL, '["C-Suite (CXO)"]', 'completed', 'e2fe20d8-6656-4c45-b200-845cf1aef32c_result.xlsx', NULL, NULL, '2025-11-26 11:46:26.282343+00', '2025-11-26 11:51:05.739674+00', 2),
+  ('27c292da-92f4-4a80-92b6-88a27ea7c000', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template (2).xlsm', '2025-11-26 09:51:24.745398+00', '2025-11-26 09:51:24.745398+00', 10),
+  ('71d7e915-2ece-4138-934f-07ed09224bde', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_2sampleCompanies.xlsm', '2025-11-26 10:09:05.118027+00', '2025-11-26 10:09:05.118027+00', 10),
+  ('6320cb02-90e0-4f9a-91d1-6bf79faea5d7', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_2sampleCompanies.xlsm', '2025-11-26 10:10:29.671547+00', '2025-11-26 10:10:29.671547+00', 10),
+  ('2cc73b26-3671-4d82-8f25-ed41b697c8f9', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_2sampleCompanies.xlsm', '2025-11-26 10:12:40.925485+00', '2025-11-26 10:12:40.925485+00', 10),
+  ('4c144254-5924-4d79-a7b6-75c93e498a52', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template_2sampleCompanies.xlsm', '2025-11-26 10:17:08.841233+00', '2025-11-26 10:17:08.841233+00', 10),
+  ('c06f6242-1325-47dd-b69e-ed87345df5d9', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'apollo_credit_error: 422 - {"error":"You have insufficient credits! <a href=''https://app.apollo.io/#/settings/plans/upgrade'' aria-onclick=''close_alert''>Upgrade your plan</a> to increase your number of lead credits."}', 'Final_template_2sampleCompanies.xlsm', '2025-11-26 10:22:21.11536+00', '2025-11-26 10:22:31.091098+00', 10),
+  ('ebc9272b-69f3-472e-920d-3fd51607f935', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'ebc9272b-69f3-472e-920d-3fd51607f935_result.xlsx', NULL, 'Final_template_2sampleCompanies.xlsm', '2025-11-26 10:26:20.986404+00', '2025-11-26 10:31:02.026236+00', 10),
+  ('5b97f099-4ae9-49b3-96e5-8fcdd0521b8a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '5b97f099-4ae9-49b3-96e5-8fcdd0521b8a_result.xlsx', NULL, 'Final_template_8companies.xlsm', '2025-11-26 10:55:59.33985+00', '2025-11-26 11:01:10.520721+00', 10),
+  ('3fa15af7-8b57-430d-bcf1-0ce8c4f7bf28', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'Escriba AG', 'escriba.de', '[]', NULL, '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-11-26 14:07:18.71755+00', '2025-11-26 14:07:18.71755+00', 5),
+  ('e83b0497-1b5f-4790-acea-0e63cd87defb', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'Escriba AG', 'escriba.de', '[]', NULL, '["C-Suite (CXO)"]', 'completed', 'e83b0497-1b5f-4790-acea-0e63cd87defb_result.xlsx', NULL, NULL, '2025-11-26 14:18:42.178439+00', '2025-11-26 14:20:59.121173+00', 5),
+  ('3faf5f2b-b73a-4d7a-8c2e-61c0c537e689', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'emploio GmbH', 'emploio.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company not found, please check your input', NULL, '2025-11-26 14:51:08.231385+00', '2025-11-26 16:23:35.711922+00', 1),
+  ('ccb74e11-0a7d-4a59-a663-f92b34177eee', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Ranger Marketing & Vertriebs GmbH', 'ranger.de', '["Sales"]', 'Germany', '["C-Suite (CXO)","Manager","Director"]', 'completed', 'ccb74e11-0a7d-4a59-a663-f92b34177eee_result.xlsx', NULL, NULL, '2025-11-27 15:46:55.495847+00', '2025-11-27 16:10:56.880953+00', 1),
+  ('a4770a5c-5007-4be3-85c3-94012f5acf7b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio gmbh', 'emploio.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-11-26 15:40:00.404629+00', '2025-11-27 16:05:08.029466+00', 10),
+  ('6e1c378f-62f6-427d-bd53-0429e5aa2dc6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Ranger Marketing & Vertriebs GmbH', 'ranger.de', '["Sales"]', 'Germany', '["C-Suite (CXO)","Manager","Director"]', 'completed', '6e1c378f-62f6-427d-bd53-0429e5aa2dc6_result.xlsx', NULL, NULL, '2025-11-27 20:40:35.171094+00', '2025-11-27 20:41:00.688139+00', 1),
+  ('5004d44b-317e-498a-bb89-a1b7e427726f', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'emploio', 'emploio.de', '[]', 'Germany', '["Entry Level","Training","Intern","Team Lead","Mid-Level","Senior Manager","Senior","Manager","Director","SVP","C-Suite (CXO)","Partner","VP","EVP","Owner"]', 'processing', NULL, NULL, NULL, '2025-11-28 10:22:55.203765+00', '2025-11-28 10:22:55.203765+00', 2),
+  ('dfa68cc0-afe4-43b7-b3c7-610632e7c274', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'Apple', 'apple.com', '[]', 'Germany', '["Director","Manager"]', 'processing', NULL, NULL, NULL, '2025-11-28 10:29:14.988673+00', '2025-11-28 10:29:14.988673+00', 2),
+  ('98b90893-a535-4388-a62d-1e9864074284', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'apple', 'apple.com', '[]', 'Germany', '["Manager","Director"]', 'completed', '98b90893-a535-4388-a62d-1e9864074284_result.xlsx', NULL, NULL, '2025-11-28 10:36:02.948993+00', '2025-11-28 10:50:56.099311+00', 2),
+  ('8c464ecf-efc7-4179-9d80-dfadf33c13b7', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Compacer GmbH', 'compacer.com', '[]', 'Germany', '["C-Suite (CXO)","Owner","Partner","SVP","VP"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:20:48.160666+00', '2025-12-03 13:20:48.160666+00', 1),
+  ('c4f631e1-6134-4094-b456-27a91b2b6edc', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'emploio', 'emploio.de', '[]', 'Germany', '["C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', 'c4f631e1-6134-4094-b456-27a91b2b6edc_result.xlsx', NULL, NULL, '2025-11-28 15:23:28.955948+00', '2025-11-28 15:25:55.988522+00', 2),
+  ('e12a6288-6087-4b5e-9ec4-f713a6f80b9a', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Anaptis GmbH', 'anaptis.com', '[]', 'Germany', '["Owner","C-Suite (CXO)","Partner","VP","SVP"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:21:16.296976+00', '2025-12-03 13:21:16.296976+00', 1),
+  ('0bc20037-50ed-4436-9488-8138f6ae2adb', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'bayer', 'bayer.com', '["Finance"]', NULL, '["Director","Manager"]', 'error', '0bc20037-50ed-4436-9488-8138f6ae2adb_result.xlsx', 'Company not found, Please check the input domain', NULL, '2025-11-28 14:33:33.818636+00', '2025-11-29 02:02:33.157243+00', 2),
+  ('5751bda2-003c-425d-8481-1320179d5ce4', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Cloudflight', 'https://www.cloudflight.io/', '[]', 'Germany', '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:26:27.698903+00', '2025-12-03 12:26:27.698903+00', 3),
+  ('df62defc-8ac1-40e0-ae8f-1459c0c3c50f', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'GUS ERP GmbH', 'https://gus-erp.com/', '[]', 'Germany', '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:26:59.687809+00', '2025-12-03 12:26:59.687809+00', 3),
+  ('fe29ac7a-78a7-4738-b60d-b1e0e5f4ce77', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Stackit', 'https://www.stackit.de/', '[]', 'Germany', '["C-Suite (CXO)","Director","Manager"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:27:36.961897+00', '2025-12-03 12:27:36.961897+00', 1),
+  ('0ddc7dc8-f945-4877-901a-6c8cb97ebd2a', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'SAP Fioneer', 'https://www.sapfioneer.com/', '["Sales"]', 'Germany', '["C-Suite (CXO)","Director","Manager"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:28:31.932638+00', '2025-12-03 12:28:31.932638+00', 1),
+  ('2135c54c-5ea6-4230-a64f-bf6969b5dd87', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Wilken Software Group', 'wilken.de', '[]', 'Germany', '["Owner","C-Suite (CXO)","Director","Manager","SVP"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:29:01.772256+00', '2025-12-03 12:29:01.772256+00', 1),
+  ('e57da4c5-f1cf-47de-b7e8-da409ed42acd', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'DTS Systeme GmbH', 'dts.de', '[]', 'Germany', '["SVP","Manager","Director","C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:29:33.000531+00', '2025-12-03 12:29:33.000531+00', 2),
+  ('2b1cc53b-080c-4dff-9faa-f70600611369', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'regio iT', 'regioit.de', '[]', 'Germany', '["SVP","VP","C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:30:27.032489+00', '2025-12-03 12:30:27.032489+00', 1),
+  ('b5313c69-5b94-4eca-9569-e616753bc909', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Parloa', 'parloa.com', '[]', 'Germany', '["C-Suite (CXO)","Owner","Director"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:30:59.534803+00', '2025-12-03 12:30:59.534803+00', 2),
+  ('978d3600-3213-45d5-89a6-3b3724a525c7', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Homify', 'homify.com', '[]', 'Germany', '["Director","C-Suite (CXO)","SVP","Manager","Owner"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:31:48.32093+00', '2025-12-03 12:31:48.32093+00', 1),
+  ('9d50c510-2a78-4844-9a64-abd2be69c74a', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Solute GmbH', 'solute.de', '[]', 'Germany', '["C-Suite (CXO)","Owner","SVP","VP"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:33:14.78336+00', '2025-12-03 12:33:14.78336+00', 1),
+  ('2b4e8212-b0cb-4e96-a5dc-9fff2dbb8f5a', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Ventum Consulting', 'ventum-consulting.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:36:10.500881+00', '2025-12-03 12:36:10.500881+00', 2),
+  ('6a6c9fbb-633a-429b-ab70-8720d7443b12', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'ORAYLIS GmbH', 'oraylis.de', '[]', 'Germany', '["C-Suite (CXO)","Owner","SVP","VP","Director","Manager"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:37:03.408472+00', '2025-12-03 12:37:03.408472+00', 1),
+  ('14581bee-737a-46c3-a890-1bdfe1400b06', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'BridgingIT GmbH', 'bridging-it.de', '[]', 'Germany', '["C-Suite (CXO)","VP","SVP","Owner"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:37:47.495376+00', '2025-12-03 12:37:47.495376+00', 1),
+  ('e5a7c646-9c30-4dde-a6d3-89b8b61617bd', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Inxmail', 'inxmail.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:39:13.94075+00', '2025-12-03 12:39:13.94075+00', 3),
+  ('141bfa2d-bea2-4e0c-8409-e998c85010e9', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'SHD System-Haus-Dresden GmbH', 'shd-online.de', '[]', 'Germany', '["C-Suite (CXO)","SVP","VP"]', 'processing', NULL, NULL, NULL, '2025-12-03 12:40:03.691272+00', '2025-12-03 12:40:03.691272+00', 2),
+  ('4c1b430e-cce0-4a4a-8e7f-02faa05e5fa9', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Nesto Software GmbH', 'nesto-software.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:18:09.703147+00', '2025-12-03 13:18:09.703147+00', 3),
+  ('9fd4b67a-fcd8-4cd8-a3fc-0fc0b1e5686f', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Cloudogu GmbH', 'cloudogu.com', '[]', 'Germany', '["C-Suite (CXO)","Owner","Partner","VP"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:18:37.09762+00', '2025-12-03 13:18:37.09762+00', 1),
+  ('1c541c08-be4c-4eaa-b5fd-a797d88a7dbd', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Peak & Peak', 'ppeak.com', '[]', 'Germany', '["C-Suite (CXO)","VP","Partner","Owner"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:19:16.079389+00', '2025-12-03 13:19:16.079389+00', 1),
+  ('db56da8c-f445-4fec-bfbb-2480574d8e8a', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Camos Software Und Beratung GmbH', 'camos.de', '[]', 'Germany', '["Owner","C-Suite (CXO)","SVP","Partner","VP","EVP"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:22:05.30793+00', '2025-12-03 13:22:05.30793+00', 1),
+  ('6bf2ddf8-4097-4e8a-860e-926985262abf', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Anaptis GmbH', 'anaptis.com', '[]', NULL, '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:22:25.123546+00', '2025-12-03 13:22:25.123546+00', 1),
+  ('a930b1ee-3c86-4004-b39a-f908613fbc15', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'DOMUS Software AG', 'domus-software.de', '[]', 'Germany', '["C-Suite (CXO)","SVP","VP","Partner","Owner"]', 'processing', NULL, NULL, NULL, '2025-12-03 13:22:49.091711+00', '2025-12-03 13:22:49.091711+00', 1),
+  ('f3b5275e-60c1-4aa1-8c00-42c739b973cd', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Domus Software AG', 'domus-software.de', '[]', 'Germany', '["C-Suite (CXO)","VP","SVP","Partner","Owner"]', 'completed', 'f3b5275e-60c1-4aa1-8c00-42c739b973cd_result.xlsx', NULL, NULL, '2025-12-03 14:52:00.805352+00', '2025-12-03 15:00:51.544958+00', 1),
+  ('1cdc079d-3e69-4ac4-8e9b-05893afbe721', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Personio', 'www.personio.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '1cdc079d-3e69-4ac4-8e9b-05893afbe721_result.xlsx', NULL, NULL, '2025-12-03 12:25:43.662113+00', '2025-12-03 15:20:53.747942+00', 3),
+  ('ddc73fac-e1ff-4d21-a940-25130a63be39', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'GUS ERP GmbH', 'gus-erp.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', 'ddc73fac-e1ff-4d21-a940-25130a63be39_result.xlsx', NULL, NULL, '2025-12-03 16:33:15.404231+00', '2025-12-03 16:35:50.251729+00', 2),
+  ('2fcada4d-9a03-4002-afa5-c9b35e682be5', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Stackit', 'stackit', '[]', 'Germany', '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 16:33:37.394194+00', '2025-12-03 16:33:37.394194+00', 3),
+  ('eaa61940-c08b-4270-93b5-21773232b3a2', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'SAP Fioneer', 'sapfioneer.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'processing', NULL, NULL, NULL, '2025-12-03 16:33:59.719738+00', '2025-12-03 16:33:59.719738+00', 3),
+  ('a26353e3-db19-43d5-ada7-9afdb86dbb85', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'DTS Systeme GmbH', 'dts.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:34:45.38232+00', '2025-12-03 16:34:51.065366+00', 3),
+  ('d1050d8f-0618-4fe8-8c7a-858acac8ad42', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Wilken Software Group', 'wilken.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', 'd1050d8f-0618-4fe8-8c7a-858acac8ad42_result.xlsx', NULL, NULL, '2025-12-03 16:34:23.998528+00', '2025-12-03 16:35:49.40259+00', 2),
+  ('5869e4d7-098d-4856-9be2-30c01d0c8e08', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Cloudflight', 'cloudflight.io', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '5869e4d7-098d-4856-9be2-30c01d0c8e08_result.xlsx', NULL, NULL, '2025-12-03 16:32:54.415113+00', '2025-12-03 16:35:49.475455+00', 2),
+  ('f93f65c4-e3b7-40a1-811c-74e14188cf55', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'regio iT', 'regioit.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', 'f93f65c4-e3b7-40a1-811c-74e14188cf55_result.xlsx', NULL, NULL, '2025-12-03 16:35:04.573284+00', '2025-12-03 16:35:49.592788+00', 3),
+  ('1948ed59-9df6-43fe-b846-95316a88ee37', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Parloa', 'parloa.com', '[]', 'Germany', '["C-Suite (CXO)","SVP","VP"]', 'completed', '1948ed59-9df6-43fe-b846-95316a88ee37_result.xlsx', NULL, NULL, '2025-12-03 16:35:28.537126+00', '2025-12-03 16:35:49.722843+00', 2),
+  ('e3a52ec8-7c05-4cde-86c5-92deb4e1a7f6', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Homify', 'homify.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:35:53.958772+00', '2025-12-03 16:36:00.019303+00', 3),
+  ('a7c71c2c-7a1a-4530-abf8-ccbc23d93589', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Ventum Consulting', 'ventum-consulting.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:36:38.569775+00', '2025-12-03 16:36:43.970602+00', 3),
+  ('dc63cd95-0efd-4e29-81d9-24a621617e90', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Inxmail', 'inxmail.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:37:55.81842+00', '2025-12-03 16:38:01.318787+00', 2),
+  ('1ac436bd-5df3-4ed7-9614-4932faef2ce2', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Peak & Peak', 'ppeak.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:40:15.26003+00', '2025-12-03 16:40:20.387813+00', 3),
+  ('a30a2225-2fee-414a-bd7e-1391922e4494', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Compacer GmbH', 'compacer.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:40:38.719218+00', '2025-12-03 16:40:45.513107+00', 3),
+  ('f9acd611-218a-409a-adfc-3ae03f3c44d2', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Cloudogu GmbH', 'cloudogu.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', 'f9acd611-218a-409a-adfc-3ae03f3c44d2_result.xlsx', NULL, NULL, '2025-12-03 16:39:13.27315+00', '2025-12-03 16:40:54.279663+00', 2),
+  ('732445fe-a6e9-4821-84a5-65842a517e7e', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'ORAYLIS GmbH', 'oraylis.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '732445fe-a6e9-4821-84a5-65842a517e7e_result.xlsx', NULL, NULL, '2025-12-03 16:37:00.769946+00', '2025-12-03 16:40:57.296287+00', 2),
+  ('11463af4-61c1-4c8b-8890-fcc414aa9c0e', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Nesto Software GmbH', 'nesto-software.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '11463af4-61c1-4c8b-8890-fcc414aa9c0e_result.xlsx', NULL, NULL, '2025-12-03 16:38:41.192426+00', '2025-12-03 16:40:57.337448+00', 3),
+  ('56231621-fe1d-44b8-9f8a-35fce57097c0', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'SHD System-Haus-Dresden GmbH', 'shd-online.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '56231621-fe1d-44b8-9f8a-35fce57097c0_result.xlsx', NULL, NULL, '2025-12-03 16:38:20.698198+00', '2025-12-03 16:40:57.574516+00', 2),
+  ('c890afc9-1cc2-4212-bb29-81531ed97eaf', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'BridgingIT GmbH', 'bridging-it.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', 'c890afc9-1cc2-4212-bb29-81531ed97eaf_result.xlsx', NULL, NULL, '2025-12-03 16:37:36.328616+00', '2025-12-03 16:40:57.812242+00', 2),
+  ('ec838a79-2f16-413b-b6e0-6574403306cb', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Solute GmbH', 'solute.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', 'ec838a79-2f16-413b-b6e0-6574403306cb_result.xlsx', NULL, NULL, '2025-12-03 16:36:19.983219+00', '2025-12-03 16:40:58.704153+00', 2),
+  ('6d7aeaff-d74c-42cc-a78f-2c62bb7b9a99', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Anaptis GmbH', 'anaptis.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:41:01.129644+00', '2025-12-03 16:41:07.554167+00', 3),
+  ('bb47b626-5700-4c44-a809-ded62570c6d8', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Camos Software Und Beratung GmbH', 'camos.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-03 16:41:27.848798+00', '2025-12-03 16:41:33.115278+00', 3),
+  ('90ed4fa6-f12e-4208-9995-d70506e2f29e', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'DOMUS Software AG', 'domus-software.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '90ed4fa6-f12e-4208-9995-d70506e2f29e_result.xlsx', NULL, NULL, '2025-12-03 16:42:04.865963+00', '2025-12-03 16:45:47.608639+00', 2),
+  ('00d36c92-7aa6-4f2f-83c2-121a7227d2f3', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'emploio.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-04 12:53:56.170225+00', '2025-12-04 12:54:05.52825+00', 10),
+  ('edc898f9-1a50-48d5-9407-3a2efbcdce7a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'ajksdbf.de', '[]', 'Chile', '["Owner","SVP","C-Suite (CXO)","Director","Senior","Manager","Entry Level","Mid-Level","Team Lead","Intern","Senior Manager","EVP","Partner","VP"]', 'error', NULL, 'Company not found, Please verify the input domain', NULL, '2025-12-04 12:56:47.171213+00', '2025-12-04 12:56:52.744822+00', 10),
+  ('63ba2c2c-e117-4ee2-9acd-092e346d27f9', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template.xlsm', '2025-12-04 12:59:40.526264+00', '2025-12-04 12:59:40.526264+00', 10),
+  ('fd13b958-2413-4a54-8ce9-569b277b39f7', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Final_template.xlsm', '2025-12-04 13:02:08.550205+00', '2025-12-04 13:03:16.510479+00', 10),
+  ('97bf8c91-25b9-4864-a8b3-b258faf8ae48', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Final_template.xlsm', '2025-12-04 13:05:01.51773+00', '2025-12-04 13:05:05.826135+00', 10),
+  ('abba8e28-85ff-4f8f-a555-8d5e88ecadbd', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Final_template.xlsm', '2025-12-04 13:12:10.704788+00', '2025-12-04 13:12:21.279345+00', 10),
+  ('d98608d2-3a42-416f-9488-dc7eafbf47f6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template.xlsm', '2025-12-04 13:14:06.382671+00', '2025-12-04 13:14:06.382671+00', 10),
+  ('988f7832-18ed-43ff-8632-aa697f5cf65e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template.xlsm', '2025-12-04 13:20:55.550502+00', '2025-12-04 13:20:55.550502+00', 10),
+  ('5eaf8853-15f0-42d6-9a56-523506ff922d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Final_template.xlsm', '2025-12-04 13:24:20.210173+00', '2025-12-04 13:24:20.210173+00', 10),
+  ('c3bd914d-dabc-4760-8e5a-7dcc18ebfd4c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'c3bd914d-dabc-4760-8e5a-7dcc18ebfd4c_result.xlsx', NULL, 'Final_template.xlsm', '2025-12-04 13:26:37.022762+00', '2025-12-04 13:45:50.542731+00', 10),
+  ('b1b5e407-ab62-45c1-9256-0ced8055d3a2', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'b1b5e407-ab62-45c1-9256-0ced8055d3a2_result.xlsx', NULL, 'Final_template.xlsm', '2025-12-04 14:14:07.820845+00', '2025-12-04 14:15:54.599818+00', 10),
+  ('e4a125e4-1649-48d5-92a9-cd15485a22c5', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '101-200-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-25 19:24:26.008181+00', '2026-01-25 19:36:03.586342+00', 10),
+  ('8badf1d7-0c8e-4400-ad19-ad37fa39568c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'gus-erp.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '8badf1d7-0c8e-4400-ad19-ad37fa39568c_result.xlsx', NULL, NULL, '2025-12-04 14:23:30.522496+00', '2025-12-04 14:25:51.859866+00', 2),
+  ('6de3181b-06f0-4b24-a428-e5122368367b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'camos.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company or people of chosen seniority not found. Please try with different parameters.', NULL, '2025-12-04 14:27:34.726199+00', '2025-12-04 14:27:43.041211+00', 2),
+  ('cb61850d-f965-4d2e-815e-a76ec64a19a6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'camossssasdf.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'error', NULL, 'Company not found, please verify the input domain and try again.', NULL, '2025-12-04 14:34:48.704187+00', '2025-12-04 14:34:53.11502+00', 2),
+  ('796d0e63-88fc-4f13-a854-ba95edfcb3b7', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'camos.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', '796d0e63-88fc-4f13-a854-ba95edfcb3b7_result.xlsx', NULL, NULL, '2025-12-04 14:33:04.172575+00', '2025-12-04 14:35:59.720059+00', 2),
+  ('38b67920-c479-4bc6-a8be-3be481700a0b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'processing', NULL, NULL, NULL, '2025-12-04 14:51:14.419927+00', '2025-12-04 14:51:14.419927+00', 2),
+  ('c17d283d-2fee-437f-83f2-46b2757bdf5b', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'ac', 'sdffs', '["Healthcare Services","Information Technology"]', NULL, '["Owner"]', 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2025-12-04 16:03:49.03859+00', '2025-12-04 16:14:52.327017+00', 10),
+  ('6ff86364-bc11-479c-b335-0053ac400d7e', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'abc', 'abc.de', '[]', NULL, '["SVP"]', 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2025-12-04 16:18:11.490475+00', '2025-12-04 16:18:13.72749+00', 10),
+  ('56dd85c6-fe86-49b8-87e1-763f74c4d13f', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'domus-software.de', '[]', 'Germany', '["C-Suite (CXO)"]', 'completed', '56dd85c6-fe86-49b8-87e1-763f74c4d13f_result.xlsx', NULL, NULL, '2025-12-05 12:37:08.979168+00', '2025-12-05 12:40:56.68759+00', 2),
+  ('00b88511-6621-49ee-9000-f46e5f7615b1', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'anaptis.com', '[]', 'Germany', '["C-Suite (CXO)"]', 'error', NULL, 'Company found, but people of chosen seniority or function  not found. Please try with broadend parameters.', NULL, '2025-12-05 12:42:14.942389+00', '2025-12-05 12:42:24.732508+00', 3),
+  ('3035ae46-1013-4521-b5a5-3cbd0925077d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Trial Company', 'anaptis.com', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', '3035ae46-1013-4521-b5a5-3cbd0925077d_result.xlsx', NULL, NULL, '2025-12-05 12:44:49.023138+00', '2025-12-05 12:46:03.126258+00', 3),
+  ('33a9bb9f-e3f0-441d-b2ca-c014b1142ce8', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'Final_template_4companies.xlsm', '2025-12-17 16:15:21.482403+00', '2025-12-17 16:16:39.163804+00', 10),
+  ('946caf0a-bb23-43b5-98a0-ea422832af8d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'Final_template_4companies.xlsm', '2025-12-17 17:58:00.905955+00', '2025-12-17 18:01:18.129848+00', 10),
+  ('e8283cbb-913f-4dbe-9979-08e2237cbc65', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'e8283cbb-913f-4dbe-9979-08e2237cbc65_result.xlsx', NULL, 'Final_template_4companies.xlsm', '2025-12-17 18:04:20.760084+00', '2025-12-17 18:06:14.370833+00', 10),
+  ('83fa1adf-f24d-41b8-afa2-235080888153', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '83fa1adf-f24d-41b8-afa2-235080888153_result.xlsx', NULL, 'Final_template_4companies.xlsm', '2025-12-18 17:56:37.469746+00', '2025-12-18 18:02:05.227796+00', 10),
+  ('b4643b7f-78cc-4c3b-ba31-3f62f1ce282c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'Final_template_4companies.xlsm', '2025-12-18 17:48:14.846727+00', '2025-12-18 17:55:47.039358+00', 10),
+  ('bd451cea-37ff-4667-87b8-c2eb2f622694', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Copy of BulkUpload_FinalTemplate.xlsx', '2025-12-18 19:00:00.020795+00', '2025-12-18 19:00:05.942341+00', 10),
+  ('f9937f7d-4574-4588-9635-c950f8fb58f8', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', 'f9937f7d-4574-4588-9635-c950f8fb58f8_result.xlsx', NULL, 'Bulk_PeopleEnrichment_Template_10name_filled.xlsx', '2025-12-19 12:54:00.976286+00', '2025-12-21 14:52:38.826654+00', 10),
+  ('13b385b9-3c7c-44a2-80ce-8ef6a77839db', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '13b385b9-3c7c-44a2-80ce-8ef6a77839db_result.xlsx', NULL, 'Copy of BulkUpload_FinalTemplate.xlsx', '2025-12-19 03:23:55.293038+00', '2025-12-19 10:59:07.408368+00', 10),
+  ('05e50d82-3d57-4f41-b816-e7605d4c9429', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Final_template (1).xlsm', '2025-12-21 18:18:55.545093+00', '2025-12-21 18:20:59.755504+00', 10),
+  ('7e56c937-c7c7-4f21-a9ec-009eee5f83d1', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '7e56c937-c7c7-4f21-a9ec-009eee5f83d1_result.xlsx', '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Copy of BulkUpload_FinalTemplate.xlsx', '2025-12-18 18:55:01.759428+00', '2025-12-19 00:41:52.668907+00', 10),
+  ('bfc8d176-0456-43a2-a7b5-ff22ac54a66e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', 'bfc8d176-0456-43a2-a7b5-ff22ac54a66e_result.xlsx', NULL, 'Final_template (1).xlsm', '2025-12-21 18:40:44.061538+00', '2025-12-21 18:42:05.166624+00', 10),
+  ('776721a5-4d1f-4079-83aa-f01df260e487', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '776721a5-4d1f-4079-83aa-f01df260e487_result.xlsx', NULL, 'Final_template (1).xlsm', '2025-12-21 19:45:15.011494+00', '2025-12-21 19:45:58.55281+00', 10),
+  ('42b0783d-291f-41dd-af2f-72f2a324c4f4', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio gmbh', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2025-12-23 17:58:00.899821+00', '2025-12-23 18:17:15.808034+00', 2),
+  ('e1c9a123-a2b0-4e65-afa8-4cf72b752e9a', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'ststone-leads-02022026-batch2 - Main_Data.csv', '2026-02-02 08:10:23.072039+00', '2026-02-02 08:11:28.151855+00', 10),
+  ('97f0c7ed-bdfa-45c1-8a66-fe2d30289e7e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '97f0c7ed-bdfa-45c1-8a66-fe2d30289e7e_result.xlsx', NULL, 'BulkSearch_Template.xlsm', '2025-12-23 18:54:12.333084+00', '2025-12-23 18:56:06.513363+00', 10),
+  ('8a847f33-d171-483e-8b3e-6a6df2a9fa7b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', '8a847f33-d171-483e-8b3e-6a6df2a9fa7b_result.xlsx', NULL, 'Bulk_PeopleEnrichment_Template.xlsx', '2025-12-23 20:11:43.587395+00', '2025-12-24 01:11:06.592966+00', 10),
+  ('051b281c-271b-4b55-90b3-2ceecd033026', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Natus GmbH', 'natus.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', '051b281c-271b-4b55-90b3-2ceecd033026_result.xlsx', NULL, NULL, '2025-12-23 22:17:09.715908+00', '2025-12-23 22:21:03.471068+00', 2),
+  ('9f45efb7-c18f-4c81-97fa-7594b44f67d0', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'testv2_sl_withoutmobilephonenumber - Main_Data.csv', '2026-01-05 14:42:38.818285+00', '2026-01-05 14:42:38.818285+00', 10),
+  ('c786cb93-ae9c-4964-8caa-f8ed3a4d85d4', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', 'c786cb93-ae9c-4964-8caa-f8ed3a4d85d4_result.xlsx', NULL, 'Kopie von Kopie von Bulk_PeopleEnrichment_Template - Main_Data.csv', '2026-01-05 13:23:42.508448+00', '2026-01-05 16:35:34.080119+00', 10),
+  ('01309a4b-92e0-426b-9ec2-99b2c2f5cefc', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', '01309a4b-92e0-426b-9ec2-99b2c2f5cefc_result.xlsx', NULL, 'test - Main_Data.csv', '2026-01-05 13:34:02.278076+00', '2026-01-05 15:26:21.391534+00', 10),
+  ('103c6aed-126a-4605-8de2-05dbd8311a2d', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', '103c6aed-126a-4605-8de2-05dbd8311a2d_result.xlsx', 'Error in workflow, the backend team has been notified. Please try again later!', 'sl_wrong_number - Main_Data.csv', '2026-01-06 10:07:07.57635+00', '2026-01-06 10:11:33.004127+00', 10),
+  ('a50b55c6-20dd-469a-ad86-4871cd3da824', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', 'a50b55c6-20dd-469a-ad86-4871cd3da824_result.xlsx', NULL, 'sl_nomobilephonenr - Main_Data.csv', '2026-01-06 11:00:32.385558+00', '2026-01-06 11:01:12.509793+00', 10),
+  ('815a6f1f-090f-4149-b51e-28b5b3fb0aca', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '815a6f1f-090f-4149-b51e-28b5b3fb0aca_result.xlsx', NULL, 'Final_template_4companies.xlsm', '2026-01-15 20:20:56.910707+00', '2026-01-15 20:31:42.724413+00', 10),
+  ('49ac380c-f172-447d-b6af-67435bcd0ce8', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', '49ac380c-f172-447d-b6af-67435bcd0ce8_result.xlsx', NULL, 'testv2_sl.csv', '2026-01-06 08:11:39.217172+00', '2026-01-08 18:35:51.517269+00', 10),
+  ('312c5a96-f9fe-4e59-aedb-944124d8a1b8', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'trivago', 'trivago.com', '[]', NULL, '["C-Suite (CXO)","VP"]', 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2026-01-09 09:15:48.451496+00', '2026-01-09 09:16:02.319255+00', 2),
+  ('e0f5f7d6-55a3-4b0d-ab60-5acc0959d6f7', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio GmbH', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', 'e0f5f7d6-55a3-4b0d-ab60-5acc0959d6f7_result.xlsx', 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2026-01-15 18:46:35.123852+00', '2026-01-15 18:49:10.480737+00', 15),
+  ('62721d23-179b-48a1-8d09-d527d2110367', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio GmbH', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'processing', NULL, NULL, NULL, '2026-01-15 19:02:34.543348+00', '2026-01-15 19:02:34.543348+00', 15),
+  ('20ced6a0-4989-46fd-9d8c-c8e9c2692291', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'trivago', 'trivago.com', '[]', NULL, '["C-Suite (CXO)","Manager"]', 'completed', '20ced6a0-4989-46fd-9d8c-c8e9c2692291_result.xlsx', 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2026-01-09 09:19:28.030347+00', '2026-01-09 09:26:00.735438+00', 5),
+  ('82d7b81b-0b06-4873-8430-862e777378c6', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', '82d7b81b-0b06-4873-8430-862e777378c6_result.xlsx', NULL, 'Bulk_PeopleEnrichment_Template.xlsx', '2026-01-09 09:41:28.862141+00', '2026-01-09 17:36:25.554888+00', 10),
+  ('773b41ad-c671-4f08-b433-2cf9085129e3', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio GmbH', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', '773b41ad-c671-4f08-b433-2cf9085129e3_result.xlsx', NULL, NULL, '2026-01-15 19:04:37.001528+00', '2026-01-15 19:11:51.244904+00', 15),
+  ('10077c38-85e6-4e6a-92eb-7941b54491a6', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', '10077c38-85e6-4e6a-92eb-7941b54491a6_result.xlsx', '⚠️ Input exceeds 100 contacts. Please reduce the list.', 'Batch2_100_Leads_fuer_Enrichment_Test_SL - Main_Data.csv', '2026-01-08 10:00:16.278355+00', '2026-01-15 19:59:05.473081+00', 10),
+  ('df5c7b96-ad4a-4a9d-9cc8-0308cfe357bf', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio GmbH', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2026-01-15 19:48:23.593438+00', '2026-01-15 19:52:11.924703+00', 10),
+  ('238dd101-4714-4de4-b6a3-c419d46f7ecd', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', '238dd101-4714-4de4-b6a3-c419d46f7ecd_result.xlsx', NULL, 'Enrichment-AWauer(HubspotTasksNoPhoneNR) - Main_Data.csv', '2026-01-13 10:59:54.875171+00', '2026-01-13 22:13:49.62581+00', 10),
+  ('77e218f8-0090-4646-a9d4-a17fa6e483d0', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio gmbh', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', '77e218f8-0090-4646-a9d4-a17fa6e483d0_result.xlsx', 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2026-01-14 14:59:16.289668+00', '2026-01-15 15:23:06.160638+00', 25),
+  ('b502a469-a680-435a-a223-d0b6238b7696', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', 'b502a469-a680-435a-a223-d0b6238b7696_result.xlsx', 'Error in workflow, the backend team has been notified. Please try again later!', 'Final_template_4companies.xlsm', '2026-01-15 20:45:38.612313+00', '2026-01-15 20:46:49.474949+00', 10),
+  ('7c99a5c3-b3d9-4fd3-b996-a2b19dca490a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Emploio GmbH', 'emploio.de', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', '7c99a5c3-b3d9-4fd3-b996-a2b19dca490a_result.xlsx', NULL, NULL, '2026-01-15 19:55:40.488066+00', '2026-01-15 20:01:27.945057+00', 10),
+  ('f13c4ae6-0aa4-4b54-b97d-0a8bd81e1fd4', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Final_template_4companies.xlsm', '2026-01-15 20:19:13.935515+00', '2026-01-15 20:19:19.186729+00', 10),
+  ('890fa0fd-b63f-4c08-b4de-7bc1b4ffe5e4', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch4 - Main_Data (1).csv', '2026-02-02 10:05:57.517419+00', '2026-02-02 10:20:42.815762+00', 10),
+  ('10c3f43e-bbb6-4912-8306-2cd577ab2a37', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain or Person Seniority is missing - Please update the fields and try again.', 'Final_template_2sampleCompanies.xlsm', '2026-01-15 20:54:17.196883+00', '2026-01-15 20:54:22.718763+00', 10),
+  ('42cc2440-bfff-4664-bd04-9c121bf0325c', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch3 - Main_Data.csv', '2026-02-02 08:26:21.418043+00', '2026-02-02 08:40:35.572076+00', 10),
+  ('40a4d0f4-1c3e-4b49-9f0e-697f04340e4f', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', '40a4d0f4-1c3e-4b49-9f0e-697f04340e4f_result.xlsx', NULL, 'Final_template_2sampleCompanies.xlsm', '2026-01-15 20:55:43.590877+00', '2026-01-15 21:01:15.094855+00', 10),
+  ('b2b870cf-9a13-4b3d-bfef-31a78753ab01', '26a051b3-bbfc-43f9-aa42-cdb9a6989199', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_withRecordId.xlsx', '2026-02-03 18:49:00.164577+00', '2026-02-03 19:20:07.483565+00', 10),
+  ('0041fdac-905a-4172-9b8d-56373e8c15c4', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '1-NonexistingCompany.xlsx', '2026-01-27 12:41:59.495309+00', '2026-01-27 12:42:01.572392+00', 10),
+  ('3b26e1bc-d71e-4a6b-b403-b284204ecee5', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Kopie von Bulk_PeopleEnrichment_Template_ - Main_Data.csv', '2026-02-04 08:32:33.951451+00', '2026-02-04 08:32:41.008727+00', 10),
+  ('c829ee16-bf4a-4923-8a37-76f8a873c850', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Copy from BulkSearch_Template - StepStone Leads without Contacts_limited.xlsx', '2026-01-25 00:18:55.253617+00', '2026-01-25 00:20:18.953529+00', 10),
+  ('0b7e2cd4-6cfc-4ac2-a9cf-769ac229b130', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Markel', 'markel.com', '[]', NULL, '["C-Suite (CXO)","Senior Manager","Manager","Director","SVP","EVP","VP"]', 'completed', NULL, NULL, NULL, '2026-01-25 00:39:04.965559+00', '2026-01-25 00:39:18.811424+00', 5),
+  ('cf6ff7b1-ffa3-4b31-9631-7e2ff3f45bc9', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template.xlsx', '2026-02-04 09:36:42.99288+00', '2026-02-04 09:38:51.121812+00', 10),
+  ('c3856bb9-b1bd-482d-aa70-4dedcff933ec', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'linkedin_04022026-company_level_mit_ap_2_batch - Main_Data.csv', '2026-02-10 08:49:09.75812+00', '2026-02-10 10:08:41.474151+00', 10),
+  ('da90f0fd-d9d3-41e6-990d-71cca96fbd16', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'linkedin_04022026-company_level_mit_ap_3_batch - Main_Data.csv', '2026-02-10 08:49:13.782493+00', '2026-02-10 08:53:19.180209+00', 10),
+  ('6143c67d-c48b-43cc-a548-4292a8d26f51', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Copy of Bulk_PeopleEnrichment_Template.xlsx', '2026-02-17 11:23:58.942356+00', '2026-02-17 11:28:13.441637+00', 10),
+  ('03a93436-0527-47d7-91ab-fdc8679dbd57', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Bosch', 'bosch.com', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'error', NULL, 'Permissible limit exceeded. Please upgrade your quota', NULL, '2026-01-16 17:54:12.163187+00', '2026-01-16 17:54:23.739351+00', 5),
+  ('78e67e0c-0fdc-4563-843c-7ca65af281f4', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-1-batch (1119) - Main_Data.csv', '2026-02-17 08:51:15.042821+00', '2026-02-17 09:09:02.823016+00', 10),
+  ('76e91a4f-a974-476e-950b-d171497bb1ba', '26a051b3-bbfc-43f9-aa42-cdb9a6989199', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_withRecordId.xlsx', '2026-02-03 20:02:55.638966+00', '2026-02-03 20:03:05.769144+00', 10),
+  ('0a6842ce-1b7b-4f3e-b39f-f98fdd184684', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-7-batch (1119) - Main_Data.csv', '2026-02-17 09:07:52.404595+00', '2026-02-17 09:15:49.812365+00', 10)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.searches (id, user_id, search_type, company_name, domain, functions, geography, seniority, status, result_url, error_message, excel_file_name, created_at, updated_at, results_per_function) VALUES
+  ('8e09ac8a-9d9f-4173-8b30-f6528eb35b97', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_withRecordId.xlsx', '2026-02-04 09:13:33.1465+00', '2026-02-04 09:13:39.332491+00', 10),
+  ('a335b68a-df72-419e-8589-82fb2ad78566', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template.xlsx', '2026-02-04 09:40:12.483832+00', '2026-02-04 09:40:17.439952+00', 10),
+  ('70d5b45b-b216-4f0a-adf3-1b1f1c383edc', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'ststone-leads-02022026-batch4 - Main_Data.csv', '2026-02-02 08:26:38.51093+00', '2026-02-02 08:30:07.655311+00', 10),
+  ('27521349-0939-4055-8393-175d8181626c', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'cisbox', 'cisbox.com', '["Human Resources","Sales","Entrepreneurship"]', 'Germany', '["C-Suite (CXO)","Owner","Partner"]', 'error', NULL, '⚠️ Company found, but no people were returned. Please broaden search parameters and try again.', NULL, '2026-02-12 13:31:32.912383+00', '2026-02-12 13:31:44.205732+00', 1),
+  ('c584ca0f-1c4d-487b-9699-b0f49656b9e4', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-11-batch (1119) - Main_Data.csv', '2026-02-17 09:18:23.553489+00', '2026-02-17 09:27:31.695773+00', 10),
+  ('1f33b46c-a766-40c4-a414-a7bb5809e887', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch5 - Main_Data (1).csv', '2026-02-02 10:06:20.587027+00', '2026-02-02 10:23:09.728455+00', 10),
+  ('dd8014aa-faaf-4176-bdb6-d1543243ecd9', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'Bulk-People-Enrichment-Leads - LinkedIn - Ursprungssuche Loris - 04022026-CompanylvlmitAP - Main_Data.csv', '2026-02-12 13:58:58.638433+00', '2026-02-12 14:05:27.100242+00', 10),
+  ('4cfa575a-3371-41f3-9f16-7718e9d7579b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'undefined', 'Bulk_PeopleEnrichment_Template_new10names.xlsx', '2026-01-24 23:59:24.383006+00', '2026-01-24 23:59:25.587226+00', 10),
+  ('94745a14-1f3f-4b24-bc8b-50380555a8e2', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-6-batch (1119) - Main_Data.csv', '2026-02-17 09:05:47.458159+00', '2026-02-17 09:42:03.677072+00', 10),
+  ('b9b67e04-5e15-4c27-9410-c53225e44a51', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Copy of Bulk_PeopleEnrichment_Template (1).xlsx', '2026-02-17 11:35:07.033589+00', '2026-02-17 11:35:16.85562+00', 10),
+  ('6403cb9c-d92a-4694-a91f-167250ac76be', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'emploio Med - Unternehmen ohne hochrangigen Kontakt - PraktischArzt - Batch 1 - Main_Data.csv', '2026-02-25 10:59:18.166346+00', '2026-02-25 11:01:50.662498+00', 10),
+  ('b461048f-5c94-43a6-9fb9-de3c284c5597', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'emploio Med - Unternehmen ohne hochrangigen Kontakt - PraktischArzt - Batch 2 - Main_Data.csv', '2026-02-25 10:59:31.552432+00', '2026-02-25 11:01:52.494344+00', 10),
+  ('a6183097-37dc-4dc2-91d0-d2936cf27a4a', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-7-Batch - Main_Data.csv', '2026-02-17 12:58:55.598825+00', '2026-02-17 13:05:27.578553+00', 10),
+  ('7635fc60-bd31-453e-a161-a7a43bcce265', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'undefined', 'Bulk_PeopleEnrichment_Template_new10names.xlsx', '2026-01-24 19:22:37.931312+00', '2026-01-24 19:22:39.275017+00', 10),
+  ('1620740c-9a3f-4acb-a28f-32215f580252', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Copy from BulkSearch_Template - StepStone Leads without Contacts - Main_Data.csv', '2026-01-23 13:57:37.306051+00', '2026-01-23 13:57:37.306051+00', 10),
+  ('17cb8186-fa5e-4fea-b5f5-d6cfb711a83b', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'Clay Outputs without Contact Information but with Jobposting (49) - Main_Data.csv', '2026-01-23 14:08:36.62741+00', '2026-01-23 14:08:36.62741+00', 10),
+  ('d12848ae-e16d-4c44-ae94-16a065d942e3', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'undefined', 'Bulk_PeopleEnrichment_Template_new10names.xlsx', '2026-01-25 00:00:34.713723+00', '2026-01-25 00:00:35.892342+00', 10),
+  ('e9470415-db4b-413d-b315-aa3f935375d7', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Permissible credit limit exceeded. Please upgrade your quota.', 'Bulk_PeopleEnrichment_Template_new10names.xlsx', '2026-01-25 00:06:18.604722+00', '2026-01-25 00:06:19.802727+00', 10),
+  ('9a15e2a4-07c6-4255-8f71-ec9a08bdc0ef', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain is missing.
+Please update the fields and try again.
+
+Domain missing in:
+ - Sr No: 50 | Row index: 85 | Company: Global Changer Tribe gUG', 'Copy from BulkSearch_Template - StepStone Leads without Contacts.xlsx', '2026-01-25 00:09:20.199228+00', '2026-01-25 00:09:23.944162+00', 10),
+  ('d75ac1f4-81e8-4e83-89bb-ab065fbb672e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Person Seniority is missing.
+Please update the fields and try again.
+
+Person Seniority missing in:
+ - Sr No: null | Row index: 10 | Company: null
+ - Sr No: null | Row index: 11 | Company: null
+ - Sr No: null | Row index: 12 | Company: null
+ - Sr No: null | Row index: 13 | Company: null
+ - Sr No: null | Row index: 14 | Company: null
+ - Sr No: null | Row index: 15 | Company: null
+ - Sr No: null | Row index: 16 | Company: null
+ - Sr No: null | Row index: 17 | Company: null
+ - Sr No: null | Row index: 18 | Company: null
+ - Sr No: null | Row index: 19 | Company: null
+ - Sr No: null | Row index: 20 | Company: null
+ - Sr No: null | Row index: 21 | Company: null
+ - Sr No: null | Row index: 22 | Company: null
+ - Sr No: null | Row index: 23 | Company: null
+ - Sr No: null | Row index: 24 | Company: null
+ - Sr No: null | Row index: 25 | Company: null
+ - Sr No: null | Row index: 26 | Company: null
+ - Sr No: null | Row index: 27 | Company: null
+ - Sr No: null | Row index: 28 | Company: null
+ - Sr No: null | Row index: 29 | Company: null
+ - Sr No: null | Row index: 30 | Company: null
+ - Sr No: null | Row index: 31 | Company: null
+ - Sr No: null | Row index: 32 | Company: null
+ - Sr No: null | Row index: 33 | Company: null
+ - Sr No: null | Row index: 34 | Company: null
+ - Sr No: null | Row index: 35 | Company: null
+ - Sr No: null | Row index: 36 | Company: null
+ - Sr No: null | Row index: 37 | Company: null
+ - Sr No: null | Row index: 38 | Company: null
+ - Sr No: null | Row index: 39 | Company: null
+ - Sr No: null | Row index: 40 | Company: null
+ - Sr No: null | Row index: 41 | Company: null
+ - Sr No: null | Row index: 42 | Company: null
+ - Sr No: null | Row index: 43 | Company: null
+ - Sr No: null | Row index: 44 | Company: null
+ - Sr No: null | Row index: 45 | Company: null
+ - Sr No: null | Row index: 46 | Company: null
+ - Sr No: null | Row index: 47 | Company: null
+ - Sr No: null | Row index: 48 | Company: null
+ - Sr No: null | Row index: 49 | Company: null
+ - Sr No: null | Row index: 50 | Company: null
+ - Sr No: null | Row index: 51 | Company: null
+ - Sr No: null | Row index: 52 | Company: null', 'Copy from BulkSearch_Template - StepStone Leads without Contacts_limited.xlsx', '2026-01-25 00:12:01.552388+00', '2026-01-25 00:12:02.879355+00', 10),
+  ('a67f5cdd-8a09-4a5c-947b-c455084d51ef', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, '411-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025 - Main_Data.csv', '2026-01-25 10:03:30.637191+00', '2026-01-25 10:03:30.637191+00', 10),
+  ('b5cc9ef8-4103-4769-ac22-63b7535a28c4', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, '300-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025 - Main_Data.csv', '2026-01-25 10:10:30.826853+00', '2026-01-25 10:10:30.826853+00', 10),
+  ('026d145d-90ca-4767-94e5-696068a0858e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, '300-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-25 12:50:03.364501+00', '2026-01-25 12:50:03.364501+00', 10),
+  ('056a303e-65f7-44da-a656-8ee0c23db518', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-30 13:40:35.394417+00', '2026-01-30 13:40:51.126899+00', 10),
+  ('a7f7c5ae-f789-4973-bda2-ba16139aafa8', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '5-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-25 17:13:02.397172+00', '2026-01-25 17:43:45.819132+00', 10),
+  ('cda97136-777a-4f55-9944-a038e78e4b29', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '101-200-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-25 19:52:07.363259+00', '2026-01-25 19:57:39.984765+00', 10),
+  ('8eac27e3-93d1-4aad-a614-82842e77b29c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Company limit exceeded. You can process a maximum of 100 companies per request. Please reduce your input and try again.', 'test_new.xlsx', '2026-01-26 11:34:44.999249+00', '2026-01-26 11:39:28.744501+00', 10),
+  ('f0653ae9-925b-462f-9fdf-06ff868a544a', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-26 12:06:22.771148+00', '2026-01-26 12:06:35.95329+00', 10),
+  ('50e43094-d04f-4cc9-a984-9494f1983953', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-27 10:24:34.535087+00', '2026-01-27 10:24:51.262672+00', 10),
+  ('dc709f9b-e829-41d7-959a-dfdf4bad7e6d', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Company limit exceeded. You can process a maximum of 100 companies per request. Please reduce your input and try again.', 'StepStone-Sales-Only-Vertriebsleiter-höhere-Stellen-IT-27012026-#8-first100 - Main_Data.csv', '2026-01-27 10:56:23.094742+00', '2026-01-27 10:56:24.045127+00', 10),
+  ('8c044d17-2654-4924-b806-012868422b49', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'File1_201-300-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:22:23.168947+00', '2026-02-02 09:31:57.574246+00', 10),
+  ('e28aceb1-2568-417c-ac53-3126b1273c67', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'StepStone-Sales-Only-Vertriebsleiter-höhere-Stellen-IT-27012026-#8-third5 - Main_Data.csv', '2026-01-27 11:16:17.414109+00', '2026-01-27 12:41:04.023621+00', 10),
+  ('221b4f2a-910e-44d7-af93-8707a8740a8e', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_withRecordId.xlsx', '2026-02-03 20:09:21.776182+00', '2026-02-03 20:09:27.77093+00', 10),
+  ('ad5ef2e0-5be6-41ce-abc4-51d80e93011d', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-2-batch (1119) - Main_Data.csv', '2026-02-17 08:54:38.771036+00', '2026-02-17 08:59:33.216914+00', 10),
+  ('bc8887f0-d66f-4b55-af0d-021517bcd684', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:53:07.557679+00', '2026-02-02 09:53:19.048543+00', 10),
+  ('f25016b3-184a-4858-9ef4-c22e9e7e46a6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_withRecordId.xlsx', '2026-02-04 09:15:27.708441+00', '2026-02-04 09:15:35.896763+00', 10),
+  ('8f3d04af-9d92-434d-8e35-d1378b187770', '64f6912f-e055-4fc7-a94c-fd1c395a125f', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Permissible credit limit exceeded. Please upgrade your quota.', 'Bulk_PeopleEnrichment-Entsorgungstalente - Main_Data.csv', '2026-02-04 10:58:36.348964+00', '2026-02-04 10:58:37.544529+00', 10),
+  ('5c4769cd-c69d-4d96-bb6f-d78d9ddad997', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '1-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 13:23:39.05892+00', '2026-02-02 13:23:48.105318+00', 10),
+  ('5b099432-e34a-404e-8f25-69db1db7a97b', '26a051b3-bbfc-43f9-aa42-cdb9a6989199', 'manual', 'Bosch', 'bosch.com', '[]', NULL, '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', NULL, NULL, NULL, '2026-01-30 19:28:58.784385+00', '2026-01-30 19:29:12.663059+00', 1),
+  ('d95cd7fc-6ea2-4772-955a-0bca55f2286a', '64f6912f-e055-4fc7-a94c-fd1c395a125f', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment-Entsorgungstalente - Main_Data.csv', '2026-02-04 10:58:59.988761+00', '2026-02-04 11:06:26.362396+00', 10),
+  ('79bc18c5-2e50-4f30-b0a5-5f4caf871a66', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-8-batch (1119) - Main_Data.csv', '2026-02-17 09:09:30.866383+00', '2026-02-17 09:16:44.144754+00', 10),
+  ('0e498bea-7312-4e52-9cdd-3f86acba4363', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'ststone-leads-02022026-batch5 - Main_Data.csv', '2026-02-02 08:26:52.899485+00', '2026-02-02 08:30:07.558425+00', 10),
+  ('3e01ab6a-bf40-428c-9471-6fc66bf74212', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:13:57.45121+00', '2026-02-02 09:13:58.917781+00', 10),
+  ('bb0052b6-e2a2-4807-954f-2f6909a2821e', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'cisbox GmbH', 'cisbox.com', '[]', 'Germany', '["Partner","C-Suite (CXO)","Owner"]', 'completed', NULL, NULL, NULL, '2026-02-12 13:33:26.149816+00', '2026-02-12 13:33:34.067563+00', 1),
+  ('6f9ec87f-8dd1-4053-8904-58173d63ed55', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'File1_0-100-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:21:18.437821+00', '2026-02-02 09:23:50.071042+00', 10),
+  ('ad45f03e-7839-488c-8cf7-a57d4b42d8f9', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Leads - LinkedIn - Ursprungssuche Loris - 04022026-Leads_Ursprungssuche_minus_angereicherte_Liste - Main_Data.csv', '2026-02-13 08:40:38.278606+00', '2026-02-13 08:51:55.741113+00', 10),
+  ('eb7be2e2-f764-45dc-a99c-f5e8708c95c9', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-1-Batch - Main_Data.csv', '2026-02-17 13:00:47.299277+00', '2026-02-17 13:21:25.341148+00', 10),
+  ('3810781d-747e-4852-8dbd-35cfe9b3da9a', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-12-batch (1119) - Main_Data.csv', '2026-02-17 09:19:23.42808+00', '2026-02-17 09:20:35.915817+00', 10),
+  ('d4edd53d-6ee6-472e-bca2-18cdfbe7e3ef', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-11-Batch - Main_Data.csv', '2026-02-17 12:44:31.028716+00', '2026-02-17 12:45:32.29289+00', 10),
+  ('4296f164-8a88-4276-bf92-c1312f80ccfb', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '5-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-25 17:45:09.013712+00', '2026-01-25 17:49:08.538569+00', 10),
+  ('cc393c1f-752b-47d8-b653-ebc3b256dc47', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'random_del_later.xlsx', '2026-01-26 09:03:44.311924+00', '2026-01-26 09:03:57.622804+00', 10),
+  ('05df0b4b-cd6e-4b9e-bcbe-6c87964210c3', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain and Person Seniority are missing.
+Please update the fields and try again.
+
+Domain missing in:
+ - Sr No: 1 | Row index: 0 | Company: 1&1 Versatel GmbH
+ - Sr No: 2 | Row index: 1 | Company: 2 W Beteiligungsgesellschaft mbH
+ - Sr No: 3 | Row index: 2 | Company: 3A Composites GmbH
+ - Sr No: 4 | Row index: 3 | Company: 4Press GmbH & Co. KG
+ - Sr No: 5 | Row index: 4 | Company: 7Learnings GmbH
+ - Sr No: 6 | Row index: 5 | Company: A.I.B. GmbH
+ - Sr No: 7 | Row index: 6 | Company: ABK Allgemeine Beamten Bank AG
+ - Sr No: 8 | Row index: 7 | Company: AGILA Haustierversicherung AG
+ - Sr No: 9 | Row index: 8 | Company: AIPERIA GmbH
+ - Sr No: 10 | Row index: 9 | Company: AMVisor GmbH
+ - Sr No: 11 | Row index: 10 | Company: ARGUS DATA INSIGHTS Deutschland GmbH
+ - Sr No: 12 | Row index: 11 | Company: ARNDT GmbH & Co.KG
+ - Sr No: 13 | Row index: 12 | Company: AS-KA GmbH & Co. KG
+ - Sr No: 14 | Row index: 13 | Company: AUTO1 Group
+ - Sr No: 15 | Row index: 14 | Company: AVIXA Germany
+ - Sr No: 16 | Row index: 15 | Company: AZ fundraising services GmbH & Co. KG
+ - Sr No: 17 | Row index: 16 | Company: Aareal First Financial Solutions AG
+ - Sr No: 18 | Row index: 17 | Company: Abacus Umantis GmbH
+ - Sr No: 19 | Row index: 18 | Company: Acceleraid
+ - Sr No: 20 | Row index: 19 | Company: Adtraction
+ - Sr No: 21 | Row index: 20 | Company: Adtraction Deutschland GmbH
+ - Sr No: 22 | Row index: 21 | Company: Advanced UniByte GmbH
+ - Sr No: 23 | Row index: 22 | Company: AdvoNeo Schuldnerberatung
+ - Sr No: 24 | Row index: 23 | Company: Ai-Bridge GmbH
+ - Sr No: 25 | Row index: 24 | Company: AirLST GmbH
+ - Sr No: 26 | Row index: 25 | Company: Alasco GmbH
+ - Sr No: 27 | Row index: 26 | Company: Alfred Kärcher Vertriebs-GmbH
+ - Sr No: 28 | Row index: 27 | Company: Allergopharma GmbH & Co. KG
+ - Sr No: 29 | Row index: 28 | Company: Ankercloud GmbH
+ - Sr No: 30 | Row index: 29 | Company: Arvana GmbH
+ - Sr No: 31 | Row index: 30 | Company: Arvato SE – Consumer Products
+ - Sr No: 32 | Row index: 31 | Company: Arvato Systems GmbH
+ - Sr No: 33 | Row index: 32 | Company: Asahi Brands Germany GmbH
+ - Sr No: 34 | Row index: 33 | Company: Autobrains AI Technologies GmbH
+ - Sr No: 35 | Row index: 34 | Company: B+D Unternehmensgruppe
+ - Sr No: 36 | Row index: 35 | Company: B2B GmbH
+ - Sr No: 37 | Row index: 36 | Company: BHC Gummi Metall GmbH
+ - Sr No: 38 | Row index: 37 | Company: BIOMERIEUX
+ - Sr No: 39 | Row index: 38 | Company: BRITA Vivreau GmbH
+ - Sr No: 40 | Row index: 39 | Company: Bakic Packaging GmbH
+ - Sr No: 41 | Row index: 40 | Company: Baqend GmbH
+ - Sr No: 42 | Row index: 41 | Company: BauWatch Projekt Service GmbH
+ - Sr No: 43 | Row index: 42 | Company: Beautinda GmbH
+ - Sr No: 44 | Row index: 43 | Company: Bechtle GmbH IT-Systemhaus Dortmund
+ - Sr No: 45 | Row index: 44 | Company: Berenberg
+ - Sr No: 46 | Row index: 45 | Company: Bioprojet Deutschland GmbH
+ - Sr No: 47 | Row index: 46 | Company: Bourns Electronics GmbH
+ - Sr No: 48 | Row index: 47 | Company: Bremer Tageszeitungen AG
+ - Sr No: 49 | Row index: 48 | Company: Brenner Verpackung GmbH & Co. KG
+ - Sr No: 50 | Row index: 49 | Company: Brunel GmbH
+ - Sr No: 51 | Row index: 50 | Company: Bundesdruckerei-Gruppe
+ - Sr No: 52 | Row index: 51 | Company: Byodo Naturkost GmbH
+ - Sr No: 53 | Row index: 52 | Company: Bönninghoff GmbH
+ - Sr No: 54 | Row index: 53 | Company: C.HAFNER GmbH + Co. KG
+ - Sr No: 55 | Row index: 54 | Company: CENDAS GmbH
+ - Sr No: 56 | Row index: 55 | Company: CERTUSS GmbH
+ - Sr No: 57 | Row index: 56 | Company: CHAMELAION GmbH
+ - Sr No: 58 | Row index: 57 | Company: CHEFS CULINAR Nord-Ost GmbH & Co. KG
+ - Sr No: 59 | Row index: 58 | Company: CHEP Deutschland GmbH
+ - Sr No: 60 | Row index: 59 | Company: CO2OPT GmbH
+ - Sr No: 61 | Row index: 60 | Company: CONTACT Software GmbH
+ - Sr No: 62 | Row index: 61 | Company: CREALOGIX (Deutschland) GmbH
+ - Sr No: 63 | Row index: 62 | Company: CUREosity GmbH
+ - Sr No: 64 | Row index: 63 | Company: Carysil GmbH
+ - Sr No: 65 | Row index: 64 | Company: Celonis SE
+ - Sr No: 66 | Row index: 65 | Company: Cerpro GmbH
+ - Sr No: 67 | Row index: 66 | Company: Channel Pilot Solutions GmbH
+ - Sr No: 68 | Row index: 67 | Company: Choco Communications GmbH
+ - Sr No: 69 | Row index: 68 | Company: CoFo Räuchle GmbH
+ - Sr No: 70 | Row index: 69 | Company: CoachHub GmbH
+ - Sr No: 71 | Row index: 70 | Company: Cochlear Deutschland GmbH & Co. KG
+ - Sr No: 72 | Row index: 71 | Company: CoffeeCup GmbH
+ - Sr No: 73 | Row index: 72 | Company: CogVis Software und Consulting GmbH
+ - Sr No: 74 | Row index: 73 | Company: CompuGroup Medical Deutschland AG
+ - Sr No: 75 | Row index: 74 | Company: Computacenter AG & Co. oHG
+ - Sr No: 76 | Row index: 75 | Company: Constaff GmbH
+ - Sr No: 77 | Row index: 76 | Company: Converge Technology Solutions GmbH
+ - Sr No: 78 | Row index: 77 | Company: Creation Willi Geller Deutschland GmbH
+ - Sr No: 79 | Row index: 78 | Company: Creative Dreams c/o barkerz GmbH
+ - Sr No: 80 | Row index: 79 | Company: Creditplus Bank AG
+ - Sr No: 81 | Row index: 80 | Company: Creditreform
+ - Sr No: 82 | Row index: 81 | Company: DACHSER SE
+ - Sr No: 83 | Row index: 82 | Company: DAKO GmbH
+ - Sr No: 84 | Row index: 83 | Company: DAW SE
+ - Sr No: 85 | Row index: 84 | Company: DELTA DORE RADEMACHER GmbH
+ - Sr No: 86 | Row index: 85 | Company: DELTA Electronics (Germany) GmbH
+ - Sr No: 87 | Row index: 86 | Company: DEWIMED Medizintechnik GmbH
+ - Sr No: 88 | Row index: 87 | Company: DHL Global Forwarding
+ - Sr No: 89 | Row index: 88 | Company: DOCTOS GmbH
+ - Sr No: 90 | Row index: 89 | Company: Dach für Dach GmbH
+ - Sr No: 91 | Row index: 90 | Company: Darguner Brauerei GmbH
+ - Sr No: 92 | Row index: 91 | Company: De Lage Landen Leasing GmbH
+ - Sr No: 93 | Row index: 92 | Company: DeepImmo GmbH
+ - Sr No: 94 | Row index: 93 | Company: Degura GmbH
+ - Sr No: 95 | Row index: 94 | Company: Deutsche Bahn AG
+ - Sr No: 96 | Row index: 95 | Company: DevBoost GmbH
+ - Sr No: 97 | Row index: 96 | Company: Doctolib GmbH
+
+Person Seniority missing in:
+ - Sr No: 1 | Row index: 0 | Company: 1&1 Versatel GmbH
+ - Sr No: 2 | Row index: 1 | Company: 2 W Beteiligungsgesellschaft mbH
+ - Sr No: 3 | Row index: 2 | Company: 3A Composites GmbH
+ - Sr No: 4 | Row index: 3 | Company: 4Press GmbH & Co. KG
+ - Sr No: 5 | Row index: 4 | Company: 7Learnings GmbH
+ - Sr No: 6 | Row index: 5 | Company: A.I.B. GmbH
+ - Sr No: 7 | Row index: 6 | Company: ABK Allgemeine Beamten Bank AG
+ - Sr No: 8 | Row index: 7 | Company: AGILA Haustierversicherung AG
+ - Sr No: 9 | Row index: 8 | Company: AIPERIA GmbH
+ - Sr No: 10 | Row index: 9 | Company: AMVisor GmbH
+ - Sr No: 11 | Row index: 10 | Company: ARGUS DATA INSIGHTS Deutschland GmbH
+ - Sr No: 12 | Row index: 11 | Company: ARNDT GmbH & Co.KG
+ - Sr No: 13 | Row index: 12 | Company: AS-KA GmbH & Co. KG
+ - Sr No: 14 | Row index: 13 | Company: AUTO1 Group
+ - Sr No: 15 | Row index: 14 | Company: AVIXA Germany
+ - Sr No: 16 | Row index: 15 | Company: AZ fundraising services GmbH & Co. KG
+ - Sr No: 17 | Row index: 16 | Company: Aareal First Financial Solutions AG
+ - Sr No: 18 | Row index: 17 | Company: Abacus Umantis GmbH
+ - Sr No: 19 | Row index: 18 | Company: Acceleraid
+ - Sr No: 20 | Row index: 19 | Company: Adtraction
+ - Sr No: 21 | Row index: 20 | Company: Adtraction Deutschland GmbH
+ - Sr No: 22 | Row index: 21 | Company: Advanced UniByte GmbH
+ - Sr No: 23 | Row index: 22 | Company: AdvoNeo Schuldnerberatung
+ - Sr No: 24 | Row index: 23 | Company: Ai-Bridge GmbH
+ - Sr No: 25 | Row index: 24 | Company: AirLST GmbH
+ - Sr No: 26 | Row index: 25 | Company: Alasco GmbH
+ - Sr No: 27 | Row index: 26 | Company: Alfred Kärcher Vertriebs-GmbH
+ - Sr No: 28 | Row index: 27 | Company: Allergopharma GmbH & Co. KG
+ - Sr No: 29 | Row index: 28 | Company: Ankercloud GmbH
+ - Sr No: 30 | Row index: 29 | Company: Arvana GmbH
+ - Sr No: 31 | Row index: 30 | Company: Arvato SE – Consumer Products
+ - Sr No: 32 | Row index: 31 | Company: Arvato Systems GmbH
+ - Sr No: 33 | Row index: 32 | Company: Asahi Brands Germany GmbH
+ - Sr No: 34 | Row index: 33 | Company: Autobrains AI Technologies GmbH
+ - Sr No: 35 | Row index: 34 | Company: B+D Unternehmensgruppe
+ - Sr No: 36 | Row index: 35 | Company: B2B GmbH
+ - Sr No: 37 | Row index: 36 | Company: BHC Gummi Metall GmbH
+ - Sr No: 38 | Row index: 37 | Company: BIOMERIEUX
+ - Sr No: 39 | Row index: 38 | Company: BRITA Vivreau GmbH
+ - Sr No: 40 | Row index: 39 | Company: Bakic Packaging GmbH
+ - Sr No: 41 | Row index: 40 | Company: Baqend GmbH
+ - Sr No: 42 | Row index: 41 | Company: BauWatch Projekt Service GmbH
+ - Sr No: 43 | Row index: 42 | Company: Beautinda GmbH
+ - Sr No: 44 | Row index: 43 | Company: Bechtle GmbH IT-Systemhaus Dortmund
+ - Sr No: 45 | Row index: 44 | Company: Berenberg
+ - Sr No: 46 | Row index: 45 | Company: Bioprojet Deutschland GmbH
+ - Sr No: 47 | Row index: 46 | Company: Bourns Electronics GmbH
+ - Sr No: 48 | Row index: 47 | Company: Bremer Tageszeitungen AG
+ - Sr No: 49 | Row index: 48 | Company: Brenner Verpackung GmbH & Co. KG
+ - Sr No: 50 | Row index: 49 | Company: Brunel GmbH
+ - Sr No: 51 | Row index: 50 | Company: Bundesdruckerei-Gruppe
+ - Sr No: 52 | Row index: 51 | Company: Byodo Naturkost GmbH
+ - Sr No: 53 | Row index: 52 | Company: Bönninghoff GmbH
+ - Sr No: 54 | Row index: 53 | Company: C.HAFNER GmbH + Co. KG
+ - Sr No: 55 | Row index: 54 | Company: CENDAS GmbH
+ - Sr No: 56 | Row index: 55 | Company: CERTUSS GmbH
+ - Sr No: 57 | Row index: 56 | Company: CHAMELAION GmbH
+ - Sr No: 58 | Row index: 57 | Company: CHEFS CULINAR Nord-Ost GmbH & Co. KG
+ - Sr No: 59 | Row index: 58 | Company: CHEP Deutschland GmbH
+ - Sr No: 60 | Row index: 59 | Company: CO2OPT GmbH
+ - Sr No: 61 | Row index: 60 | Company: CONTACT Software GmbH
+ - Sr No: 62 | Row index: 61 | Company: CREALOGIX (Deutschland) GmbH
+ - Sr No: 63 | Row index: 62 | Company: CUREosity GmbH
+ - Sr No: 64 | Row index: 63 | Company: Carysil GmbH
+ - Sr No: 65 | Row index: 64 | Company: Celonis SE
+ - Sr No: 66 | Row index: 65 | Company: Cerpro GmbH
+ - Sr No: 67 | Row index: 66 | Company: Channel Pilot Solutions GmbH
+ - Sr No: 68 | Row index: 67 | Company: Choco Communications GmbH
+ - Sr No: 69 | Row index: 68 | Company: CoFo Räuchle GmbH
+ - Sr No: 70 | Row index: 69 | Company: CoachHub GmbH
+ - Sr No: 71 | Row index: 70 | Company: Cochlear Deutschland GmbH & Co. KG
+ - Sr No: 72 | Row index: 71 | Company: CoffeeCup GmbH
+ - Sr No: 73 | Row index: 72 | Company: CogVis Software und Consulting GmbH
+ - Sr No: 74 | Row index: 73 | Company: CompuGroup Medical Deutschland AG
+ - Sr No: 75 | Row index: 74 | Company: Computacenter AG & Co. oHG
+ - Sr No: 76 | Row index: 75 | Company: Constaff GmbH
+ - Sr No: 77 | Row index: 76 | Company: Converge Technology Solutions GmbH
+ - Sr No: 78 | Row index: 77 | Company: Creation Willi Geller Deutschland GmbH
+ - Sr No: 79 | Row index: 78 | Company: Creative Dreams c/o barkerz GmbH
+ - Sr No: 80 | Row index: 79 | Company: Creditplus Bank AG
+ - Sr No: 81 | Row index: 80 | Company: Creditreform
+ - Sr No: 82 | Row index: 81 | Company: DACHSER SE
+ - Sr No: 83 | Row index: 82 | Company: DAKO GmbH
+ - Sr No: 84 | Row index: 83 | Company: DAW SE
+ - Sr No: 85 | Row index: 84 | Company: DELTA DORE RADEMACHER GmbH
+ - Sr No: 86 | Row index: 85 | Company: DELTA Electronics (Germany) GmbH
+ - Sr No: 87 | Row index: 86 | Company: DEWIMED Medizintechnik GmbH
+ - Sr No: 88 | Row index: 87 | Company: DHL Global Forwarding
+ - Sr No: 89 | Row index: 88 | Company: DOCTOS GmbH
+ - Sr No: 90 | Row index: 89 | Company: Dach für Dach GmbH
+ - Sr No: 91 | Row index: 90 | Company: Darguner Brauerei GmbH
+ - Sr No: 92 | Row index: 91 | Company: De Lage Landen Leasing GmbH
+ - Sr No: 93 | Row index: 92 | Company: DeepImmo GmbH
+ - Sr No: 94 | Row index: 93 | Company: Degura GmbH
+ - Sr No: 95 | Row index: 94 | Company: Deutsche Bahn AG
+ - Sr No: 96 | Row index: 95 | Company: DevBoost GmbH
+ - Sr No: 97 | Row index: 96 | Company: Doctolib GmbH', 'test_new.xlsx', '2026-01-26 11:40:21.436223+00', '2026-01-26 11:40:22.684391+00', 10),
+  ('ba20b92a-ee09-41cf-9d82-ce5037d2ba34', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'stepstone_leads_domain+company-26012026-2-batch-100-entries - Main_Data.csv', '2026-01-26 12:08:18.736672+00', '2026-01-26 12:12:35.263165+00', 10),
+  ('f5ecef3b-7de3-4177-a62f-ce8325730145', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, '⚠️ Validation failed.
+Please update the fields and try again.', '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-27 10:39:27.697961+00', '2026-01-27 10:50:48.827248+00', 10),
+  ('e34986db-1051-444c-9da3-a6eb0e918ca1', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'StepStone-Sales-Only-Vertriebsleiter-höhere-Stellen-IT-27012026-#8-second100 - Main_Data.csv', '2026-01-27 10:56:57.582084+00', '2026-01-27 10:57:32.749104+00', 10),
+  ('67476716-060e-4ce2-9293-753f0661cc64', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'StepStone-Sales-Only-Vertriebsleiter-höhere-Stellen-IT-27012026-#8-third4 - Main_Data.csv', '2026-01-27 10:57:14.901995+00', '2026-01-27 10:57:35.677973+00', 10),
+  ('55f7c7ff-9ee3-42ec-a54e-30e0d44de369', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'StepStone-Sales-Only-Vertriebsleiter-höhere-Stellen-IT-27012026-#8-first100 - Main_Data (2).csv', '2026-01-27 10:59:00.108933+00', '2026-01-27 11:05:14.502084+00', 10),
+  ('05b6a04c-e39c-4d44-97a2-460136f4fb89', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'NTI Deutschland GmbH', 'nti-group.com', '["Entrepreneurship","Human Resources","Sales"]', 'Germany', '["C-Suite (CXO)","Director","Team Lead"]', 'error', NULL, '⚠️ Company found, but no people were returned. Please broaden search parameters and try again.', NULL, '2026-01-27 11:52:04.971886+00', '2026-01-27 12:53:39.854908+00', 1),
+  ('e236ab5a-e71f-44ae-bb26-cdbb1875588f', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Leads - LinkedIn - Ursprungssuche Loris - 04022026-Leads_Ursprungssuche_minus_angereicherte_Liste-2-batch - Main_Data.csv', '2026-02-13 08:52:47.63359+00', '2026-02-13 09:07:11.224579+00', 10),
+  ('dcf132b4-4010-473b-9368-fe106932e68c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_withRecordId.xlsx', '2026-02-03 20:22:57.507996+00', '2026-02-03 20:25:03.913042+00', 10),
+  ('806386db-a810-45ad-af32-9e7884518489', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'ststone-leads-02022026-batch6 - Main_Data.csv', '2026-02-02 08:27:11.131268+00', '2026-02-02 08:30:06.679943+00', 10),
+  ('0a3028c9-6348-435b-b67f-98c2506c02ee', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_withRecordId.xlsx', '2026-02-03 20:25:44.270424+00', '2026-02-03 20:25:52.523321+00', 10),
+  ('d01b0f46-5e01-4ffc-a36c-b05908df9245', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Kopie von Bulk_PeopleEnrichment_Template_ - Main_Data.csv', '2026-02-04 09:17:24.964445+00', '2026-02-04 09:21:05.347641+00', 10),
+  ('a126e680-db4e-48f9-8a89-9d477eac6185', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:19:28.008649+00', '2026-02-02 09:19:29.092295+00', 10),
+  ('28fc84be-b907-4186-a187-8c1ad528dc3d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_Template_new.xlsx', '2026-02-17 10:58:45.642452+00', '2026-02-17 11:03:23.149509+00', 10),
+  ('0f5caa99-4e15-4be6-a466-66c78383655f', '64f6912f-e055-4fc7-a94c-fd1c395a125f', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_2.Batch-06022026 - Main_Data.csv', '2026-02-06 12:36:08.076349+00', '2026-02-06 12:51:06.855495+00', 10),
+  ('8f62bb2c-df93-484d-963a-4674fe4ff7dd', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'File1_0-100-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:21:36.325419+00', '2026-02-02 09:26:31.467452+00', 10),
+  ('61c8ed32-ed7d-464e-b574-5d3cbfadd47b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'File1_301-400-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:31:58.749858+00', '2026-02-02 09:34:36.868818+00', 10),
+  ('b0b120f1-8a68-4be7-8f4a-b4e6f65e8ec8', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-4-batch (1119) - Main_Data.csv', '2026-02-17 09:00:32.974137+00', '2026-02-17 09:06:57.965962+00', 10),
+  ('ee91bd79-8530-48ca-a7b3-ec2dc9e15b00', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Bosch', 'bosch.com', '[]', 'Germany', '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', NULL, '2026-01-30 13:42:06.879955+00', '2026-01-30 13:42:13.199714+00', 5),
+  ('1e9e6752-551e-4d5c-b94e-b91c6f4023da', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 10:00:05.557876+00', '2026-02-02 10:00:18.521683+00', 10),
+  ('cf7bb2c3-16ae-451d-843e-2671c6e317d8', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-01 22:24:13.528157+00', '2026-02-01 22:24:31.188871+00', 10),
+  ('f9e26f1e-4a95-40c9-9fa9-7dc3808f25dd', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'Elunic AG', 'elunic.com', '[]', 'Germany', '["Partner","C-Suite (CXO)","Owner"]', 'error', NULL, '⚠️ Company found, but no people were returned. Please broaden search parameters and try again.', NULL, '2026-02-12 13:36:13.388278+00', '2026-02-12 13:36:19.340618+00', 1),
+  ('32291436-bebf-457c-8845-5b84ec1c78f6', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '1-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 13:28:35.645521+00', '2026-02-02 13:29:01.234753+00', 10),
+  ('09c57fb7-fab1-466a-88ea-23a1071496f5', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-3-batch (1119) - Main_Data (1).csv', '2026-02-17 08:57:53.882625+00', '2026-02-17 09:26:16.459642+00', 10),
+  ('719d32cd-2ae1-4428-a903-06313e35ca33', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-9-batch (1119) - Main_Data.csv', '2026-02-17 09:10:34.650516+00', '2026-02-17 09:45:50.423533+00', 10),
+  ('7fc95f8e-bfc9-419e-ac2f-d004268c162a', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-10-Batch - Main_Data.csv', '2026-02-17 12:47:16.049987+00', '2026-02-17 12:50:15.90545+00', 10),
+  ('c8a1ebe2-7f7a-4f8e-bf4a-488da53c41a4', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-8-Batch - Main_Data.csv', '2026-02-17 13:16:16.303182+00', '2026-02-17 13:23:57.502313+00', 10),
+  ('ef8dbce9-5f63-419a-b312-b432e511430f', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '0-100-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-25 17:56:00.11224+00', '2026-01-25 19:19:12.049761+00', 10),
+  ('aab0c3ce-eab9-4c96-b01c-8f61add09e7c', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'hubspot_stepstone_unique_companies_2026-01-26_FINAL_with_domains_only (1) - Main_Data.csv', '2026-01-26 10:30:27.47545+00', '2026-01-26 11:22:04.439291+00', 10),
+  ('503c4b3e-c135-44c7-946b-73172370d338', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, '⚠️ Domain and Person Seniority are missing.
+Please update the fields and try again.
+
+Domain missing in:
+ - Sr No: 1 | Row index: 0 | Company: 1&1 Versatel GmbH
+ - Sr No: 2 | Row index: 1 | Company: 2 W Beteiligungsgesellschaft mbH
+ - Sr No: 3 | Row index: 2 | Company: 3A Composites GmbH
+ - Sr No: 4 | Row index: 3 | Company: 4Press GmbH & Co. KG
+ - Sr No: 5 | Row index: 4 | Company: 7Learnings GmbH
+ - Sr No: 6 | Row index: 5 | Company: A.I.B. GmbH
+ - Sr No: 7 | Row index: 6 | Company: ABK Allgemeine Beamten Bank AG
+ - Sr No: 8 | Row index: 7 | Company: AGILA Haustierversicherung AG
+ - Sr No: 9 | Row index: 8 | Company: AIPERIA GmbH
+ - Sr No: 10 | Row index: 9 | Company: AMVisor GmbH
+ - Sr No: 11 | Row index: 10 | Company: ARGUS DATA INSIGHTS Deutschland GmbH
+ - Sr No: 12 | Row index: 11 | Company: ARNDT GmbH & Co.KG
+ - Sr No: 13 | Row index: 12 | Company: AS-KA GmbH & Co. KG
+ - Sr No: 14 | Row index: 13 | Company: AUTO1 Group
+ - Sr No: 15 | Row index: 14 | Company: AVIXA Germany
+ - Sr No: 16 | Row index: 15 | Company: AZ fundraising services GmbH & Co. KG
+ - Sr No: 17 | Row index: 16 | Company: Aareal First Financial Solutions AG
+ - Sr No: 18 | Row index: 17 | Company: Abacus Umantis GmbH
+ - Sr No: 19 | Row index: 18 | Company: Acceleraid
+ - Sr No: 20 | Row index: 19 | Company: Adtraction
+ - Sr No: 21 | Row index: 20 | Company: Adtraction Deutschland GmbH
+ - Sr No: 22 | Row index: 21 | Company: Advanced UniByte GmbH
+ - Sr No: 23 | Row index: 22 | Company: AdvoNeo Schuldnerberatung
+ - Sr No: 24 | Row index: 23 | Company: Ai-Bridge GmbH
+ - Sr No: 25 | Row index: 24 | Company: AirLST GmbH
+ - Sr No: 26 | Row index: 25 | Company: Alasco GmbH
+ - Sr No: 27 | Row index: 26 | Company: Alfred Kärcher Vertriebs-GmbH
+ - Sr No: 28 | Row index: 27 | Company: Allergopharma GmbH & Co. KG
+ - Sr No: 29 | Row index: 28 | Company: Ankercloud GmbH
+ - Sr No: 30 | Row index: 29 | Company: Arvana GmbH
+ - Sr No: 31 | Row index: 30 | Company: Arvato SE – Consumer Products
+ - Sr No: 32 | Row index: 31 | Company: Arvato Systems GmbH
+ - Sr No: 33 | Row index: 32 | Company: Asahi Brands Germany GmbH
+ - Sr No: 34 | Row index: 33 | Company: Autobrains AI Technologies GmbH
+ - Sr No: 35 | Row index: 34 | Company: B+D Unternehmensgruppe
+ - Sr No: 36 | Row index: 35 | Company: B2B GmbH
+ - Sr No: 37 | Row index: 36 | Company: BHC Gummi Metall GmbH
+ - Sr No: 38 | Row index: 37 | Company: BIOMERIEUX
+ - Sr No: 39 | Row index: 38 | Company: BRITA Vivreau GmbH
+ - Sr No: 40 | Row index: 39 | Company: Bakic Packaging GmbH
+ - Sr No: 41 | Row index: 40 | Company: Baqend GmbH
+ - Sr No: 42 | Row index: 41 | Company: BauWatch Projekt Service GmbH
+ - Sr No: 43 | Row index: 42 | Company: Beautinda GmbH
+ - Sr No: 44 | Row index: 43 | Company: Bechtle GmbH IT-Systemhaus Dortmund
+ - Sr No: 45 | Row index: 44 | Company: Berenberg
+ - Sr No: 46 | Row index: 45 | Company: Bioprojet Deutschland GmbH
+ - Sr No: 47 | Row index: 46 | Company: Bourns Electronics GmbH
+ - Sr No: 48 | Row index: 47 | Company: Bremer Tageszeitungen AG
+ - Sr No: 49 | Row index: 48 | Company: Brenner Verpackung GmbH & Co. KG
+ - Sr No: 50 | Row index: 49 | Company: Brunel GmbH
+ - Sr No: 51 | Row index: 50 | Company: Bundesdruckerei-Gruppe
+ - Sr No: 52 | Row index: 51 | Company: Byodo Naturkost GmbH
+ - Sr No: 53 | Row index: 52 | Company: Bönninghoff GmbH
+ - Sr No: 54 | Row index: 53 | Company: C.HAFNER GmbH + Co. KG
+ - Sr No: 55 | Row index: 54 | Company: CENDAS GmbH
+ - Sr No: 56 | Row index: 55 | Company: CERTUSS GmbH
+ - Sr No: 57 | Row index: 56 | Company: CHAMELAION GmbH
+ - Sr No: 58 | Row index: 57 | Company: CHEFS CULINAR Nord-Ost GmbH & Co. KG
+ - Sr No: 59 | Row index: 58 | Company: CHEP Deutschland GmbH
+ - Sr No: 60 | Row index: 59 | Company: CO2OPT GmbH
+ - Sr No: 61 | Row index: 60 | Company: CONTACT Software GmbH
+ - Sr No: 62 | Row index: 61 | Company: CREALOGIX (Deutschland) GmbH
+ - Sr No: 63 | Row index: 62 | Company: CUREosity GmbH
+ - Sr No: 64 | Row index: 63 | Company: Carysil GmbH
+ - Sr No: 65 | Row index: 64 | Company: Celonis SE
+ - Sr No: 66 | Row index: 65 | Company: Cerpro GmbH
+ - Sr No: 67 | Row index: 66 | Company: Channel Pilot Solutions GmbH
+ - Sr No: 68 | Row index: 67 | Company: Choco Communications GmbH
+ - Sr No: 69 | Row index: 68 | Company: CoFo Räuchle GmbH
+ - Sr No: 70 | Row index: 69 | Company: CoachHub GmbH
+ - Sr No: 71 | Row index: 70 | Company: Cochlear Deutschland GmbH & Co. KG
+ - Sr No: 72 | Row index: 71 | Company: CoffeeCup GmbH
+ - Sr No: 73 | Row index: 72 | Company: CogVis Software und Consulting GmbH
+ - Sr No: 74 | Row index: 73 | Company: CompuGroup Medical Deutschland AG
+ - Sr No: 75 | Row index: 74 | Company: Computacenter AG & Co. oHG
+ - Sr No: 76 | Row index: 75 | Company: Constaff GmbH
+ - Sr No: 77 | Row index: 76 | Company: Converge Technology Solutions GmbH
+ - Sr No: 78 | Row index: 77 | Company: Creation Willi Geller Deutschland GmbH
+ - Sr No: 79 | Row index: 78 | Company: Creative Dreams c/o barkerz GmbH
+ - Sr No: 80 | Row index: 79 | Company: Creditplus Bank AG
+ - Sr No: 81 | Row index: 80 | Company: Creditreform
+ - Sr No: 82 | Row index: 81 | Company: DACHSER SE
+ - Sr No: 83 | Row index: 82 | Company: DAKO GmbH
+ - Sr No: 84 | Row index: 83 | Company: DAW SE
+ - Sr No: 85 | Row index: 84 | Company: DELTA DORE RADEMACHER GmbH
+ - Sr No: 86 | Row index: 85 | Company: DELTA Electronics (Germany) GmbH
+ - Sr No: 87 | Row index: 86 | Company: DEWIMED Medizintechnik GmbH
+ - Sr No: 88 | Row index: 87 | Company: DHL Global Forwarding
+ - Sr No: 89 | Row index: 88 | Company: DOCTOS GmbH
+ - Sr No: 90 | Row index: 89 | Company: Dach für Dach GmbH
+ - Sr No: 91 | Row index: 90 | Company: Darguner Brauerei GmbH
+ - Sr No: 92 | Row index: 91 | Company: De Lage Landen Leasing GmbH
+ - Sr No: 93 | Row index: 92 | Company: DeepImmo GmbH
+ - Sr No: 94 | Row index: 93 | Company: Degura GmbH
+ - Sr No: 95 | Row index: 94 | Company: Deutsche Bahn AG
+ - Sr No: 96 | Row index: 95 | Company: DevBoost GmbH
+ - Sr No: 97 | Row index: 96 | Company: Doctolib GmbH
+
+Person Seniority missing in:
+ - Sr No: 1 | Row index: 0 | Company: 1&1 Versatel GmbH
+ - Sr No: 2 | Row index: 1 | Company: 2 W Beteiligungsgesellschaft mbH
+ - Sr No: 3 | Row index: 2 | Company: 3A Composites GmbH
+ - Sr No: 4 | Row index: 3 | Company: 4Press GmbH & Co. KG
+ - Sr No: 5 | Row index: 4 | Company: 7Learnings GmbH
+ - Sr No: 6 | Row index: 5 | Company: A.I.B. GmbH
+ - Sr No: 7 | Row index: 6 | Company: ABK Allgemeine Beamten Bank AG
+ - Sr No: 8 | Row index: 7 | Company: AGILA Haustierversicherung AG
+ - Sr No: 9 | Row index: 8 | Company: AIPERIA GmbH
+ - Sr No: 10 | Row index: 9 | Company: AMVisor GmbH
+ - Sr No: 11 | Row index: 10 | Company: ARGUS DATA INSIGHTS Deutschland GmbH
+ - Sr No: 12 | Row index: 11 | Company: ARNDT GmbH & Co.KG
+ - Sr No: 13 | Row index: 12 | Company: AS-KA GmbH & Co. KG
+ - Sr No: 14 | Row index: 13 | Company: AUTO1 Group
+ - Sr No: 15 | Row index: 14 | Company: AVIXA Germany
+ - Sr No: 16 | Row index: 15 | Company: AZ fundraising services GmbH & Co. KG
+ - Sr No: 17 | Row index: 16 | Company: Aareal First Financial Solutions AG
+ - Sr No: 18 | Row index: 17 | Company: Abacus Umantis GmbH
+ - Sr No: 19 | Row index: 18 | Company: Acceleraid
+ - Sr No: 20 | Row index: 19 | Company: Adtraction
+ - Sr No: 21 | Row index: 20 | Company: Adtraction Deutschland GmbH
+ - Sr No: 22 | Row index: 21 | Company: Advanced UniByte GmbH
+ - Sr No: 23 | Row index: 22 | Company: AdvoNeo Schuldnerberatung
+ - Sr No: 24 | Row index: 23 | Company: Ai-Bridge GmbH
+ - Sr No: 25 | Row index: 24 | Company: AirLST GmbH
+ - Sr No: 26 | Row index: 25 | Company: Alasco GmbH
+ - Sr No: 27 | Row index: 26 | Company: Alfred Kärcher Vertriebs-GmbH
+ - Sr No: 28 | Row index: 27 | Company: Allergopharma GmbH & Co. KG
+ - Sr No: 29 | Row index: 28 | Company: Ankercloud GmbH
+ - Sr No: 30 | Row index: 29 | Company: Arvana GmbH
+ - Sr No: 31 | Row index: 30 | Company: Arvato SE – Consumer Products
+ - Sr No: 32 | Row index: 31 | Company: Arvato Systems GmbH
+ - Sr No: 33 | Row index: 32 | Company: Asahi Brands Germany GmbH
+ - Sr No: 34 | Row index: 33 | Company: Autobrains AI Technologies GmbH
+ - Sr No: 35 | Row index: 34 | Company: B+D Unternehmensgruppe
+ - Sr No: 36 | Row index: 35 | Company: B2B GmbH
+ - Sr No: 37 | Row index: 36 | Company: BHC Gummi Metall GmbH
+ - Sr No: 38 | Row index: 37 | Company: BIOMERIEUX
+ - Sr No: 39 | Row index: 38 | Company: BRITA Vivreau GmbH
+ - Sr No: 40 | Row index: 39 | Company: Bakic Packaging GmbH
+ - Sr No: 41 | Row index: 40 | Company: Baqend GmbH
+ - Sr No: 42 | Row index: 41 | Company: BauWatch Projekt Service GmbH
+ - Sr No: 43 | Row index: 42 | Company: Beautinda GmbH
+ - Sr No: 44 | Row index: 43 | Company: Bechtle GmbH IT-Systemhaus Dortmund
+ - Sr No: 45 | Row index: 44 | Company: Berenberg
+ - Sr No: 46 | Row index: 45 | Company: Bioprojet Deutschland GmbH
+ - Sr No: 47 | Row index: 46 | Company: Bourns Electronics GmbH
+ - Sr No: 48 | Row index: 47 | Company: Bremer Tageszeitungen AG
+ - Sr No: 49 | Row index: 48 | Company: Brenner Verpackung GmbH & Co. KG
+ - Sr No: 50 | Row index: 49 | Company: Brunel GmbH
+ - Sr No: 51 | Row index: 50 | Company: Bundesdruckerei-Gruppe
+ - Sr No: 52 | Row index: 51 | Company: Byodo Naturkost GmbH
+ - Sr No: 53 | Row index: 52 | Company: Bönninghoff GmbH
+ - Sr No: 54 | Row index: 53 | Company: C.HAFNER GmbH + Co. KG
+ - Sr No: 55 | Row index: 54 | Company: CENDAS GmbH
+ - Sr No: 56 | Row index: 55 | Company: CERTUSS GmbH
+ - Sr No: 57 | Row index: 56 | Company: CHAMELAION GmbH
+ - Sr No: 58 | Row index: 57 | Company: CHEFS CULINAR Nord-Ost GmbH & Co. KG
+ - Sr No: 59 | Row index: 58 | Company: CHEP Deutschland GmbH
+ - Sr No: 60 | Row index: 59 | Company: CO2OPT GmbH
+ - Sr No: 61 | Row index: 60 | Company: CONTACT Software GmbH
+ - Sr No: 62 | Row index: 61 | Company: CREALOGIX (Deutschland) GmbH
+ - Sr No: 63 | Row index: 62 | Company: CUREosity GmbH
+ - Sr No: 64 | Row index: 63 | Company: Carysil GmbH
+ - Sr No: 65 | Row index: 64 | Company: Celonis SE
+ - Sr No: 66 | Row index: 65 | Company: Cerpro GmbH
+ - Sr No: 67 | Row index: 66 | Company: Channel Pilot Solutions GmbH
+ - Sr No: 68 | Row index: 67 | Company: Choco Communications GmbH
+ - Sr No: 69 | Row index: 68 | Company: CoFo Räuchle GmbH
+ - Sr No: 70 | Row index: 69 | Company: CoachHub GmbH
+ - Sr No: 71 | Row index: 70 | Company: Cochlear Deutschland GmbH & Co. KG
+ - Sr No: 72 | Row index: 71 | Company: CoffeeCup GmbH
+ - Sr No: 73 | Row index: 72 | Company: CogVis Software und Consulting GmbH
+ - Sr No: 74 | Row index: 73 | Company: CompuGroup Medical Deutschland AG
+ - Sr No: 75 | Row index: 74 | Company: Computacenter AG & Co. oHG
+ - Sr No: 76 | Row index: 75 | Company: Constaff GmbH
+ - Sr No: 77 | Row index: 76 | Company: Converge Technology Solutions GmbH
+ - Sr No: 78 | Row index: 77 | Company: Creation Willi Geller Deutschland GmbH
+ - Sr No: 79 | Row index: 78 | Company: Creative Dreams c/o barkerz GmbH
+ - Sr No: 80 | Row index: 79 | Company: Creditplus Bank AG
+ - Sr No: 81 | Row index: 80 | Company: Creditreform
+ - Sr No: 82 | Row index: 81 | Company: DACHSER SE
+ - Sr No: 83 | Row index: 82 | Company: DAKO GmbH
+ - Sr No: 84 | Row index: 83 | Company: DAW SE
+ - Sr No: 85 | Row index: 84 | Company: DELTA DORE RADEMACHER GmbH
+ - Sr No: 86 | Row index: 85 | Company: DELTA Electronics (Germany) GmbH
+ - Sr No: 87 | Row index: 86 | Company: DEWIMED Medizintechnik GmbH
+ - Sr No: 88 | Row index: 87 | Company: DHL Global Forwarding
+ - Sr No: 89 | Row index: 88 | Company: DOCTOS GmbH
+ - Sr No: 90 | Row index: 89 | Company: Dach für Dach GmbH
+ - Sr No: 91 | Row index: 90 | Company: Darguner Brauerei GmbH
+ - Sr No: 92 | Row index: 91 | Company: De Lage Landen Leasing GmbH
+ - Sr No: 93 | Row index: 92 | Company: DeepImmo GmbH
+ - Sr No: 94 | Row index: 93 | Company: Degura GmbH
+ - Sr No: 95 | Row index: 94 | Company: Deutsche Bahn AG
+ - Sr No: 96 | Row index: 95 | Company: DevBoost GmbH
+ - Sr No: 97 | Row index: 96 | Company: Doctolib GmbH', 'test_new.xlsx', '2026-01-26 11:41:28.079749+00', '2026-01-26 11:41:29.608959+00', 10),
+  ('f1505400-3340-4605-bea2-e7eacdd6eba4', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'stepstone_leads_domain+company-26012026-3-batch-100-entries - Main_Data.csv', '2026-01-26 12:11:29.890934+00', '2026-01-26 12:13:31.077483+00', 10),
+  ('de327fcb-5738-407e-bc3a-04f6125273dd', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-27 10:54:52.647532+00', '2026-01-27 10:54:59.216918+00', 10),
+  ('d154f8fe-7f29-4b6c-862c-108cae8d5a03', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'StepStone-Sales-Only-Vertriebsleiter-höhere-Stellen-IT-27012026-#8-second100 - Main_Data (2).csv', '2026-01-27 11:05:58.976959+00', '2026-01-27 11:14:41.496302+00', 10),
+  ('bc84ca1c-5ed9-4580-aea4-2d1f6faf24c8', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '1-NonexistingCompany.xlsx', '2026-01-27 12:26:52.339667+00', '2026-01-27 12:26:57.481762+00', 10),
+  ('3f901b41-3fe2-435d-9c4f-c4f3edc0f38d', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'File1_101-200-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:22:12.946228+00', '2026-02-02 09:29:14.560484+00', 10),
+  ('c39719b8-5918-4714-a031-86a371b7e4b5', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '1-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-03 20:34:30.779014+00', '2026-02-03 20:34:44.325193+00', 10),
+  ('2fbf2baa-ca78-4b99-af6f-277784bf9c0c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Permissible credit limit exceeded. Please upgrade your quota.', '411-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-25 14:39:46.401853+00', '2026-01-25 15:03:40.96359+00', 10),
+  ('3cee8b84-dc80-47e1-9695-e395f0d96da1', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'amasol GmbH', 'amasol.de', '[]', 'Germany', '["Owner","C-Suite (CXO)","Partner"]', 'completed', NULL, NULL, NULL, '2026-02-12 13:38:23.690007+00', '2026-02-12 13:38:33.540904+00', 2),
+  ('0a7b88ec-ba42-435f-a87b-5fbc6f334e5b', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:47:47.287296+00', '2026-02-02 09:48:30.579135+00', 10),
+  ('48a7c4a5-b489-4728-85f2-fc3da58676a9', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', '1und1', '1und1.net', '[]', NULL, '["C-Suite (CXO)","Director","Senior"]', 'completed', NULL, NULL, NULL, '2026-02-03 20:35:43.224062+00', '2026-02-03 20:35:53.323905+00', 3),
+  ('e0ae8fdd-c77f-4b9a-81b9-be073c6056a7', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-10-batch (1119) - Main_Data.csv', '2026-02-17 09:13:10.212259+00', '2026-02-17 09:38:50.523448+00', 10),
+  ('6a4725c5-3d68-4721-829c-86fc8b7e5e01', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'BulkSearch_Template (1).xlsm', '2026-01-30 13:26:38.512765+00', '2026-01-30 13:26:39.210726+00', 10),
+  ('57478c5a-f84e-45f7-a9c0-cd92e2cea3c3', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Permissible credit limit exceeded. Please upgrade your quota.', 'Bulk_PeopleEnrichment_Template.xlsx', '2026-02-04 09:33:58.017206+00', '2026-02-04 09:38:47.994857+00', 10),
+  ('150db1e5-626c-4e0f-b6d7-343f21ace89c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'BulkSearch_Template (1).xlsm', '2026-01-30 13:26:44.920089+00', '2026-01-30 13:29:27.170025+00', 10),
+  ('07a2c93c-71a9-4379-a818-0718f31ce0fd', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '3-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-01-30 13:42:14.799349+00', '2026-01-30 13:42:34.073724+00', 10),
+  ('19861708-ff20-450b-ad01-00cbf4cfada7', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'manual', 'Bosch', 'bosch.com', '[]', NULL, '["Owner","Partner","C-Suite (CXO)","VP","SVP","EVP","Director","Senior Manager","Manager","Team Lead","Senior","Mid-Level","Entry Level","Intern","Training"]', 'completed', NULL, NULL, NULL, '2026-01-30 13:44:08.863971+00', '2026-01-30 13:44:21.045436+00', 3),
+  ('31239ef1-dd96-4379-aa29-13bb28ac40cb', 'bba17cb9-8d78-4503-8b1d-f47a3cd2e4f8', 'manual', 'bosch', 'bosch.de', '[]', 'Germany', '["C-Suite (CXO)","Director","Manager"]', 'completed', NULL, NULL, NULL, '2026-02-16 07:02:50.478138+00', '2026-02-16 07:03:16.893159+00', 2),
+  ('8777bc64-ce8a-41b8-bbe8-e644149879ae', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'ststone-leads-02022026-batch7 - Main_Data.csv', '2026-02-02 08:27:19.864644+00', '2026-02-02 08:29:20.547512+00', 10),
+  ('e16e28a4-1e25-4449-956b-0d971b70836f', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch1 - Main_Data.csv', '2026-02-02 08:08:42.447173+00', '2026-02-02 08:43:32.959405+00', 10),
+  ('d645d61a-210d-44f6-b6af-4fee2d0a9d8c', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'processing', NULL, NULL, 'File1_0-100-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 09:20:59.972958+00', '2026-02-02 09:21:05.512648+00', 10),
+  ('c14c38f8-9bb5-40db-ba43-86628eb96d20', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'linkedin_04022026-company_level_mit_ap_1_batch - Main_Data (1).csv', '2026-02-10 08:48:55.709286+00', '2026-02-10 08:58:12.702882+00', 10),
+  ('5ef2788f-22bb-4532-b8da-3a65500b4355', '4272e641-ed75-4390-8100-98e4ed949581', 'manual', 'amasol GmbH', 'amasol.de', '[]', 'Germany', '["Partner","C-Suite (CXO)","Owner"]', 'completed', NULL, NULL, NULL, '2026-02-12 13:37:35.051817+00', '2026-02-12 13:37:42.921149+00', 1),
+  ('d0e23ebc-a335-4b62-8142-f1170091dcaa', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch2 - Main_Data (1).csv', '2026-02-02 10:05:20.438112+00', '2026-02-02 10:18:41.674994+00', 10),
+  ('63f4754b-bd26-4cca-b72d-120614b30c1d', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch3 - Main_Data (1).csv', '2026-02-02 10:05:39.818785+00', '2026-02-02 10:19:53.537263+00', 10),
+  ('d616f126-f24d-4455-8c2e-e5cfc38de71b', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch7 - Main_Data (1).csv', '2026-02-02 10:06:57.212524+00', '2026-02-02 10:22:42.117423+00', 10),
+  ('ae6548b1-23aa-41ea-9d8f-369585a34aa1', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch6 - Main_Data (1).csv', '2026-02-02 10:06:43.364562+00', '2026-02-02 10:27:57.832908+00', 10),
+  ('6f19ad8a-7e91-417b-ae5a-089d2901b879', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'ststone-leads-02022026-batch1 - Main_Data (1).csv', '2026-02-02 10:04:57.801394+00', '2026-02-02 10:53:33.162837+00', 10),
+  ('fd32d69d-2b10-42e7-9443-1ff17f93e173', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'error', NULL, 'Error in workflow, the backend team has been notified. Please try again later!', 'Entsorgungstalente_SearchperDomain-8-Batch - Main_Data.csv', '2026-02-17 12:58:44.4898+00', '2026-02-17 13:02:25.495387+00', 10),
+  ('2671d297-9930-4218-bab8-ad7995ab8e84', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, '1-COMPANIES-SALES-JOBS-WITHOUT-CONTACTS-WITH-JOB-25.01.2025.xlsx', '2026-02-02 13:37:23.288007+00', '2026-02-02 13:41:47.34419+00', 10),
+  ('8b44dab7-4a10-47eb-9f03-8b93575a8a6d', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente-Bulk-People-Enrichment-unternehmen_mit_ap-5-batch (1119) - Main_Data.csv', '2026-02-17 09:02:58.403504+00', '2026-02-17 09:31:09.119781+00', 10),
+  ('b2471f11-b76d-40e7-b9fa-87b51b5554dc', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_5names.xlsx', '2026-02-17 11:18:06.691658+00', '2026-02-17 11:18:23.665287+00', 10),
+  ('2a6efdc9-e06e-43f2-beaa-557fba21fb08', 'b71b9ee5-7c13-403f-b46a-97efa3a316d1', 'bulk_people_enrichment', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Bulk_PeopleEnrichment_5names.xlsx', '2026-02-17 11:21:00.169915+00', '2026-02-17 11:21:09.105295+00', 10),
+  ('e95215e8-4c83-4938-834a-0d7b1757f0e9', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-2-Batch - Main_Data.csv', '2026-02-17 13:00:36.281424+00', '2026-02-17 13:18:53.226806+00', 10),
+  ('bfa19807-27da-408b-9ffa-ba7ae37b3f83', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-6-Batch - Main_Data.csv', '2026-02-17 12:59:23.778312+00', '2026-02-17 13:07:58.336371+00', 10),
+  ('30e10a33-d680-44ab-aed9-3d9ddf344069', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-5-Batch - Main_Data.csv', '2026-02-17 12:59:33.359794+00', '2026-02-17 13:10:55.691288+00', 10),
+  ('4c210ea8-fed7-4503-9e35-893524c99fbd', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-4-Batch - Main_Data.csv', '2026-02-17 13:00:00.248744+00', '2026-02-17 13:13:31.752105+00', 10),
+  ('0c66fb58-0e3d-4231-87d8-01f589e8924f', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-3-Batch - Main_Data.csv', '2026-02-17 13:00:28.059597+00', '2026-02-17 13:16:40.120014+00', 10),
+  ('ba9e9e04-e68f-4566-8bab-4205f7613056', '4272e641-ed75-4390-8100-98e4ed949581', 'bulk', NULL, NULL, NULL, NULL, NULL, 'completed', NULL, NULL, 'Entsorgungstalente_SearchperDomain-9-Batch - Main_Data.csv', '2026-02-17 12:58:26.10676+00', '2026-02-17 13:01:44.086841+00', 10)
+ON CONFLICT DO NOTHING;
+
+
+SET session_replication_role = 'DEFAULT';
