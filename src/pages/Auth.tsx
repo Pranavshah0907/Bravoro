@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,34 +8,27 @@ import bravoroLogo from "@/assets/bravoro-logo.svg";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
 import { ForgotPasswordDialog } from "@/components/ForgotPasswordDialog";
 
-interface Beam {
-  x: number;
-  y: number;
-  width: number;
-  length: number;
-  angle: number;
-  speed: number;
-  opacity: number;
-  pulse: number;
-  pulseSpeed: number;
-  layer: number;
-}
-
-function createBeam(width: number, height: number, layer: number): Beam {
-  const angle = -35 + Math.random() * 10;
-  return {
-    x: Math.random() * width,
-    y: Math.random() * height,
-    width: 10 + layer * 6,
-    length: height * 2.5,
-    angle,
-    speed: 0.3 + layer * 0.25 + Math.random() * 0.2,
-    opacity: 0.055 + layer * 0.035 + Math.random() * 0.04,
-    pulse: Math.random() * Math.PI * 2,
-    pulseSpeed: 0.008 + Math.random() * 0.012,
-    layer,
-  };
-}
+// Static beam data — computed once at module level, never re-rendered
+// 3 depth layers matching original: thin/slow, medium, thick/fast
+const BEAM_DATA = [
+  // Layer 1 — thin, slow, subtle (opacity ~0.06–0.08, blur 2px)
+  { left: "4%",  w: 10, dur: 14, delay:  0,    op: 0.07,  blur: 2   },
+  { left: "22%", w: 12, dur: 16, delay: -5,    op: 0.06,  blur: 2   },
+  { left: "41%", w: 10, dur: 13, delay: -9,    op: 0.08,  blur: 2   },
+  { left: "63%", w: 11, dur: 15, delay: -2,    op: 0.065, blur: 2   },
+  { left: "82%", w: 10, dur: 17, delay: -11,   op: 0.07,  blur: 2   },
+  // Layer 2 — medium (opacity ~0.09–0.11, blur 3.5px)
+  { left: "13%", w: 17, dur: 11, delay: -4,    op: 0.10,  blur: 3.5 },
+  { left: "34%", w: 16, dur: 12, delay: -8,    op: 0.09,  blur: 3.5 },
+  { left: "55%", w: 18, dur: 10, delay: -1,    op: 0.11,  blur: 3.5 },
+  { left: "74%", w: 16, dur: 13, delay: -6,    op: 0.10,  blur: 3.5 },
+  // Layer 3 — thick, faster, more visible (opacity ~0.13–0.15, blur 5px)
+  { left: "7%",  w: 24, dur: 8,  delay: -3,    op: 0.14,  blur: 5   },
+  { left: "29%", w: 26, dur: 9,  delay: -7,    op: 0.13,  blur: 5   },
+  { left: "50%", w: 22, dur: 7,  delay: -0.5,  op: 0.15,  blur: 5   },
+  { left: "70%", w: 25, dur: 10, delay: -5,    op: 0.14,  blur: 5   },
+  { left: "90%", w: 23, dur: 8,  delay: -10,   op: 0.13,  blur: 5   },
+];
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -56,87 +49,11 @@ const Auth = () => {
   const [wordIndex, setWordIndex] = useState(0);
   const [animPhase, setAnimPhase] = useState<AnimPhase>("idle");
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const beamsRef = useRef<Beam[]>([]);
-  const rafRef = useRef<number>(0);
-
-  const LAYERS = 3;
-  const BEAMS_PER_LAYER = 9;
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/dashboard");
     });
   }, [navigate]);
-
-  // Canvas beam animation
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
-      beamsRef.current = [];
-      for (let layer = 1; layer <= LAYERS; layer++) {
-        for (let i = 0; i < BEAMS_PER_LAYER; i++) {
-          beamsRef.current.push(createBeam(window.innerWidth, window.innerHeight, layer));
-        }
-      }
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const drawBeam = (beam: Beam) => {
-      ctx.save();
-      ctx.translate(beam.x, beam.y);
-      ctx.rotate((beam.angle * Math.PI) / 180);
-      const po = Math.min(1, beam.opacity * (0.7 + Math.sin(beam.pulse) * 0.5));
-      const g = ctx.createLinearGradient(0, 0, 0, beam.length);
-      g.addColorStop(0, `rgba(0,157,165,0)`);
-      g.addColorStop(0.15, `rgba(88,221,221,${po * 0.4})`);
-      g.addColorStop(0.5, `rgba(88,221,221,${po})`);
-      g.addColorStop(0.85, `rgba(88,221,221,${po * 0.4})`);
-      g.addColorStop(1, `rgba(0,157,165,0)`);
-      ctx.fillStyle = g;
-      ctx.filter = `blur(${2 + beam.layer * 1.5}px)`;
-      ctx.fillRect(-beam.width / 2, 0, beam.width, beam.length);
-      ctx.restore();
-    };
-
-    const animate = () => {
-      const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      bg.addColorStop(0, "#09161f");
-      bg.addColorStop(1, "#0f2535");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      beamsRef.current.forEach((beam) => {
-        beam.y -= beam.speed * (beam.layer / LAYERS + 0.5);
-        beam.pulse += beam.pulseSpeed;
-        if (beam.y + beam.length < -50) {
-          beam.y = window.innerHeight + 50;
-          beam.x = Math.random() * window.innerWidth;
-        }
-        drawBeam(beam);
-      });
-
-      rafRef.current = requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
 
   // Rotating word — exit → swap → enter
   useEffect(() => {
@@ -176,8 +93,36 @@ const Auth = () => {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden" }}>
-      {/* Canvas bg */}
-      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, zIndex: 0 }} />
+
+      {/* Static background gradient — same colors as canvas drew */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        background: "linear-gradient(to bottom, #09161f 0%, #0f2535 100%)",
+      }} />
+
+      {/* CSS beam layer — compositor-only, zero JS after mount */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        overflow: "hidden", pointerEvents: "none",
+      }}>
+        {BEAM_DATA.map((b, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: b.left,
+              top: 0,
+              width: b.w,
+              height: "160vh",
+              background: "linear-gradient(to bottom, transparent 0%, rgba(88,221,221,0.35) 25%, rgba(88,221,221,0.9) 50%, rgba(88,221,221,0.35) 75%, transparent 100%)",
+              opacity: b.op,
+              filter: `blur(${b.blur}px)`,
+              willChange: "transform",
+              animation: `auth-beam-rise ${b.dur}s linear ${b.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
 
       {/* Center glow */}
       <div style={{
@@ -240,7 +185,7 @@ const Auth = () => {
           </h1>
         </div>
 
-        {/* Rotating word — inline reference style */}
+        {/* Rotating word */}
         <div style={{
           height: "clamp(56px, 8vh, 80px)",
           overflow: "hidden",
@@ -528,6 +473,12 @@ const Auth = () => {
       )}
 
       <style>{`
+        /* CSS beam animation — compositor thread only, no JS */
+        @keyframes auth-beam-rise {
+          from { transform: rotate(-35deg) translateY(110vh); }
+          to   { transform: rotate(-35deg) translateY(-160vh); }
+        }
+
         /* Rotating word animations */
         .auth-word-exit {
           animation: auth-word-up 0.36s cubic-bezier(0.4, 0, 1, 1) forwards;
