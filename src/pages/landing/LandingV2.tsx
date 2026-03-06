@@ -60,7 +60,7 @@ const LandingV2 = () => {
   return (
     <div
       style={{
-        background: "#09161f",
+        background: "#000000",
         color: "#e4efef",
         width: "100%",
         minHeight: "100vh",
@@ -145,8 +145,8 @@ const LandingV2 = () => {
 
         {/* Marquee strip */}
         <div style={{ width: "100%", maxWidth: "640px", margin: "clamp(40px, 7vh, 72px) auto 0", overflow: "hidden", position: "relative", height: "36px" }}>
-          <div style={{ pointerEvents: "none", position: "absolute", inset: 0, width: "80px", background: "linear-gradient(to right, #09161f, transparent)", zIndex: 2 }} />
-          <div style={{ pointerEvents: "none", position: "absolute", inset: 0, left: "auto", right: 0, width: "80px", background: "linear-gradient(to left, #09161f, transparent)", zIndex: 2 }} />
+          <div style={{ pointerEvents: "none", position: "absolute", inset: 0, width: "80px", background: "linear-gradient(to right, #000000, transparent)", zIndex: 2 }} />
+          <div style={{ pointerEvents: "none", position: "absolute", inset: 0, left: "auto", right: 0, width: "80px", background: "linear-gradient(to left, #000000, transparent)", zIndex: 2 }} />
           <div className="animate-marquee" style={{ display: "flex", whiteSpace: "nowrap", alignItems: "center", height: "100%" }}>
             {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
               <span key={i} style={{ padding: "0 18px", color: item === "·" ? "rgba(88,221,221,0.35)" : "rgba(197,216,215,0.38)", fontSize: item === "·" ? "20px" : "13px", fontWeight: item === "·" ? 700 : 500, letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -158,8 +158,10 @@ const LandingV2 = () => {
       </div>
 
       {/* ── Bottom glow — static, GPU-free ── */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "500px", background: "radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0,157,165,0.38) 0%, rgba(88,221,221,0.15) 40%, transparent 70%)", filter: "blur(60px)", pointerEvents: "none", zIndex: 1 }} />
-      <div style={{ position: "absolute", bottom: "-40px", left: "20%", right: "20%", height: "300px", background: "radial-gradient(ellipse 100% 80% at 50% 100%, rgba(0,157,165,0.50) 0%, rgba(88,221,221,0.20) 50%, transparent 100%)", filter: "blur(50px)", pointerEvents: "none", zIndex: 1, borderRadius: "50%" }} />
+      {/* Wide ambient halo */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "520px", background: "radial-gradient(ellipse 85% 65% at 50% 100%, rgba(0,157,165,0.45) 0%, rgba(39,117,135,0.22) 40%, transparent 70%)", filter: "blur(70px)", pointerEvents: "none", zIndex: 1 }} />
+      {/* Bright core — Cardinal Blue */}
+      <div style={{ position: "absolute", bottom: "-60px", left: "25%", right: "25%", height: "320px", background: "radial-gradient(ellipse 100% 75% at 50% 100%, rgba(88,221,221,0.55) 0%, rgba(0,157,165,0.30) 45%, transparent 100%)", filter: "blur(45px)", pointerEvents: "none", zIndex: 1, borderRadius: "50%" }} />
 
       {/* ── Login Modal ── */}
       {showLogin && (
