@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import bravoroIcon from "@/assets/Logo_icon_final.png";
 
 interface AiConv {
   id: string;
@@ -70,9 +71,11 @@ export const AppSidebar = ({
   const [isPinned, setIsPinned] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [anyDropdownOpen, setAnyDropdownOpen] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
-  const isExpanded = isHovered || isPinned;
+  // Keep sidebar expanded while any dropdown is open — prevents mouseLeave collapse
+  const isExpanded = isHovered || isPinned || anyDropdownOpen;
   const isAiStaffingActive = selectedType === "ai_staffing";
   const showYourChats = isAiStaffingActive && isExpanded;
 
@@ -176,8 +179,61 @@ export const AppSidebar = ({
         isExpanded ? "w-56" : "w-16"
       )}
     >
+      {/* Top header — pin toggle + B logo */}
+      <div
+        className={cn(
+          "flex items-center shrink-0 px-2 pt-3 pb-2",
+          isExpanded ? "gap-2" : "justify-center"
+        )}
+      >
+        {/* Pin toggle — only visible when expanded */}
+        <button
+          onClick={togglePin}
+          className={cn(
+            "flex items-center justify-center rounded-lg p-1.5 duration-200",
+            "hover:bg-sidebar-accent/80",
+            isPinned
+              ? "text-primary"
+              : "text-sidebar-foreground/35 hover:text-sidebar-foreground/70",
+            isExpanded ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none absolute"
+          )}
+          title={isPinned ? "Unpin sidebar" : "Pin sidebar open"}
+        >
+          {isPinned ? (
+            <PinOff className="h-3.5 w-3.5" />
+          ) : (
+            <Pin className="h-3.5 w-3.5" />
+          )}
+        </button>
+
+        {/* B logo */}
+        <div className="relative flex items-center justify-center">
+          <div
+            className="absolute inset-0 rounded-lg"
+            style={{
+              background: "radial-gradient(ellipse, rgba(88,221,221,0.15), transparent 70%)",
+              filter: "blur(6px)",
+            }}
+          />
+          <img
+            src={bravoroIcon}
+            alt="Bravoro"
+            className={cn(
+              "relative rounded-lg object-contain duration-300",
+              isExpanded ? "h-7 w-7" : "h-8 w-8"
+            )}
+            style={{
+              boxShadow: "0 0 0 1px rgba(88,221,221,0.15), 0 2px 8px rgba(0,0,0,0.3)",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Thin divider under header */}
+      <div className="mx-2 mb-1 border-t border-sidebar-border/30" />
+
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col p-2 pt-4 gap-1 min-h-0 overflow-hidden">
+      <nav className="flex-1 flex flex-col p-2 pt-2 gap-1 min-h-0 overflow-hidden">
         {navItems.map((item, index) => renderNavItem(item, index))}
 
         {/* Divider */}
@@ -188,7 +244,7 @@ export const AppSidebar = ({
           )}
         />
 
-        {/* Your Chats section — visible when AI Staffing is active and sidebar is expanded */}
+        {/* Your Chats section */}
         {showYourChats && (
           <div className="flex flex-col gap-0.5 min-h-0 animate-fade-in overflow-hidden">
             <div className="flex items-center justify-between px-3 py-1.5 shrink-0">
@@ -249,7 +305,11 @@ export const AppSidebar = ({
                   )}
 
                   {renamingId !== conv.id && (
-                    <DropdownMenu>
+                    <DropdownMenu
+                      onOpenChange={(open) =>
+                        setAnyDropdownOpen(open)
+                      }
+                    >
                       <DropdownMenuTrigger asChild>
                         <button
                           className={cn(
@@ -293,33 +353,6 @@ export const AppSidebar = ({
 
       {/* Bottom Actions */}
       <div className="p-2 border-t border-sidebar-border/50 flex flex-col gap-1">
-        {/* Pin toggle */}
-        <button
-          onClick={togglePin}
-          className={cn(
-            "group flex items-center w-full rounded-xl duration-300",
-            isExpanded ? "px-4 py-2.5 gap-4" : "p-2.5 justify-center",
-            isPinned
-              ? "text-primary hover:bg-primary/10"
-              : "text-sidebar-foreground/40 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/60"
-          )}
-          title={isPinned ? "Unpin sidebar" : "Pin sidebar open"}
-        >
-          {isPinned ? (
-            <PinOff className="h-4 w-4 shrink-0" />
-          ) : (
-            <Pin className="h-4 w-4 shrink-0" />
-          )}
-          <span
-            className={cn(
-              "text-xs whitespace-nowrap duration-300",
-              isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 absolute"
-            )}
-          >
-            {isPinned ? "Unpin sidebar" : "Pin sidebar"}
-          </span>
-        </button>
-
         {/* Sign out */}
         <button
           onClick={onSignOut}
