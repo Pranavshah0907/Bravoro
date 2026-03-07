@@ -179,14 +179,33 @@ export const AppSidebar = ({
         isExpanded ? "w-56" : "w-16"
       )}
     >
-      {/* Top header — pin toggle + B logo */}
+      {/* Top header — B logo + pin toggle */}
       <div
         className={cn(
           "flex items-center shrink-0 px-2 pt-3 pb-2",
-          isExpanded ? "gap-2" : "justify-center"
+          isExpanded ? "justify-between" : "justify-center"
         )}
       >
-        {/* Pin toggle — only visible when expanded */}
+        {/* B logo */}
+        <div className="relative flex items-center justify-center">
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(ellipse, rgba(88,221,221,0.15), transparent 70%)",
+              filter: "blur(6px)",
+            }}
+          />
+          <img
+            src={bravoroIcon}
+            alt="Bravoro"
+            className={cn(
+              "relative object-contain duration-300",
+              isExpanded ? "h-7 w-7" : "h-8 w-8"
+            )}
+          />
+        </div>
+
+        {/* Pin toggle — right side, only visible when expanded */}
         <button
           onClick={togglePin}
           className={cn(
@@ -205,32 +224,7 @@ export const AppSidebar = ({
             <Pin className="h-3.5 w-3.5" />
           )}
         </button>
-
-        {/* B logo */}
-        <div className="relative flex items-center justify-center">
-          <div
-            className="absolute inset-0 rounded-lg"
-            style={{
-              background: "radial-gradient(ellipse, rgba(88,221,221,0.15), transparent 70%)",
-              filter: "blur(6px)",
-            }}
-          />
-          <img
-            src={bravoroIcon}
-            alt="Bravoro"
-            className={cn(
-              "relative rounded-lg object-contain duration-300",
-              isExpanded ? "h-7 w-7" : "h-8 w-8"
-            )}
-            style={{
-              boxShadow: "0 0 0 1px rgba(88,221,221,0.15), 0 2px 8px rgba(0,0,0,0.3)",
-            }}
-          />
-        </div>
       </div>
-
-      {/* Thin divider under header */}
-      <div className="mx-2 mb-1 border-t border-sidebar-border/30" />
 
       {/* Navigation */}
       <nav className="flex-1 flex flex-col p-2 pt-2 gap-1 min-h-0 overflow-hidden">
