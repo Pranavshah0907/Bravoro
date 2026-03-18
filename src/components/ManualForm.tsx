@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Loader2, Send, Sparkles, X } from "lucide-react";
 import { ProcessingStatus } from "./ProcessingStatus";
 import { z } from "zod";
 
@@ -57,6 +57,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const [domain, setDomain] = useState("");
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
   const [selectedSeniority, setSelectedSeniority] = useState<string[]>([]);
+  const [seniorityInput, setSeniorityInput] = useState("");
+  const seniorityInputRef = useRef<HTMLInputElement>(null);
   const [geography, setGeography] = useState("");
   const [resultsPerFunction, setResultsPerFunction] = useState<number>(10);
   const [searchId, setSearchId] = useState<string | null>(null);
@@ -68,10 +70,34 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
     );
   };
 
-  const handleSeniorityToggle = (level: string) => {
-    setSelectedSeniority((prev) =>
-      prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]
-    );
+  const addSeniorityTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (trimmed && !selectedSeniority.includes(trimmed)) {
+      setSelectedSeniority((prev) => [...prev, trimmed]);
+    }
+    setSeniorityInput("");
+  };
+
+  const removeSeniorityTag = (tag: string) => {
+    setSelectedSeniority((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const handleSeniorityPresetClick = (level: string) => {
+    if (selectedSeniority.includes(level)) {
+      removeSeniorityTag(level);
+    } else {
+      addSeniorityTag(level);
+    }
+    seniorityInputRef.current?.focus();
+  };
+
+  const handleSeniorityKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Enter" || e.key === ",") && seniorityInput.trim()) {
+      e.preventDefault();
+      addSeniorityTag(seniorityInput);
+    } else if (e.key === "Backspace" && !seniorityInput && selectedSeniority.length > 0) {
+      setSelectedSeniority((prev) => prev.slice(0, -1));
+    }
   };
 
   const handleSelectAllSeniorities = () => {
@@ -246,42 +272,88 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             )}
           </div>
 
+          {/* Seniority Level — Tag Input */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Seniority Level * (Select all that apply)</Label>
+              <Label className="text-foreground font-medium">Seniority Level *</Label>
               <button
                 type="button"
                 onClick={handleSelectAllSeniorities}
-                className={`text-sm px-3 py-1 rounded-md transition-all duration-300 ${
+                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-all duration-200 ${
                   allSenioritiesSelected
-                    ? 'bg-accent text-accent-foreground'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                    ? 'bg-primary/20 text-primary border border-primary/40'
+                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border'
                 }`}
               >
                 {allSenioritiesSelected ? '✓ All Selected' : 'Select All'}
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border border-border rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors duration-300">
-              {SENIORITY_LEVELS.map((level) => (
-                <div key={level} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors duration-200">
-                  <Checkbox
-                    id={level}
-                    checked={selectedSeniority.includes(level)}
-                    onCheckedChange={() => handleSeniorityToggle(level)}
-                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <Label htmlFor={level} className="font-normal cursor-pointer text-sm">
-                    {level}
-                  </Label>
-                </div>
+
+            {/* Tag input box */}
+            <div
+              className="min-h-[46px] flex flex-wrap gap-1.5 items-center px-3 py-2 border border-border rounded-lg bg-background cursor-text transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary"
+              onClick={() => seniorityInputRef.current?.focus()}
+            >
+              {selectedSeniority.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/15 text-primary border border-primary/30 select-none"
+                  style={{ animation: 'tagPop 0.15s cubic-bezier(0.34,1.56,0.64,1)' }}
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeSeniorityTag(tag); }}
+                    className="ml-0.5 rounded-full hover:bg-primary/20 p-0.5 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    aria-label={`Remove ${tag}`}
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
               ))}
+              <input
+                ref={seniorityInputRef}
+                type="text"
+                value={seniorityInput}
+                onChange={(e) => setSeniorityInput(e.target.value)}
+                onKeyDown={handleSeniorityKeyDown}
+                placeholder={selectedSeniority.length === 0 ? "Type a level & press Enter, or pick below…" : "Add more…"}
+                className="flex-1 min-w-[140px] bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 py-0.5"
+              />
             </div>
-            {selectedSeniority.length > 0 && (
-              <p className="text-sm text-accent font-medium">
-                ✓ Selected: {selectedSeniority.length} seniority level(s)
-              </p>
-            )}
+
+            {/* Preset chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {SENIORITY_LEVELS.map((level) => {
+                const active = selectedSeniority.includes(level);
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => handleSeniorityPresetClick(level)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 ${
+                      active
+                        ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.35)]'
+                        : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {active ? `✓ ${level}` : level}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-muted-foreground/70">
+              Click a level to add it as a tag · Type a custom level and press <kbd className="px-1 py-0.5 rounded text-[10px] bg-muted border border-border font-mono">Enter</kbd> · Press <kbd className="px-1 py-0.5 rounded text-[10px] bg-muted border border-border font-mono">⌫</kbd> to remove last tag
+            </p>
           </div>
+
+          <style>{`
+            @keyframes tagPop {
+              0% { transform: scale(0.7); opacity: 0; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
