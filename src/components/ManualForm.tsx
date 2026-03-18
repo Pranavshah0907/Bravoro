@@ -1,18 +1,17 @@
-import { useState, useEffect, useRef, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, Sparkles, X } from "lucide-react";
+import { Loader2, Send, Sparkles, X, ChevronDown, Check, Search } from "lucide-react";
 import { ProcessingStatus } from "./ProcessingStatus";
 import { z } from "zod";
 
 const COUNTRIES = [
-  "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", 
+  "United States", "United Kingdom", "Canada", "Australia", "Germany", "France",
   "India", "China", "Japan", "Brazil", "Mexico", "Spain", "Italy", "Netherlands",
   "Singapore", "Switzerland", "Sweden", "Norway", "Denmark", "Finland", "Belgium",
   "Austria", "Ireland", "Poland", "Czech Republic", "Portugal", "Greece", "Hungary",
@@ -22,8 +21,8 @@ const COUNTRIES = [
 ].sort();
 
 const SENIORITY_LEVELS = [
-  "Owner", "Partner", "C-Suite (CXO)", "VP", "SVP", "EVP", "Director", 
-  "Senior Manager", "Manager", "Team Lead", "Senior", "Mid-Level", 
+  "Owner", "Partner", "C-Suite (CXO)", "VP", "SVP", "EVP", "Director",
+  "Senior Manager", "Manager", "Team Lead", "Senior", "Mid-Level",
   "Entry Level", "Intern", "Training"
 ];
 
@@ -50,87 +49,182 @@ interface ManualFormProps {
   userId: string;
 }
 
+// ─── Reusable Tag Bubble ─────────────────────────────────────────────────────
+const Tag = ({ label, onRemove }: { label: string; onRemove: () => void }) => (
+  <span className="tag-bubble inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/15 text-primary border border-primary/35 select-none whitespace-nowrap">
+    {label}
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onRemove(); }}
+      className="rounded-full hover:bg-primary/25 p-0.5 transition-colors duration-150 focus-visible:outline-none"
+      aria-label={`Remove ${label}`}
+    >
+      <X className="h-2.5 w-2.5" />
+    </button>
+  </span>
+);
+
+// ─── Section label with optional hint ────────────────────────────────────────
+const FieldLabel = ({
+  children,
+  required,
+  hint,
+  action,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+  hint?: string;
+  action?: React.ReactNode;
+}) => (
+  <div className="flex items-center justify-between mb-2">
+    <div className="flex items-baseline gap-1.5">
+      <Label className="text-sm font-semibold text-foreground tracking-tight">
+        {children}
+        {required && <span className="text-primary ml-0.5">*</span>}
+      </Label>
+      {hint && <span className="text-xs text-muted-foreground/60">{hint}</span>}
+    </div>
+    {action}
+  </div>
+);
+
+// ─── Tag input wrapper (the shared "pill box" container) ──────────────────────
+const TagInputBox = ({
+  children,
+  onClick,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) => (
+  <div
+    onClick={onClick}
+    className={`
+      min-h-[46px] flex flex-wrap gap-1.5 items-center px-3 py-2
+      border border-border rounded-xl
+      bg-[hsl(202_35%_17%)]
+      cursor-text
+      transition-all duration-200
+      focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/60
+      hover:border-border/80
+      ${className}
+    `}
+  >
+    {children}
+  </div>
+);
+
+// ─── Hint line beneath inputs ─────────────────────────────────────────────────
+const HintLine = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-[11px] text-muted-foreground/55 mt-1.5 leading-relaxed">{children}</p>
+);
+
+const Kbd = ({ children }: { children: React.ReactNode }) => (
+  <kbd className="inline-flex items-center px-1 py-0.5 rounded text-[10px] bg-muted/60 border border-border/60 font-mono leading-none">
+    {children}
+  </kbd>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const ManualForm = ({ userId }: ManualFormProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  // Form fields
   const [companyName, setCompanyName] = useState("");
   const [domain, setDomain] = useState("");
-  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
-  const [selectedSeniority, setSelectedSeniority] = useState<string[]>([]);
-  const [seniorityInput, setSeniorityInput] = useState("");
-  const seniorityInputRef = useRef<HTMLInputElement>(null);
   const [geography, setGeography] = useState("");
   const [resultsPerFunction, setResultsPerFunction] = useState<number>(10);
   const [searchId, setSearchId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | "queued" | null>(null);
 
-  const handleFunctionToggle = (func: string) => {
-    setSelectedFunctions((prev) =>
-      prev.includes(func) ? prev.filter((f) => f !== func) : [...prev, func]
-    );
-  };
+  // ── Functions tag-input state ──
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
+  const [functionInput, setFunctionInput] = useState("");
+  const [functionDropdownOpen, setFunctionDropdownOpen] = useState(false);
+  const [functionSearch, setFunctionSearch] = useState("");
+  const functionDropdownRef = useRef<HTMLDivElement>(null);
+  const functionInputRef = useRef<HTMLInputElement>(null);
 
-  const addSeniorityTag = (tag: string) => {
-    const trimmed = tag.trim();
-    if (trimmed && !selectedSeniority.includes(trimmed)) {
-      setSelectedSeniority((prev) => [...prev, trimmed]);
+  // ── Seniority tag-input state ──
+  const [selectedSeniority, setSelectedSeniority] = useState<string[]>([]);
+  const [seniorityInput, setSeniorityInput] = useState("");
+  const seniorityInputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (functionDropdownRef.current && !functionDropdownRef.current.contains(e.target as Node)) {
+        setFunctionDropdownOpen(false);
+        setFunctionSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ── Functions helpers ──
+  const addFunctionTag = (tag: string) => {
+    const v = tag.trim();
+    if (v && !selectedFunctions.includes(v)) setSelectedFunctions((p) => [...p, v]);
+    setFunctionInput("");
+  };
+  const removeFunctionTag = (tag: string) => setSelectedFunctions((p) => p.filter((t) => t !== tag));
+  const toggleFunctionFromDropdown = (func: string) => {
+    if (selectedFunctions.includes(func)) removeFunctionTag(func);
+    else addFunctionTag(func);
+  };
+  const handleFunctionKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Enter" || e.key === ",") && functionInput.trim()) {
+      e.preventDefault();
+      addFunctionTag(functionInput);
+    } else if (e.key === "Backspace" && !functionInput && selectedFunctions.length > 0) {
+      setSelectedFunctions((p) => p.slice(0, -1));
+    } else if (e.key === "Escape") {
+      setFunctionDropdownOpen(false);
     }
+  };
+  const filteredFunctions = LINKEDIN_FUNCTIONS.filter((f) =>
+    f.toLowerCase().includes(functionSearch.toLowerCase())
+  );
+
+  // ── Seniority helpers ──
+  const addSeniorityTag = (tag: string) => {
+    const v = tag.trim();
+    if (v && !selectedSeniority.includes(v)) setSelectedSeniority((p) => [...p, v]);
     setSeniorityInput("");
   };
-
-  const removeSeniorityTag = (tag: string) => {
-    setSelectedSeniority((prev) => prev.filter((t) => t !== tag));
-  };
-
+  const removeSeniorityTag = (tag: string) => setSelectedSeniority((p) => p.filter((t) => t !== tag));
   const handleSeniorityPresetClick = (level: string) => {
-    if (selectedSeniority.includes(level)) {
-      removeSeniorityTag(level);
-    } else {
-      addSeniorityTag(level);
-    }
+    if (selectedSeniority.includes(level)) removeSeniorityTag(level);
+    else addSeniorityTag(level);
     seniorityInputRef.current?.focus();
   };
-
   const handleSeniorityKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if ((e.key === "Enter" || e.key === ",") && seniorityInput.trim()) {
       e.preventDefault();
       addSeniorityTag(seniorityInput);
     } else if (e.key === "Backspace" && !seniorityInput && selectedSeniority.length > 0) {
-      setSelectedSeniority((prev) => prev.slice(0, -1));
+      setSelectedSeniority((p) => p.slice(0, -1));
     }
   };
-
   const handleSelectAllSeniorities = () => {
-    if (selectedSeniority.length === SENIORITY_LEVELS.length) {
-      setSelectedSeniority([]);
-    } else {
-      setSelectedSeniority([...SENIORITY_LEVELS]);
-    }
+    if (selectedSeniority.length === SENIORITY_LEVELS.length) setSelectedSeniority([]);
+    else setSelectedSeniority([...SENIORITY_LEVELS]);
   };
-
   const allSenioritiesSelected = selectedSeniority.length === SENIORITY_LEVELS.length;
 
-  const isFormValid = () => {
-    return companyName.trim() && domain.trim() && selectedSeniority.length > 0 && resultsPerFunction > 0;
-  };
+  const isFormValid = () =>
+    companyName.trim() && domain.trim() && selectedSeniority.length > 0 && resultsPerFunction > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
-      // Validate form
-      formSchema.parse({
-        companyName,
-        domain,
-        functions: selectedFunctions,
-        seniority: selectedSeniority,
-        geography,
-        resultsPerFunction,
-      });
-
+      formSchema.parse({ companyName, domain, functions: selectedFunctions, seniority: selectedSeniority, geography, resultsPerFunction });
       setLoading(true);
 
-      // Create search record
       const { data: search, error: searchError } = await supabase
         .from("searches")
         .insert({
@@ -149,58 +243,38 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
       if (searchError) throw searchError;
 
-      // Show processing status (backend will update to 'queued' if needed)
       setSearchId(search.id);
       setProcessingStatus("processing");
 
-      // Trigger N8N webhook in background (don't await)
-      supabase.functions.invoke(
-        "trigger-n8n-webhook",
-        {
-          body: {
-            searchId: search.id,
-            entryType: 'manual_entry',
-            searchData: {
-              search_id: search.id,
-              company_name: companyName.trim(),
-              domain: domain.trim(),
-              functions: selectedFunctions,
-              seniority: selectedSeniority,
-              geography,
-              results_per_function: resultsPerFunction,
-              user_id: userId,
-              search_type: "manual",
-            },
+      supabase.functions.invoke("trigger-n8n-webhook", {
+        body: {
+          searchId: search.id,
+          entryType: "manual_entry",
+          searchData: {
+            search_id: search.id,
+            company_name: companyName.trim(),
+            domain: domain.trim(),
+            functions: selectedFunctions,
+            seniority: selectedSeniority,
+            geography,
+            results_per_function: resultsPerFunction,
+            user_id: userId,
+            search_type: "manual",
           },
-        }
-      ).catch((webhookError) => {
-        console.error("N8N webhook trigger failed:", webhookError);
-      });
+        },
+      }).catch((err) => console.error("N8N webhook trigger failed:", err));
 
-      toast({
-        title: "Request Submitted",
-        description: "Your lead enrichment request is being processed",
-      });
+      toast({ title: "Request Submitted", description: "Your lead enrichment request is being processed" });
     } catch (error: any) {
-      toast({
-        title: "Submission Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = () => {
-    setCompanyName("");
-    setDomain("");
-    setSelectedFunctions([]);
-    setSelectedSeniority([]);
-    setGeography("");
-    setResultsPerFunction(10);
-    setSearchId(null);
-    setProcessingStatus(null);
+    setCompanyName(""); setDomain(""); setSelectedFunctions([]); setSelectedSeniority([]);
+    setGeography(""); setResultsPerFunction(10); setSearchId(null); setProcessingStatus(null);
   };
 
   if (searchId && processingStatus) {
@@ -208,204 +282,309 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   }
 
   return (
-    <Card className="shadow-strong hover-lift border border-border backdrop-blur-sm">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Single Search
-        </CardTitle>
-        <CardDescription className="text-base">
-          Search and enrich contacts from a single company
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="company" className="text-foreground font-medium">Company Name *</Label>
-              <Input
-                id="company"
-                type="text"
-                placeholder="Acme Corporation"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                required
-                className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
+    <>
+      <style>{`
+        @keyframes tagPop {
+          0%   { transform: scale(0.65); opacity: 0; }
+          100% { transform: scale(1);    opacity: 1; }
+        }
+        .tag-bubble { animation: tagPop 0.14s cubic-bezier(0.34,1.56,0.64,1); }
 
-            <div className="space-y-2">
-              <Label htmlFor="domain" className="text-foreground font-medium">Domain Name *</Label>
-              <Input
-                id="domain"
-                type="text"
-                placeholder="acme.com"
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-                required
-                className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
+        @keyframes dropDown {
+          0%   { opacity: 0; transform: translateY(-6px) scaleY(0.96); }
+          100% { opacity: 1; transform: translateY(0)  scaleY(1); }
+        }
+        .dropdown-panel { animation: dropDown 0.14s cubic-bezier(0.22,1,0.36,1); transform-origin: top; }
+      `}</style>
+
+      <Card className="border border-border/60 bg-card shadow-[0_8px_40px_hsl(202_55%_5%/0.5)] rounded-2xl overflow-hidden">
+        {/* ── Card header with gradient accent line ── */}
+        <div className="h-px w-full bg-gradient-to-r from-primary/0 via-primary/60 to-primary/0" />
+        <CardHeader className="px-8 pt-7 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 border border-primary/20">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold text-foreground tracking-tight">Single Search</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground mt-0.5">
+                Enrich contacts from a specific company
+              </CardDescription>
             </div>
           </div>
+        </CardHeader>
 
-          <div className="space-y-3">
-            <Label className="text-foreground font-medium">Functions (Select all that apply)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 border border-border rounded-lg bg-muted/30 hover:bg-muted/40 transition-colors duration-300">
-              {LINKEDIN_FUNCTIONS.map((func) => (
-                <div key={func} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors duration-200">
-                  <Checkbox
-                    id={func}
-                    checked={selectedFunctions.includes(func)}
-                    onCheckedChange={() => handleFunctionToggle(func)}
-                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <Label htmlFor={func} className="font-normal cursor-pointer text-sm">
-                    {func}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            {selectedFunctions.length > 0 && (
-              <p className="text-sm text-accent font-medium">
-                ✓ Selected: {selectedFunctions.length} function(s)
-              </p>
-            )}
-          </div>
+        <CardContent className="px-8 pb-8">
+          <form onSubmit={handleSubmit} className="space-y-7">
 
-          {/* Seniority Level — Tag Input */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Seniority Level *</Label>
-              <button
-                type="button"
-                onClick={handleSelectAllSeniorities}
-                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-all duration-200 ${
-                  allSenioritiesSelected
-                    ? 'bg-primary/20 text-primary border border-primary/40'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border'
-                }`}
-              >
-                {allSenioritiesSelected ? '✓ All Selected' : 'Select All'}
-              </button>
+            {/* ── Row 1: Company + Domain ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <FieldLabel required>Company Name</FieldLabel>
+                <Input
+                  id="company"
+                  type="text"
+                  placeholder="Acme Corporation"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required
+                  className="h-11 rounded-xl border-border/70 bg-[hsl(202_35%_17%)] text-sm placeholder:text-muted-foreground/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-all duration-200"
+                />
+              </div>
+              <div>
+                <FieldLabel required>Domain</FieldLabel>
+                <Input
+                  id="domain"
+                  type="text"
+                  placeholder="acme.com"
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  required
+                  className="h-11 rounded-xl border-border/70 bg-[hsl(202_35%_17%)] text-sm placeholder:text-muted-foreground/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-all duration-200"
+                />
+              </div>
             </div>
 
-            {/* Tag input box */}
-            <div
-              className="min-h-[46px] flex flex-wrap gap-1.5 items-center px-3 py-2 border border-border rounded-lg bg-background cursor-text transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary"
-              onClick={() => seniorityInputRef.current?.focus()}
-            >
-              {selectedSeniority.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/15 text-primary border border-primary/30 select-none"
-                  style={{ animation: 'tagPop 0.15s cubic-bezier(0.34,1.56,0.64,1)' }}
+            {/* ── Divider ── */}
+            <div className="h-px bg-border/40" />
+
+            {/* ── Functions — Tag input + dropdown ── */}
+            <div>
+              <FieldLabel hint="(optional)">Functions</FieldLabel>
+              <div className="relative" ref={functionDropdownRef}>
+                {/* Pill box */}
+                <TagInputBox
+                  className="pr-10"
+                  onClick={() => functionInputRef.current?.focus()}
                 >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); removeSeniorityTag(tag); }}
-                    className="ml-0.5 rounded-full hover:bg-primary/20 p-0.5 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                    aria-label={`Remove ${tag}`}
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </button>
-                </span>
-              ))}
-              <input
-                ref={seniorityInputRef}
-                type="text"
-                value={seniorityInput}
-                onChange={(e) => setSeniorityInput(e.target.value)}
-                onKeyDown={handleSeniorityKeyDown}
-                placeholder={selectedSeniority.length === 0 ? "Type a level & press Enter, or pick below…" : "Add more…"}
-                className="flex-1 min-w-[140px] bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 py-0.5"
-              />
+                  {selectedFunctions.map((tag) => (
+                    <Tag key={tag} label={tag} onRemove={() => removeFunctionTag(tag)} />
+                  ))}
+                  <input
+                    ref={functionInputRef}
+                    type="text"
+                    value={functionInput}
+                    onChange={(e) => setFunctionInput(e.target.value)}
+                    onKeyDown={handleFunctionKeyDown}
+                    onFocus={() => setFunctionDropdownOpen(true)}
+                    placeholder={
+                      selectedFunctions.length === 0
+                        ? "Choose all that apply from the dropdown or type a functionality"
+                        : "Add more…"
+                    }
+                    className="flex-1 min-w-[180px] bg-transparent text-sm outline-none placeholder:text-muted-foreground/45 py-0.5 text-foreground"
+                  />
+                </TagInputBox>
+
+                {/* Dropdown chevron toggle */}
+                <button
+                  type="button"
+                  onClick={() => { setFunctionDropdownOpen((v) => !v); functionInputRef.current?.focus(); }}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-200 focus-visible:outline-none ${functionDropdownOpen ? "rotate-180 text-primary" : ""}`}
+                  aria-label="Toggle functions dropdown"
+                >
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                </button>
+
+                {/* Dropdown panel */}
+                {functionDropdownOpen && (
+                  <div className="dropdown-panel absolute top-[calc(100%+6px)] left-0 right-0 z-50 rounded-xl border border-border/70 bg-popover shadow-[0_8px_32px_hsl(202_55%_5%/0.6)] overflow-hidden">
+                    {/* Search bar inside dropdown */}
+                    <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50 bg-muted/20">
+                      <Search className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                      <input
+                        type="text"
+                        value={functionSearch}
+                        onChange={(e) => setFunctionSearch(e.target.value)}
+                        placeholder="Search functions…"
+                        className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground/50"
+                      />
+                      {functionSearch && (
+                        <button type="button" onClick={() => setFunctionSearch("")} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Options list */}
+                    <div className="max-h-52 overflow-y-auto py-1 px-1">
+                      {filteredFunctions.length === 0 ? (
+                        <p className="px-3 py-4 text-xs text-center text-muted-foreground/50">No functions match "{functionSearch}"</p>
+                      ) : (
+                        filteredFunctions.map((func) => {
+                          const active = selectedFunctions.includes(func);
+                          return (
+                            <button
+                              key={func}
+                              type="button"
+                              onClick={() => toggleFunctionFromDropdown(func)}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg text-left transition-colors duration-150 ${
+                                active
+                                  ? "bg-primary/10 text-primary"
+                                  : "text-foreground/80 hover:bg-muted/50 hover:text-foreground"
+                              }`}
+                            >
+                              <div className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all duration-150 ${
+                                active ? "bg-primary border-primary" : "border-border/60"
+                              }`}>
+                                {active && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                              </div>
+                              {func}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Footer summary */}
+                    {selectedFunctions.length > 0 && (
+                      <div className="border-t border-border/40 px-3 py-2 flex items-center justify-between bg-muted/10">
+                        <span className="text-xs text-muted-foreground/70">
+                          {selectedFunctions.length} selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFunctions([])}
+                          className="text-xs text-muted-foreground/60 hover:text-destructive transition-colors duration-150"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <HintLine>
+                Pick from the list · Or type a custom function and press <Kbd>Enter</Kbd> · <Kbd>⌫</Kbd> removes the last tag
+              </HintLine>
             </div>
 
-            {/* Preset chips */}
-            <div className="flex flex-wrap gap-1.5">
-              {SENIORITY_LEVELS.map((level) => {
-                const active = selectedSeniority.includes(level);
-                return (
+            {/* ── Divider ── */}
+            <div className="h-px bg-border/40" />
+
+            {/* ── Seniority Level — Tag input + preset chips ── */}
+            <div>
+              <FieldLabel
+                required
+                action={
                   <button
-                    key={level}
                     type="button"
-                    onClick={() => handleSeniorityPresetClick(level)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95 ${
-                      active
-                        ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.35)]'
-                        : 'bg-muted/50 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground hover:bg-muted'
+                    onClick={handleSelectAllSeniorities}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg font-medium border transition-all duration-200 ${
+                      allSenioritiesSelected
+                        ? "bg-primary/15 text-primary border-primary/40"
+                        : "bg-muted/40 text-muted-foreground border-border/60 hover:border-primary/40 hover:text-foreground"
                     }`}
                   >
-                    {active ? `✓ ${level}` : level}
+                    {allSenioritiesSelected ? "✓ All selected" : "Select all"}
                   </button>
-                );
-              })}
+                }
+              >
+                Seniority Level
+              </FieldLabel>
+
+              {/* Pill box */}
+              <TagInputBox onClick={() => seniorityInputRef.current?.focus()}>
+                {selectedSeniority.map((tag) => (
+                  <Tag key={tag} label={tag} onRemove={() => removeSeniorityTag(tag)} />
+                ))}
+                <input
+                  ref={seniorityInputRef}
+                  type="text"
+                  value={seniorityInput}
+                  onChange={(e) => setSeniorityInput(e.target.value)}
+                  onKeyDown={handleSeniorityKeyDown}
+                  placeholder={selectedSeniority.length === 0 ? "Type a level & press Enter, or pick below…" : "Add more…"}
+                  className="flex-1 min-w-[160px] bg-transparent text-sm outline-none placeholder:text-muted-foreground/45 py-0.5 text-foreground"
+                />
+              </TagInputBox>
+
+              {/* Preset chips */}
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {SENIORITY_LEVELS.map((level) => {
+                  const active = selectedSeniority.includes(level);
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => handleSeniorityPresetClick(level)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 ${
+                        active
+                          ? "bg-primary text-primary-foreground border-primary shadow-[0_0_10px_hsl(var(--primary)/0.3)]"
+                          : "bg-muted/40 text-muted-foreground border-border/60 hover:border-primary/50 hover:text-foreground hover:bg-muted/70"
+                      }`}
+                    >
+                      {active ? `✓ ${level}` : level}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <HintLine>
+                Click a level to toggle it · Type a custom level and press <Kbd>Enter</Kbd> · <Kbd>⌫</Kbd> removes the last tag
+              </HintLine>
             </div>
 
-            <p className="text-xs text-muted-foreground/70">
-              Click a level to add it as a tag · Type a custom level and press <kbd className="px-1 py-0.5 rounded text-[10px] bg-muted border border-border font-mono">Enter</kbd> · Press <kbd className="px-1 py-0.5 rounded text-[10px] bg-muted border border-border font-mono">⌫</kbd> to remove last tag
-            </p>
-          </div>
+            {/* ── Divider ── */}
+            <div className="h-px bg-border/40" />
 
-          <style>{`
-            @keyframes tagPop {
-              0% { transform: scale(0.7); opacity: 0; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-          `}</style>
+            {/* ── Row 2: Results per function + Country ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <FieldLabel required hint="per function">Results</FieldLabel>
+                <Input
+                  id="resultsPerFunction"
+                  type="number"
+                  min="1"
+                  placeholder="10"
+                  value={resultsPerFunction}
+                  onChange={(e) => setResultsPerFunction(parseInt(e.target.value) || 0)}
+                  required
+                  className="h-11 rounded-xl border-border/70 bg-[hsl(202_35%_17%)] text-sm placeholder:text-muted-foreground/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-all duration-200"
+                />
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="resultsPerFunction" className="text-foreground font-medium">Results Per Function *</Label>
-              <Input
-                id="resultsPerFunction"
-                type="number"
-                min="1"
-                placeholder="10"
-                value={resultsPerFunction}
-                onChange={(e) => setResultsPerFunction(parseInt(e.target.value) || 0)}
-                required
-                className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
+              <div>
+                <FieldLabel hint="(optional)">Country</FieldLabel>
+                <Select value={geography} onValueChange={setGeography}>
+                  <SelectTrigger
+                    id="geography"
+                    className="h-11 rounded-xl border-border/70 bg-[hsl(202_35%_17%)] text-sm focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-all duration-200 data-[placeholder]:text-muted-foreground/50"
+                  >
+                    <SelectValue placeholder="Select a country" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border/70 rounded-xl shadow-[0_8px_32px_hsl(202_55%_5%/0.6)]">
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country} value={country} className="rounded-lg text-sm">
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="geography" className="text-foreground font-medium">Country</Label>
-              <Select value={geography} onValueChange={setGeography}>
-                <SelectTrigger id="geography" className="h-11 transition-all duration-300 focus:ring-2 focus:ring-primary/20">
-                  <SelectValue placeholder="Select a country" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow text-base font-medium transition-all text-primary-foreground"
-            disabled={!isFormValid() || loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-5 w-5" />
-                Submit Request
-              </>
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            {/* ── Submit ── */}
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold text-sm tracking-wide hover:opacity-90 hover:shadow-[0_0_24px_hsl(var(--primary)/0.4)] active:scale-[0.99] transition-all duration-200 disabled:opacity-40"
+              disabled={!isFormValid() || loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting…
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Submit Request
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </>
   );
 };
