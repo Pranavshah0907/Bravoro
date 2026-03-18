@@ -499,6 +499,16 @@ serve(async (req: Request) => {
       );
     }
 
+    // Check if this is a flag-release-only call (no result processing, just release the queue)
+    if (bodyAny?.flag_action === 'release' && !companies.length && !isPeopleEnrichmentPayload && bodyAny?.status !== 'error') {
+      console.log(`[${requestId}] Flag-only release for search ${search_id}`);
+      await handleFlagAction(supabase, requestId, search_id, 'release');
+      return new Response(
+        JSON.stringify({ success: true, message: 'Flag released', request_id: requestId }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check if this is an error payload from n8n
     const isErrorPayload = bodyAny?.status === 'error' || (bodyAny?.error_message && !companies.length && !isPeopleEnrichmentPayload);
 
