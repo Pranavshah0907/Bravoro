@@ -7,7 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Webhook URLs per entry type
 const WEBHOOK_URLS: Record<string, string> = {
   manual_entry: 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual',
   bulk_upload: 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request',
@@ -58,13 +57,7 @@ serve(async (req) => {
       enrichmentRemaining = Math.max(0, enrichmentLimit - (profile?.enrichment_used ?? 0));
     }
 
-    // Mark search as processing
-    await supabase
-      .from('searches')
-      .update({ status: 'processing', updated_at: new Date().toISOString() })
-      .eq('id', searchId);
-
-    // Build payload
+    // Build n8n payload
     const payload = {
       ...searchData,
       search_id: searchId,
@@ -73,10 +66,38 @@ serve(async (req) => {
       enrichment_limit: enrichmentLimit,
     };
 
-    // Select webhook URL
-    const n8nUrl = WEBHOOK_URLS[entryType] || WEBHOOK_URLS['bulk_upload'];
+    // Try to acquire the processing flag
+    const { data: flagAcquired } = await supabase
+      .rpc('acquire_processing_flag', { p_search_id: searchId });
 
-    // Build headers
+    if (!flagAcquired) {
+      // Flag is busy — add to queue
+      await supabase.from('request_queue').insert({
+        search_id: searchId,
+        entry_type: entryType || 'manual_entry',
+        search_data: payload,
+        status: 'queued',
+      });
+
+      await supabase.from('searches').update({
+        status: 'queued',
+        updated_at: new Date().toISOString(),
+      }).eq('id', searchId);
+
+      console.log(`Queued search ${searchId} — flag was busy`);
+      return new Response(
+        JSON.stringify({ success: true, queued: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Flag acquired — mark as processing and send to n8n
+    await supabase.from('searches').update({
+      status: 'processing',
+      updated_at: new Date().toISOString(),
+    }).eq('id', searchId);
+
+    const n8nUrl = WEBHOOK_URLS[entryType] || WEBHOOK_URLS['bulk_upload'];
     const webhookHeaders: Record<string, string> = {
       'Content-Type': 'application/json; charset=utf-8',
       'type_of_entry': entryType || 'manual_entry',
@@ -85,7 +106,6 @@ serve(async (req) => {
       webhookHeaders['x-webhook-secret'] = n8nWebhookSecret;
     }
 
-    // Call n8n
     const response = await fetch(n8nUrl, {
       method: 'POST',
       headers: webhookHeaders,
@@ -96,10 +116,13 @@ serve(async (req) => {
       const text = await response.text().catch(() => '');
       console.error(`n8n webhook failed: ${response.status} ${text}`);
 
-      await supabase
-        .from('searches')
-        .update({ status: 'error', error_message: 'Processing failed', updated_at: new Date().toISOString() })
-        .eq('id', searchId);
+      // Release flag on failure so next queued item can proceed
+      await supabase.rpc('release_processing_flag', { p_search_id: searchId });
+      await supabase.from('searches').update({
+        status: 'error',
+        error_message: 'Processing failed',
+        updated_at: new Date().toISOString(),
+      }).eq('id', searchId);
 
       return new Response(
         JSON.stringify({ error: `n8n webhook failed: ${response.status}` }),

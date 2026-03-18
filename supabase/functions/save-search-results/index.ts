@@ -270,7 +270,9 @@ async function handleFlagAction(
           
           const n8nWebhookUrl = nextItem.next_entry_type === 'bulk_people_enrichment'
             ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
-            : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+            : nextItem.next_entry_type === 'manual_entry'
+              ? 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual'
+              : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
 
           const webhookHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
