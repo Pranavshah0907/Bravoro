@@ -218,11 +218,6 @@ const Dashboard = () => {
           "fixed inset-0 pointer-events-none overflow-hidden duration-300 ease-out",
           isSidebarPinned ? "ml-56" : "ml-16"
         )}>
-          {/* Dot grid texture */}
-          <div className="absolute inset-0 opacity-[0.055]" style={{
-            backgroundImage: "radial-gradient(circle, #009da5 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }} />
           {/* Top-center teal corona */}
           <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-30" style={{
             background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
@@ -298,15 +293,15 @@ const Dashboard = () => {
             /* ── Selected View: Left panel + Form ── */
             <div className="flex flex-col lg:flex-row min-h-screen">
 
-              {/* Left Sticky Cards — redesigned black+teal */}
+              {/* Left Sticky Nav ─ compact horizontal list items */}
               <div className="
                 lg:sticky lg:top-0 lg:h-screen
-                w-full lg:w-60 xl:w-68 2xl:w-76
+                w-full lg:w-52
                 shrink-0 flex flex-col justify-center
                 py-4 lg:py-[10vh]
                 px-4 lg:px-0 lg:pl-5
               ">
-                <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 h-auto lg:h-full overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+                <div className="flex flex-row lg:flex-col gap-1.5 lg:gap-1.5 h-auto lg:h-full overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
                   {enrichmentOptions.map((option, index) => {
                     const isSelected = selectedType === option.type;
                     const Icon = option.icon;
@@ -315,48 +310,45 @@ const Dashboard = () => {
                         key={option.type}
                         onClick={() => setSelectedType(option.type)}
                         className={cn(
-                          "animate-sweep-left flex-shrink-0 lg:flex-1 relative",
-                          "flex flex-col items-center justify-center text-center",
-                          "min-w-[130px] lg:min-w-0",
-                          "p-4 lg:p-5 xl:p-6 rounded-2xl",
-                          "border transition-all duration-300 ease-out",
+                          "animate-sweep-left flex-shrink-0 lg:flex-shrink lg:flex-grow-0",
+                          "relative flex items-center gap-3 text-left",
+                          "min-w-[148px] lg:min-w-0 lg:w-full",
+                          "px-3 py-2.5 rounded-xl cursor-pointer",
+                          "transition-all duration-200 ease-out",
                           "focus:outline-none active:scale-[0.98]",
                           isSelected
-                            ? "bg-[#060d0d] border-[#009da5]/60 shadow-[0_0_24px_#009da525,0_4px_20px_#000000a0]"
-                            : "bg-[#060d0d] border-[#0f2424] hover:border-[#009da5]/35 hover:bg-[#0a1414] hover:shadow-[0_4px_20px_#000000a0]"
+                            ? "bg-[#0f2424] border border-[#009da5]/28 shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
+                            : "bg-transparent border border-transparent hover:bg-[#0a1c1c] hover:border-[#1a3535]/50"
                         )}
                         style={{ animationDelay: `${index * 80}ms` }}
                       >
-                        {/* Left teal bar when selected */}
+                        {/* Selected accent bar */}
                         {isSelected && (
-                          <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-gradient-to-b from-[#009da5] to-[#58dddd] rounded-r-full shadow-[0_0_8px_#009da5]" />
+                          <div className="absolute left-0 top-[20%] bottom-[20%] w-[2px] bg-[#009da5] rounded-r-full" />
                         )}
 
                         {/* Icon */}
                         <div className={cn(
-                          "p-3 lg:p-3.5 rounded-xl mb-2.5 lg:mb-3 transition-all duration-300 border",
+                          "p-1.5 rounded-lg shrink-0 transition-colors duration-200",
                           isSelected
-                            ? "bg-[#009da5]/15 text-[#58dddd] border-[#009da5]/30 shadow-[0_0_16px_#009da520]"
-                            : "bg-[#0a1414] text-[#3d7070] border-[#0f2424] group-hover:text-[#009da5]"
+                            ? "bg-[#009da5]/14 text-[#58dddd]"
+                            : "bg-white/[0.04] text-[#3d7070]"
                         )}>
-                          <Icon className="h-5 w-5 lg:h-6 lg:w-6" />
+                          <Icon className="h-4 w-4" />
                         </div>
 
                         {/* Title */}
-                        <h3 className={cn(
-                          "font-bold text-sm lg:text-[15px] leading-tight transition-colors duration-200",
-                          isSelected ? "text-white" : "text-[#7ab8b8]"
+                        <span className={cn(
+                          "text-[12.5px] font-semibold leading-tight truncate transition-colors duration-200",
+                          isSelected ? "text-white" : "text-[#5a9090]"
                         )}>
                           {option.title}
-                        </h3>
+                        </span>
 
-                        {/* Description */}
-                        <p className={cn(
-                          "text-[11px] lg:text-xs mt-1.5 px-2 leading-relaxed hidden lg:block transition-colors duration-200",
-                          isSelected ? "text-[#3d8080]" : "text-[#2a5555]"
-                        )}>
-                          {option.description}
-                        </p>
+                        {/* Active dot */}
+                        {isSelected && (
+                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#009da5] shrink-0" />
+                        )}
                       </button>
                     );
                   })}
@@ -364,11 +356,11 @@ const Dashboard = () => {
               </div>
 
               {/* Gap */}
-              <div className="hidden lg:block w-4 xl:w-6 shrink-0" />
+              <div className="hidden lg:block w-5 xl:w-7 shrink-0" />
 
-              {/* Right Form Area — increased padding and text */}
+              {/* Right Form Area */}
               <div className="flex-1 p-5 lg:p-8 xl:p-10 2xl:p-12 pt-3 lg:pt-8">
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-4xl mx-auto">
                   {/* Page header */}
                   <div className="mb-6 lg:mb-8 animate-fade-in">
                     <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#009da5]/70 mb-2">
@@ -377,10 +369,9 @@ const Dashboard = () => {
                     <h1 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-white tracking-tight mb-2">
                       {enrichmentOptions.find(o => o.type === selectedType)?.title}
                     </h1>
-                    <p className="text-sm lg:text-base text-[#3d8080] font-medium">
+                    <p className="text-sm lg:text-base text-[#3d7070] font-medium">
                       {enrichmentOptions.find(o => o.type === selectedType)?.description}
                     </p>
-                    {/* Teal underline accent */}
                     <div className="mt-4 h-px w-16 bg-gradient-to-r from-[#009da5] to-transparent rounded-full" />
                   </div>
 

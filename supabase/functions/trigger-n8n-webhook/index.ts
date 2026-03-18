@@ -130,7 +130,9 @@ serve(async (req) => {
     // Select webhook URL based on entry type
     const n8nWebhookUrl = entryType === 'bulk_people_enrichment'
       ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
-      : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+      : entryType === 'manual_entry'
+        ? 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual'
+        : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
 
     console.log(`[${requestId}] Using webhook URL for entry type:`, entryType);
 
