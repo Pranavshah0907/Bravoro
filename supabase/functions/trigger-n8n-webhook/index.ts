@@ -1,355 +1,122 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Schema for manual entry
-const manualEntrySchema = z.object({
-  searchId: z.string().uuid({ message: "Invalid searchId: must be a valid UUID" }),
-  searchData: z.object({
-    company_name: z.string().optional(),
-    domain: z.string().optional(),
-    functions: z.array(z.string()).optional(),
-    geography: z.string().optional(),
-    seniority: z.array(z.string()).optional(),
-    results_per_function: z.number().int().positive().optional(),
-  }),
-  entryType: z.literal('manual_entry').optional(),
-  apollo_credits: z.number().int().min(0).max(1000000).optional().default(0),
-  cleon1_credits: z.number().int().min(0).max(1000000).optional().default(0),
-  lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
-});
-
-// Schema for bulk upload - accepts any data structure from Excel
-const bulkUploadSchema = z.object({
-  searchId: z.string().uuid({ message: "Invalid searchId: must be a valid UUID" }),
-  searchData: z.object({
-    search_id: z.string().uuid().optional(),
-    data: z.record(z.array(z.record(z.unknown()))).optional(), // Excel sheets as object with arrays of records
-  }).passthrough(), // Allow additional fields
-  entryType: z.literal('bulk_upload'),
-  apollo_credits: z.number().int().min(0).max(1000000).optional().default(0),
-  cleon1_credits: z.number().int().min(0).max(1000000).optional().default(0),
-  lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
-});
-
-// Schema for bulk people enrichment - similar to bulk upload
-const bulkPeopleEnrichmentSchema = z.object({
-  searchId: z.string().uuid({ message: "Invalid searchId: must be a valid UUID" }),
-  searchData: z.object({
-    search_id: z.string().uuid().optional(),
-    data: z.record(z.array(z.record(z.unknown()))).optional(), // Excel sheets as object with arrays of records
-  }).passthrough(), // Allow additional fields
-  entryType: z.literal('bulk_people_enrichment'),
-  apollo_credits: z.number().int().min(0).max(1000000).optional().default(0),
-  cleon1_credits: z.number().int().min(0).max(1000000).optional().default(0),
-  lusha_credits: z.number().int().min(0).max(1000000).optional().default(0),
-});
-
-// Combined schema that accepts any format
-const requestSchema = z.union([bulkUploadSchema, bulkPeopleEnrichmentSchema, manualEntrySchema]);
-
-// Generate a unique request ID for tracking
-function generateRequestId(): string {
-  return crypto.randomUUID();
-}
+// Webhook URLs per entry type
+const WEBHOOK_URLS: Record<string, string> = {
+  manual_entry: 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual',
+  bulk_upload: 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request',
+  bulk_people_enrichment: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich',
+};
 
 serve(async (req) => {
-  const requestId = generateRequestId();
-  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const body = await req.json();
-    console.log(`[${requestId}] Received request body:`, JSON.stringify(body));
-    
-    const validationResult = requestSchema.safeParse(body);
-    
-    if (!validationResult.success) {
-      console.error(`[${requestId}] Validation error:`, validationResult.error.issues);
+    const { searchId, entryType, searchData } = body;
+
+    if (!searchId || !searchData) {
       return new Response(
-        JSON.stringify({ error: 'Invalid request data', request_id: requestId }),
+        JSON.stringify({ error: 'Missing searchId or searchData' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { searchData, searchId, entryType, apollo_credits, cleon1_credits, lusha_credits } = validationResult.data;
-    console.log(`[${requestId}] Entry type:`, entryType);
-    console.log(`[${requestId}] Search data keys:`, Object.keys(searchData));
-
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user_id and email from the search record
-    const { data: searchRecord, error: searchError } = await supabase
+    // Get user email and enrichment limits
+    let userEmail = '';
+    let enrichmentRemaining = 0;
+    let enrichmentLimit = 0;
+
+    const { data: searchRecord } = await supabase
       .from('searches')
       .select('user_id')
       .eq('id', searchId)
       .maybeSingle();
 
-    if (searchError) {
-      console.error(`[${requestId}] Search record error:`, searchError);
-    }
-    console.log(`[${requestId}] Search record found:`, !!searchRecord);
-
-    let userEmail = '';
-    let enrichmentRemaining = 0;
-    let enrichmentLimit = 0;
-
     if (searchRecord?.user_id) {
-      // Get user profile including enrichment data
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('email, enrichment_limit, enrichment_used')
         .eq('id', searchRecord.user_id)
         .maybeSingle();
-      
-      if (profileError) {
-        console.error(`[${requestId}] Profile error:`, profileError);
-      }
-      userEmail = profileData?.email || '';
-      enrichmentLimit = profileData?.enrichment_limit ?? 0;
-      const enrichmentUsed = profileData?.enrichment_used ?? 0;
-      enrichmentRemaining = Math.max(0, enrichmentLimit - enrichmentUsed);
-      
-      console.log(`[${requestId}] Enrichment data - limit: ${enrichmentLimit}, used: ${enrichmentUsed}, remaining: ${enrichmentRemaining}`);
+
+      userEmail = profile?.email || '';
+      enrichmentLimit = profile?.enrichment_limit ?? 0;
+      enrichmentRemaining = Math.max(0, enrichmentLimit - (profile?.enrichment_used ?? 0));
     }
 
-    console.log(`[${requestId}] User email retrieved:`, !!userEmail);
-
-    // Select webhook URL based on entry type
-    const n8nWebhookUrl = entryType === 'bulk_people_enrichment'
-      ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
-      : entryType === 'manual_entry'
-        ? 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual'
-        : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
-
-    console.log(`[${requestId}] Using webhook URL for entry type:`, entryType);
-
-    // Build payload based on entry type (NO api_to_use field anymore)
-    let payloadToSend: Record<string, unknown>;
-
-    if (entryType === 'bulk_upload' || entryType === 'bulk_people_enrichment') {
-      // For bulk upload and people enrichment, include the Excel data
-      payloadToSend = {
-        search_id: searchId,
-        user_email: userEmail,
-        data: (searchData as { data?: unknown }).data, // The parsed Excel content
-        enrichment_remaining: enrichmentRemaining,
-        enrichment_limit: enrichmentLimit,
-      };
-    } else {
-      // For manual entry, spread the search data fields
-      payloadToSend = {
-        ...searchData,
-        search_id: searchId,
-        user_email: userEmail,
-        enrichment_remaining: enrichmentRemaining,
-        enrichment_limit: enrichmentLimit,
-      };
-    }
-
-    // ========== SINGLE FLAG ACQUISITION LOGIC ==========
-    // Attempt to acquire the processing flag atomically
-    console.log(`[${requestId}] Attempting to acquire processing flag...`);
-    
-    const { data: flagAcquired, error: flagError } = await supabase
-      .rpc('acquire_processing_flag', { p_search_id: searchId });
-
-    if (flagError) {
-      console.error(`[${requestId}] Flag acquisition error:`, flagError);
-      throw flagError;
-    }
-
-    if (!flagAcquired) {
-      // Flag is occupied - add to queue
-      console.log(`[${requestId}] Processing flag occupied, adding to queue`);
-      
-      const { error: queueError } = await supabase
-        .from('request_queue')
-        .insert({
-          search_id: searchId,
-          entry_type: entryType || 'manual_entry',
-          search_data: payloadToSend,
-          status: 'queued'
-        });
-      
-      if (queueError) {
-        console.error(`[${requestId}] Queue insertion error:`, queueError);
-        throw queueError;
-      }
-      
-      // Update search status to queued
-      const { error: updateError } = await supabase
-        .from('searches')
-        .update({ status: 'queued', updated_at: new Date().toISOString() })
-        .eq('id', searchId);
-      
-      if (updateError) {
-        console.error(`[${requestId}] Status update error:`, updateError);
-      }
-      
-      console.log(`[${requestId}] Request queued successfully`);
-      
-      return new Response(
-        JSON.stringify({ success: true, queued: true, request_id: requestId }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Flag acquired - update status to processing and proceed to send to n8n
-    console.log(`[${requestId}] Processing flag acquired, updating status and sending to n8n`);
-    
-    // Update search status to processing
-    const { error: processingStatusError } = await supabase
+    // Mark search as processing
+    await supabase
       .from('searches')
       .update({ status: 'processing', updated_at: new Date().toISOString() })
       .eq('id', searchId);
-    
-    if (processingStatusError) {
-      console.error(`[${requestId}] Error updating status to processing:`, processingStatusError);
-    }
-    
-    console.log(`[${requestId}] Sending payload to n8n webhook with enrichment_remaining: ${enrichmentRemaining}, enrichment_limit: ${enrichmentLimit}`);
 
-    // Build headers with webhook secret authentication
+    // Build payload
+    const payload = {
+      ...searchData,
+      search_id: searchId,
+      user_email: userEmail,
+      enrichment_remaining: enrichmentRemaining,
+      enrichment_limit: enrichmentLimit,
+    };
+
+    // Select webhook URL
+    const n8nUrl = WEBHOOK_URLS[entryType] || WEBHOOK_URLS['bulk_upload'];
+
+    // Build headers
     const webhookHeaders: Record<string, string> = {
       'Content-Type': 'application/json; charset=utf-8',
       'type_of_entry': entryType || 'manual_entry',
     };
-
-    // Add webhook secret if configured
     if (n8nWebhookSecret) {
       webhookHeaders['x-webhook-secret'] = n8nWebhookSecret;
     }
 
-    const response = await fetch(n8nWebhookUrl, {
+    // Call n8n
+    const response = await fetch(n8nUrl, {
       method: 'POST',
       headers: webhookHeaders,
-      body: JSON.stringify(payloadToSend),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      const responseText = await response.text().catch(() => '');
-      console.error(
-        `[${requestId}] N8N webhook failed`,
-        JSON.stringify({ status: response.status, statusText: response.statusText, body: responseText })
+      const text = await response.text().catch(() => '');
+      console.error(`n8n webhook failed: ${response.status} ${text}`);
+
+      await supabase
+        .from('searches')
+        .update({ status: 'error', error_message: 'Processing failed', updated_at: new Date().toISOString() })
+        .eq('id', searchId);
+
+      return new Response(
+        JSON.stringify({ error: `n8n webhook failed: ${response.status}` }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-      
-      // Release the flag on failure
-      await supabase.rpc('release_processing_flag', { p_search_id: searchId });
-      console.log(`[${requestId}] Released processing flag due to webhook failure`);
-      
-      throw new Error(`N8N webhook failed: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log(`[${requestId}] N8N webhook response received`);
-
-    // Store credit usage if credits are provided
-    if ((apollo_credits > 0 || cleon1_credits > 0 || lusha_credits > 0) && searchRecord?.user_id) {
-      const { error: creditError } = await supabase
-        .from('credit_usage')
-        .insert({
-          user_id: searchRecord.user_id,
-          search_id: searchId,
-          apollo_credits,
-          cleon1_credits,
-          lusha_credits,
-        });
-      
-      if (creditError) {
-        console.error(`[${requestId}] Credit tracking error:`, creditError);
-      }
-    }
-
-    // Update the search record based on n8n response
-    if (result.status === 'error') {
-      console.log(`[${requestId}] N8N reported error status`);
-      await supabase
-        .from('searches')
-        .update({
-          status: 'error',
-          error_message: 'Processing failed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', searchId);
-    } else if (result.status === 'completed' || result.status === 'success') {
-      // Construct download URL from file_id
-      const downloadUrl = `https://n8n.srv1081444.hstgr.cloud/webhook/download?fileId=${result.file_id}`;
-      
-      await supabase
-        .from('searches')
-        .update({
-          status: 'completed',
-          result_url: downloadUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', searchId);
-
-      // Store credit usage from n8n response if provided
-      if ((result.apollo_credits > 0 || result.cleon1_credits > 0 || result.lusha_credits > 0) && searchRecord?.user_id) {
-        const { error: creditError } = await supabase
-          .from('credit_usage')
-          .insert({
-            user_id: searchRecord.user_id,
-            search_id: searchId,
-            apollo_credits: result.apollo_credits || 0,
-            cleon1_credits: result.cleon1_credits || 0,
-            lusha_credits: result.lusha_credits || 0,
-          });
-        
-        if (creditError) {
-          console.error(`[${requestId}] Credit tracking error from n8n response:`, creditError);
-        }
-      }
     }
 
     return new Response(
-      JSON.stringify({ success: true, request_id: requestId }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   } catch (error) {
-    console.error(`[${requestId}] Error triggering N8N webhook:`, error);
-    
-    // Try to update search status to error if we have searchId
-    try {
-      const body = await req.clone().json();
-      const { searchId } = body;
-      if (searchId) {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        await supabase
-          .from('searches')
-          .update({
-            status: 'error',
-            error_message: 'Processing failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', searchId);
-      }
-    } catch (updateError) {
-      console.error(`[${requestId}] Error updating search status:`, updateError);
-    }
-    
+    console.error('trigger-n8n-webhook error:', error);
     return new Response(
-      JSON.stringify({ error: 'Request processing failed', request_id: requestId }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: String(error) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
