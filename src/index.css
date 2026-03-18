@@ -24,20 +24,20 @@
 
 @layer base {
   :root {
-    /* Dark Galaxy background - default dark theme */
-    --background: 202 55% 11%;
-    --foreground: 180 22% 92%;
+    /* ── Obsidian Black — pure black base, electric teal accents ── */
+    --background: 180 20% 4%;       /* #060f0f — near-black with teal breath */
+    --foreground: 180 22% 93%;      /* #e4f4f4 — bright white-teal */
 
-    /* Cards - slightly elevated from background */
-    --card: 202 50% 14%;
-    --card-foreground: 180 22% 92%;
+    /* Cards — slightly elevated from background */
+    --card: 183 20% 6%;             /* #0a1414 — dark card */
+    --card-foreground: 180 22% 93%;
 
-    /* Popovers - more contrast */
-    --popover: 202 45% 16%;
-    --popover-foreground: 180 22% 92%;
+    /* Popovers */
+    --popover: 183 18% 8%;          /* #0d1818 */
+    --popover-foreground: 180 22% 93%;
 
     /* Ocean Blue - Primary */
-    --primary: 183 100% 32%;
+    --primary: 183 100% 32%;        /* #009da5 */
     --primary-foreground: 0 0% 100%;
 
     /* Blue Grass - Secondary */
@@ -45,12 +45,12 @@
     --secondary-foreground: 0 0% 100%;
 
     /* Muted - subtle backgrounds */
-    --muted: 202 40% 18%;
-    --muted-foreground: 176 16% 75%;
+    --muted: 183 18% 10%;           /* #0f1c1c */
+    --muted-foreground: 176 30% 55%; /* teal-tinted, not gray */
 
     /* Cardinal Blue - Accent (vibrant) */
-    --accent: 180 66% 61%;
-    --accent-foreground: 202 55% 11%;
+    --accent: 180 66% 61%;          /* #58dddd */
+    --accent-foreground: 183 20% 6%;
 
     /* Caretta Green - special actions */
     --caretta: 183 100% 21%;
@@ -59,43 +59,43 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders - visible but subtle */
-    --border: 183 30% 22%;
-    --input: 202 35% 20%;
+    /* Borders — visible teal-tinted lines */
+    --border: 183 30% 13%;          /* #0f2424 */
+    --input: 183 25% 11%;           /* #0d1e1e */
     --ring: 180 66% 61%;
 
     --radius: 0.75rem;
-    
-    /* Gradients - using brand colors */
+
+    /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(183 100% 32%), hsl(180 66% 61%));
     --gradient-secondary: linear-gradient(135deg, hsl(191 55% 34%), hsl(183 100% 32%));
-    --gradient-card: linear-gradient(145deg, hsl(202 50% 14%), hsl(202 45% 17%));
-    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(180 66% 61% / 0.15), transparent 60%);
-    
-    /* Shadows - teal-tinted */
-    --shadow-soft: 0 4px 20px hsl(180 66% 50% / 0.1);
-    --shadow-medium: 0 8px 32px hsl(180 66% 50% / 0.15);
-    --shadow-strong: 0 16px 48px hsl(180 66% 50% / 0.2);
-    --shadow-glow: 0 0 40px hsl(180 66% 61% / 0.25);
-    --shadow-card: 0 4px 24px hsl(202 55% 5% / 0.4);
+    --gradient-card: linear-gradient(145deg, hsl(183 20% 6%), hsl(183 18% 8%));
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(180 66% 61% / 0.12), transparent 60%);
 
-    /* Chart colors - distinct and vibrant */
+    /* Shadows — teal-tinted on black */
+    --shadow-soft: 0 4px 20px hsl(183 100% 10% / 0.5);
+    --shadow-medium: 0 8px 32px hsl(183 100% 10% / 0.6);
+    --shadow-strong: 0 16px 48px hsl(183 100% 10% / 0.7);
+    --shadow-glow: 0 0 40px hsl(180 66% 61% / 0.2);
+    --shadow-card: 0 4px 24px hsl(183 100% 3% / 0.8);
+
+    /* Chart colors */
     --chart-1: 183 100% 40%;
     --chart-2: 280 65% 60%;
     --chart-3: 45 90% 55%;
     --chart-4: 340 70% 55%;
     --chart-5: 145 60% 45%;
-    
-    /* Sidebar */
-    --sidebar-background: 202 55% 9%;
+
+    /* Sidebar — deepest black */
+    --sidebar-background: 183 22% 3%;   /* #060c0c */
     --sidebar-foreground: 180 22% 92%;
     --sidebar-primary: 183 100% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 183 100% 21%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 183 30% 18%;
+    --sidebar-border: 183 30% 11%;      /* #0d1f1f */
     --sidebar-ring: 180 66% 61%;
-    --sidebar-muted: 202 40% 15%;
+    --sidebar-muted: 183 20% 8%;        /* #0d1818 */
   }
 
   .light {

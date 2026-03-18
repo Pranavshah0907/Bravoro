@@ -213,25 +213,28 @@ const Dashboard = () => {
         "flex-1 min-h-screen duration-300 ease-out",
         isSidebarPinned ? "ml-56" : "ml-16"
       )}>
-        {/* Background Effects */}
+        {/* Background Effects — atmospheric black + teal */}
         <div className={cn(
           "fixed inset-0 pointer-events-none overflow-hidden duration-300 ease-out",
           isSidebarPinned ? "ml-56" : "ml-16"
         )}>
-          <div
-            className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full opacity-50"
-            style={{
-              background: "radial-gradient(circle, hsl(var(--primary) / 0.22) 0%, transparent 70%)",
-              animation: "float 20s ease-in-out infinite"
-            }}
-          />
-          <div
-            className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] rounded-full opacity-40"
-            style={{
-              background: "radial-gradient(circle, hsl(var(--accent) / 0.18) 0%, transparent 70%)",
-              animation: "float 15s ease-in-out infinite reverse"
-            }}
-          />
+          {/* Dot grid texture */}
+          <div className="absolute inset-0 opacity-[0.055]" style={{
+            backgroundImage: "radial-gradient(circle, #009da5 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }} />
+          {/* Top-center teal corona */}
+          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-30" style={{
+            background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
+            filter: "blur(60px)",
+            animation: "float 22s ease-in-out infinite",
+          }} />
+          {/* Bottom-right secondary glow */}
+          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full opacity-15" style={{
+            background: "radial-gradient(circle, #58dddd 0%, transparent 65%)",
+            filter: "blur(80px)",
+            animation: "float 18s ease-in-out infinite reverse",
+          }} />
         </div>
 
         {/* Content */}
@@ -244,8 +247,8 @@ const Dashboard = () => {
           )}
 
           {selectedType === "ai_staffing" ? (
-            /* AI Staffing — full height, no tile sidebar */
-            <div className="p-4 lg:p-5" style={{ paddingTop: "1.5rem", height: "100vh" }}>
+            /* AI Staffing — full height */
+            <div className="p-4 lg:p-6" style={{ paddingTop: "1.5rem", height: "100vh" }}>
               <AIChatInterface
                 ref={aiChatRef}
                 userId={user?.id || ""}
@@ -254,18 +257,21 @@ const Dashboard = () => {
               />
             </div>
           ) : !selectedType ? (
-            /* Initial View - 3 Cards */
-            <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
-              <div className="text-center mb-12 animate-fade-in">
-                <h1 className="text-4xl md:text-5xl font-bold mb-3" style={{
-                  background: "linear-gradient(135deg, hsl(var(--foreground)) 40%, hsl(var(--accent)) 100%)",
+            /* ── Home: Welcome view ── */
+            <div className="min-h-screen flex flex-col items-center justify-center px-8 py-16">
+              <div className="text-center mb-14 animate-fade-in">
+                <p className="text-xs font-bold tracking-[0.2em] uppercase text-[#009da5] mb-4 opacity-80">
+                  Lead Enrichment Platform
+                </p>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-none tracking-tight" style={{
+                  background: "linear-gradient(135deg, #ffffff 30%, #58dddd 75%, #009da5 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                 }}>
                   Welcome back
                 </h1>
-                <p className="text-base text-muted-foreground max-w-md mx-auto">
+                <p className="text-base lg:text-lg text-[#3d8080] max-w-lg mx-auto font-medium">
                   Select an enrichment method to get started
                 </p>
               </div>
@@ -289,18 +295,18 @@ const Dashboard = () => {
               </div>
             </div>
           ) : (
-            /* Selected View - Left Panel + Form */
+            /* ── Selected View: Left panel + Form ── */
             <div className="flex flex-col lg:flex-row min-h-screen">
-              {/* Left Sticky Cards */}
+
+              {/* Left Sticky Cards — redesigned black+teal */}
               <div className="
                 lg:sticky lg:top-0 lg:h-screen
-                w-full lg:w-56 xl:w-64 2xl:w-72
-                shrink-0
-                flex flex-col justify-center
-                py-4 lg:py-[12.5vh]
-                px-4 lg:px-0 lg:pl-4
+                w-full lg:w-60 xl:w-68 2xl:w-76
+                shrink-0 flex flex-col justify-center
+                py-4 lg:py-[10vh]
+                px-4 lg:px-0 lg:pl-5
               ">
-                <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 xl:gap-4 h-auto lg:h-full overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+                <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 h-auto lg:h-full overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
                   {enrichmentOptions.map((option, index) => {
                     const isSelected = selectedType === option.type;
                     const Icon = option.icon;
@@ -309,39 +315,46 @@ const Dashboard = () => {
                         key={option.type}
                         onClick={() => setSelectedType(option.type)}
                         className={cn(
-                          "animate-sweep-left flex-shrink-0 lg:flex-1 relative flex flex-col items-center justify-center",
-                          "min-w-[120px] lg:min-w-0",
-                          "p-3 lg:p-4 xl:p-5 rounded-xl lg:rounded-2xl",
-                          "bg-gradient-to-br", option.gradient,
-                          "border backdrop-blur-sm",
-                          "duration-300 ease-out",
-                          "hover:shadow-lg hover:shadow-primary/10",
-                          "focus:outline-none",
+                          "animate-sweep-left flex-shrink-0 lg:flex-1 relative",
+                          "flex flex-col items-center justify-center text-center",
+                          "min-w-[130px] lg:min-w-0",
+                          "p-4 lg:p-5 xl:p-6 rounded-2xl",
+                          "border transition-all duration-300 ease-out",
+                          "focus:outline-none active:scale-[0.98]",
                           isSelected
-                            ? "border-primary/50 shadow-lg shadow-primary/15"
-                            : "border-border/30 hover:border-primary/30"
+                            ? "bg-[#060d0d] border-[#009da5]/60 shadow-[0_0_24px_#009da525,0_4px_20px_#000000a0]"
+                            : "bg-[#060d0d] border-[#0f2424] hover:border-[#009da5]/35 hover:bg-[#0a1414] hover:shadow-[0_4px_20px_#000000a0]"
                         )}
                         style={{ animationDelay: `${index * 80}ms` }}
                       >
+                        {/* Left teal bar when selected */}
                         {isSelected && (
-                          <div className="absolute left-0 top-3 bottom-3 lg:top-4 lg:bottom-4 w-1 bg-primary rounded-r-full" />
+                          <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-gradient-to-b from-[#009da5] to-[#58dddd] rounded-r-full shadow-[0_0_8px_#009da5]" />
                         )}
+
+                        {/* Icon */}
                         <div className={cn(
-                          "p-2.5 lg:p-3 xl:p-4 rounded-lg lg:rounded-xl mb-1.5 lg:mb-3",
-                          "duration-300",
+                          "p-3 lg:p-3.5 rounded-xl mb-2.5 lg:mb-3 transition-all duration-300 border",
                           isSelected
-                            ? "bg-primary/20 text-primary"
-                            : "bg-card/60 text-muted-foreground"
+                            ? "bg-[#009da5]/15 text-[#58dddd] border-[#009da5]/30 shadow-[0_0_16px_#009da520]"
+                            : "bg-[#0a1414] text-[#3d7070] border-[#0f2424] group-hover:text-[#009da5]"
                         )}>
-                          <Icon className="h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6" />
+                          <Icon className="h-5 w-5 lg:h-6 lg:w-6" />
                         </div>
+
+                        {/* Title */}
                         <h3 className={cn(
-                          "font-semibold text-xs lg:text-sm xl:text-base text-center duration-200 leading-tight",
-                          isSelected ? "text-primary" : "text-foreground"
+                          "font-bold text-sm lg:text-[15px] leading-tight transition-colors duration-200",
+                          isSelected ? "text-white" : "text-[#7ab8b8]"
                         )}>
                           {option.title}
                         </h3>
-                        <p className="text-[10px] lg:text-xs text-muted-foreground text-center mt-1 px-1 lg:px-2 leading-relaxed hidden lg:block">
+
+                        {/* Description */}
+                        <p className={cn(
+                          "text-[11px] lg:text-xs mt-1.5 px-2 leading-relaxed hidden lg:block transition-colors duration-200",
+                          isSelected ? "text-[#3d8080]" : "text-[#2a5555]"
+                        )}>
                           {option.description}
                         </p>
                       </button>
@@ -351,18 +364,24 @@ const Dashboard = () => {
               </div>
 
               {/* Gap */}
-              <div className="hidden lg:block w-3 xl:w-5 2xl:w-6 shrink-0" />
+              <div className="hidden lg:block w-4 xl:w-6 shrink-0" />
 
-              {/* Right Form Area */}
-              <div className="flex-1 p-4 lg:p-6 xl:p-8 2xl:p-10 pt-2 lg:pt-6">
+              {/* Right Form Area — increased padding and text */}
+              <div className="flex-1 p-5 lg:p-8 xl:p-10 2xl:p-12 pt-3 lg:pt-8">
                 <div className="max-w-3xl mx-auto">
-                  <div className="mb-4 lg:mb-6 animate-fade-in">
-                    <h1 className="text-lg lg:text-xl xl:text-2xl 2xl:text-3xl font-bold text-foreground mb-1.5 lg:mb-2">
+                  {/* Page header */}
+                  <div className="mb-6 lg:mb-8 animate-fade-in">
+                    <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#009da5]/70 mb-2">
+                      Enrichment
+                    </p>
+                    <h1 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-white tracking-tight mb-2">
                       {enrichmentOptions.find(o => o.type === selectedType)?.title}
                     </h1>
-                    <p className="text-xs lg:text-sm xl:text-base text-muted-foreground">
+                    <p className="text-sm lg:text-base text-[#3d8080] font-medium">
                       {enrichmentOptions.find(o => o.type === selectedType)?.description}
                     </p>
+                    {/* Teal underline accent */}
+                    <div className="mt-4 h-px w-16 bg-gradient-to-r from-[#009da5] to-transparent rounded-full" />
                   </div>
 
                   <div className="animate-slide-up">
