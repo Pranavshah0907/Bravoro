@@ -400,9 +400,14 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         };
       }
 
-      supabase.functions.invoke("trigger-n8n-webhook", {
+      const { error: fnError } = await supabase.functions.invoke("trigger-n8n-webhook", {
         body: { searchId: search.id, entryType: "manual_entry", searchData },
-      }).catch(err => console.error("N8N webhook trigger failed:", err));
+      });
+
+      if (fnError) {
+        console.error("trigger-n8n-webhook failed:", fnError);
+        throw new Error(`Webhook invoke failed: ${fnError.message}`);
+      }
 
       toast({ title: "Request Submitted", description: "Your lead enrichment request is being processed" });
     } catch (error: any) {
