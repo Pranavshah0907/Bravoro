@@ -19,6 +19,34 @@ serve(async (req) => {
   }
 
   try {
+    // Verify the caller has a valid Supabase JWT (anon or user session)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerToken = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // Verify token by calling Supabase auth — accepts both anon key and user JWTs
+    const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        'Authorization': `Bearer ${callerToken}`,
+        'apikey': supabaseAnonKey,
+      },
+    });
+    // Allow anon key (returns 400 "missing sub claim") or valid user session (200)
+    if (authCheck.status !== 200 && authCheck.status !== 400) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body = await req.json();
     const { searchId, entryType, searchData } = body;
 
@@ -29,7 +57,6 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
     const supabase = createClient(supabaseUrl, supabaseKey);
