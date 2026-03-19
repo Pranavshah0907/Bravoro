@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, X, ChevronDown, Check, Search, ArrowRight, Briefcase } from "lucide-react";
+import { Loader2, X, ChevronDown, Check, Search, ArrowRight, Briefcase, Calendar } from "lucide-react";
 import { ProcessingStatus } from "./ProcessingStatus";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,7 +55,7 @@ const DATE_POSTED_OPTIONS = [
   { label: "Past month",    value: "past_month" },
 ] as const;
 
-type DatePosted = "anytime" | "past_24h" | "past_week" | "past_month";
+type DatePosted = "anytime" | "past_24h" | "past_week" | "past_month" | "custom";
 
 // ── Spell-check helpers for Job Titles ─────────────────────────────────────────
 const COMMON_JOB_TITLE_WORDS = [
@@ -506,6 +506,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const [jobSeniority, setJobSeniority] = useState<string[]>([]);
   const [jobSeniorityInput, setJobSeniorityInput] = useState("");
   const [datePosted, setDatePosted] = useState<DatePosted>("anytime");
+  const [customDays, setCustomDays] = useState<number>(7);
+  const customDaysInputRef = useRef<HTMLInputElement>(null);
   const jobSeniorityInputRef = useRef<HTMLInputElement>(null);
 
   // Search summary (captured at submit time, passed to ProcessingStatus)
@@ -584,6 +586,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
           job_titles: jobTitles,
           seniority: jobSeniority,
           date_posted: datePosted,
+          ...(datePosted === "custom" && { custom_days: customDays }),
         };
       }
 
@@ -607,7 +610,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const handleReset = () => {
     setCompanyName(""); setDomain(""); setSelectedFunctions([]); setSelectedSeniority([]);
     setGeography(""); setResultsPerFunction(10); setSearchId(null); setProcessingStatus(null);
-    setIncludeJobSearch(false); setJobTitles([]); setJobSeniority([]); setDatePosted("anytime");
+    setIncludeJobSearch(false); setJobTitles([]); setJobSeniority([]); setDatePosted("anytime"); setCustomDays(7);
     setSearchSummary(null);
   };
 
@@ -839,7 +842,6 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                                 : "bg-transparent text-[#7ab8b8] border-[#254848] hover:border-[#009da5]/30 hover:text-[#9dd4d4]"
                             }`}
                           >
-                            {/* Radio dot */}
                             <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
                               active ? "border-[#009da5]" : "border-[#3d6868]"
                             }`}>
@@ -849,6 +851,49 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                           </button>
                         );
                       })}
+
+                      {/* Custom option */}
+                      <div
+                        onClick={() => {
+                          setDatePosted("custom");
+                          setTimeout(() => customDaysInputRef.current?.focus(), 50);
+                        }}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium border text-left transition-all duration-150 cursor-pointer select-none ${
+                          datePosted === "custom"
+                            ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/42"
+                            : "bg-transparent text-[#7ab8b8] border-[#254848] hover:border-[#009da5]/30 hover:text-[#9dd4d4]"
+                        }`}
+                      >
+                        {/* Radio dot */}
+                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
+                          datePosted === "custom" ? "border-[#009da5]" : "border-[#3d6868]"
+                        }`}>
+                          {datePosted === "custom" && <div className="w-1.5 h-1.5 rounded-full bg-[#009da5]" />}
+                        </div>
+
+                        {/* Calendar icon */}
+                        <Calendar className={`h-3.5 w-3.5 shrink-0 transition-colors duration-150 ${datePosted === "custom" ? "text-[#009da5]" : "text-[#3d6868]"}`} />
+
+                        <span className="shrink-0">Custom: Past</span>
+
+                        {/* Editable days input */}
+                        {datePosted === "custom" ? (
+                          <input
+                            ref={customDaysInputRef}
+                            type="number"
+                            min="1"
+                            max="365"
+                            value={customDays}
+                            onChange={e => setCustomDays(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
+                            onClick={e => e.stopPropagation()}
+                            className="w-12 mx-0.5 text-center bg-[#009da5]/18 border border-[#009da5]/50 rounded-md text-[13px] text-white font-bold outline-none focus:border-[#009da5] focus:bg-[#009da5]/25 px-1 py-0.5 transition-colors duration-150 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                        ) : (
+                          <span className="mx-1 opacity-40 font-normal text-[12px]">—</span>
+                        )}
+
+                        <span className="shrink-0">days</span>
+                      </div>
                     </div>
                   </div>
 
