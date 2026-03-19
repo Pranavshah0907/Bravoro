@@ -286,6 +286,13 @@ const TagDropdownInput = ({
           onChange={e => { setInput(e.target.value); setSearch(e.target.value); }}
           onKeyDown={handleKeyDown}
           onFocus={() => setOpen(true)}
+          onBlur={e => {
+            // Auto-commit pending text only if focus is leaving the whole dropdown component
+            if (dropdownRef.current && !dropdownRef.current.contains(e.relatedTarget as Node)) {
+              if (input.trim()) addTag(input);
+              setOpen(false);
+            }
+          }}
           placeholder={selected.length === 0 ? placeholder : "Add more…"}
           className="mf-bare flex-1 min-w-[120px] bg-transparent text-[13px] text-white outline-none py-0.5"
         />
@@ -403,6 +410,7 @@ const JobTitleInput = ({ tags, onAdd, onRemove }: {
           value={input}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onBlur={() => { if (input.trim()) addTag(input); }}
           placeholder={tags.length === 0 ? "e.g. Sales, Marketing…" : "Add more…"}
           className="mf-bare flex-1 min-w-[120px] bg-transparent text-[13px] text-white outline-none py-0.5"
         />
@@ -737,6 +745,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                         value={jobSeniorityInput}
                         onChange={e => setJobSeniorityInput(e.target.value)}
                         onKeyDown={handleJobSeniorityKeyDown}
+                        onBlur={() => { if (jobSeniorityInput.trim()) addJobSeniorityTag(jobSeniorityInput); }}
                         placeholder={jobSeniority.length === 0 ? "e.g. Manager, Director…" : "Add more…"}
                         className="mf-bare flex-1 min-w-[100px] bg-transparent text-[13px] text-white outline-none py-0.5"
                       />
