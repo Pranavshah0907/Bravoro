@@ -373,23 +373,63 @@ const TagDropdownInput = ({
 };
 
 // Free-text tag input with spell suggestion (used for Job Titles)
+// Uses LanguageTool API (auto language detection) for multi-language spell correction,
+// with local Levenshtein as a fast fallback for common English typos.
 const JobTitleInput = ({ tags, onAdd, onRemove }: {
   tags: string[]; onAdd: (v: string) => void; onRemove: (v: string) => void;
 }) => {
   const [input, setInput] = useState("");
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const checkSpelling = async (text: string) => {
+    if (text.length < 4) { setSuggestion(null); return; }
+
+    // Fast path: local Levenshtein for common English job title words
+    const local = getSpellSuggestion(text);
+    if (local) { setSuggestion(local); return; }
+
+    // Slow path: LanguageTool API — auto-detects language, handles German/French/etc.
+    try {
+      setChecking(true);
+      const res = await fetch("https://api.languagetool.org/v2/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ text, language: "auto" }).toString(),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const first = data.matches?.[0];
+      // Only suggest if the match covers the whole word and there's a replacement
+      if (first?.replacements?.length > 0) {
+        setSuggestion(first.replacements[0].value);
+      } else {
+        setSuggestion(null);
+      }
+    } catch {
+      // Network failure — silently skip
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const addTag = (val: string) => {
     const v = val.trim();
     if (v && !tags.includes(v)) onAdd(v);
     setInput(""); setSuggestion(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInput(val);
-    setSuggestion(val.trim().length >= 4 ? getSpellSuggestion(val.trim()) : null);
+    setSuggestion(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (val.trim().length >= 4) {
+      debounceRef.current = setTimeout(() => checkSpelling(val.trim()), 600);
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -415,17 +455,26 @@ const JobTitleInput = ({ tags, onAdd, onRemove }: {
           className="mf-bare flex-1 min-w-[120px] bg-transparent text-[13px] text-white outline-none py-0.5"
         />
       </TagBox>
-      {suggestion && (
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <span className="text-[10.5px] text-[#5e9898]">Did you mean</span>
-          <button
-            type="button"
-            onClick={() => addTag(suggestion)}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#009da5]/12 text-[#58dddd] border border-[#009da5]/30 hover:bg-[#009da5]/20 transition-colors duration-150 cursor-pointer"
-          >
-            {suggestion} <Check className="h-2.5 w-2.5" />
-          </button>
-          <span className="text-[10px] text-[#3d6060]">?</span>
+      {(suggestion || checking) && (
+        <div className="flex items-center gap-1.5 mt-1.5 min-h-[20px]">
+          {checking && !suggestion && (
+            <span className="text-[10.5px] text-[#3d6464] flex items-center gap-1">
+              <Loader2 className="h-2.5 w-2.5 animate-spin" /> checking…
+            </span>
+          )}
+          {suggestion && (
+            <>
+              <span className="text-[10.5px] text-[#5e9898]">Did you mean</span>
+              <button
+                type="button"
+                onClick={() => addTag(suggestion)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#009da5]/12 text-[#58dddd] border border-[#009da5]/30 hover:bg-[#009da5]/20 transition-colors duration-150 cursor-pointer"
+              >
+                {suggestion} <Check className="h-2.5 w-2.5" />
+              </button>
+              <span className="text-[10px] text-[#3d6060]">?</span>
+            </>
+          )}
         </div>
       )}
     </div>
