@@ -730,7 +730,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 onRemove={v => setSelectedSeniority(p => p.filter(t => t !== v))}
                 placeholder="Search or pick a seniority level…"
                 suggestions={SENIORITY_LEVELS}
-                keepSelectedInList={false}
+                keepSelectedInList={true}
               />
               <HintLine>Pick from dropdown · <Kbd>⌫</Kbd> removes last</HintLine>
             </div>
