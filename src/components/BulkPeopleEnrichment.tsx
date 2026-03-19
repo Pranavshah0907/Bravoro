@@ -45,14 +45,14 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetch("/BulkSearch_Template_V2.xlsm");
+      const response = await fetch("/Bulk_PeopleEnrichment.xlsx");
       if (!response.ok) throw new Error('Download failed');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "BulkSearch_Template_V2.xlsm";
+      link.download = "Bulk_PeopleEnrichment.xlsx";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
