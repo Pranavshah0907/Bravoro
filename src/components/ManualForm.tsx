@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, X, ChevronDown, Check, Search, ArrowRight, Briefcase, Calendar } from "lucide-react";
+import { Loader2, X, ChevronDown, Check, Search, ArrowRight, Briefcase } from "lucide-react";
 import { ProcessingStatus } from "./ProcessingStatus";
 import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -871,9 +871,6 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                           {datePosted === "custom" && <div className="w-1.5 h-1.5 rounded-full bg-[#009da5]" />}
                         </div>
 
-                        {/* Calendar icon */}
-                        <Calendar className={`h-3.5 w-3.5 shrink-0 transition-colors duration-150 ${datePosted === "custom" ? "text-[#009da5]" : "text-[#3d6868]"}`} />
-
                         <span className="shrink-0">Custom: Past</span>
 
                         {/* Editable days input */}
@@ -886,7 +883,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                             value={customDays}
                             onChange={e => setCustomDays(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
                             onClick={e => e.stopPropagation()}
-                            className="w-12 mx-0.5 text-center bg-[#009da5]/18 border border-[#009da5]/50 rounded-md text-[13px] text-white font-bold outline-none focus:border-[#009da5] focus:bg-[#009da5]/25 px-1 py-0.5 transition-colors duration-150 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            className="w-12 mx-0.5 text-center border border-[#009da5]/50 rounded-md text-[13px] text-[#58dddd] font-bold outline-none focus:border-[#009da5] px-1 py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            style={{ background: "#0a1f1f" }}
                           />
                         ) : (
                           <span className="mx-1 opacity-40 font-normal text-[12px]">—</span>
