@@ -57,6 +57,47 @@ const DATE_POSTED_OPTIONS = [
 
 type DatePosted = "anytime" | "past_24h" | "past_week" | "past_month";
 
+// ── Spell-check helpers for Job Titles ─────────────────────────────────────────
+const COMMON_JOB_TITLE_WORDS = [
+  "Accountant","Administrator","Analyst","Architect","Assistant","Associate",
+  "Automation","Coordinator","Consultant","Designer","Developer","Director",
+  "Engineer","Engineering","Executive","Finance","Founder","Leadership",
+  "Manager","Marketing","Mechanic","Operations","Planner","Product",
+  "Project","Quality","Recruiter","Researcher","Robotics","Sales",
+  "Scientist","Security","Software","Specialist","Strategist","Support",
+  "Technician","Technology","Training","Vendor","Architect","Infrastructure",
+  "Manufacturing","Procurement","Logistics","Analytics","Intelligence",
+];
+
+function levenshtein(a: string, b: string): number {
+  if (Math.abs(a.length - b.length) > 3) return 99;
+  const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i];
+    for (let j = 1; j <= b.length; j++) {
+      curr[j] = a[i-1] === b[j-1]
+        ? prev[j-1]
+        : 1 + Math.min(prev[j], curr[j-1], prev[j-1]);
+    }
+    prev.splice(0, prev.length, ...curr);
+  }
+  return prev[b.length];
+}
+
+function getSpellSuggestion(input: string): string | null {
+  if (input.length < 4) return null;
+  const lower = input.toLowerCase();
+  let best: string | null = null;
+  let bestDist = 3; // suggest only if distance <= 2
+  for (const word of COMMON_JOB_TITLE_WORDS) {
+    const wl = word.toLowerCase();
+    if (wl === lower) return null; // exact match
+    const d = levenshtein(lower, wl);
+    if (d < bestDist) { bestDist = d; best = word; }
+  }
+  return best;
+}
+
 const formSchema = z.object({
   companyName: z.string().trim().min(1, "Company name is required"),
   domain: z.string().trim().min(1, "Domain name is required"),
@@ -324,6 +365,65 @@ const TagDropdownInput = ({
   );
 };
 
+// Free-text tag input with spell suggestion (used for Job Titles)
+const JobTitleInput = ({ tags, onAdd, onRemove }: {
+  tags: string[]; onAdd: (v: string) => void; onRemove: (v: string) => void;
+}) => {
+  const [input, setInput] = useState("");
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const addTag = (val: string) => {
+    const v = val.trim();
+    if (v && !tags.includes(v)) onAdd(v);
+    setInput(""); setSuggestion(null);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInput(val);
+    setSuggestion(val.trim().length >= 4 ? getSpellSuggestion(val.trim()) : null);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && input.trim()) {
+      e.preventDefault(); addTag(input);
+    } else if (e.key === "Backspace" && !input && tags.length > 0) {
+      onRemove(tags[tags.length - 1]);
+    }
+  };
+
+  return (
+    <div>
+      <TagBox onClick={() => inputRef.current?.focus()}>
+        {tags.map(tag => <Tag key={tag} label={tag} onRemove={() => onRemove(tag)} />)}
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder={tags.length === 0 ? "e.g. Sales, Marketing…" : "Add more…"}
+          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[13px] text-white outline-none py-0.5"
+        />
+      </TagBox>
+      {suggestion && (
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <span className="text-[10.5px] text-[#5e9898]">Did you mean</span>
+          <button
+            type="button"
+            onClick={() => addTag(suggestion)}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#009da5]/12 text-[#58dddd] border border-[#009da5]/30 hover:bg-[#009da5]/20 transition-colors duration-150 cursor-pointer"
+          >
+            {suggestion} <Check className="h-2.5 w-2.5" />
+          </button>
+          <span className="text-[10px] text-[#3d6060]">?</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Main component ─────────────────────────────────────────────────────────────
 export const ManualForm = ({ userId }: ManualFormProps) => {
   const { toast } = useToast();
@@ -345,17 +445,20 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
   // Job search state
   const [includeJobSearch, setIncludeJobSearch] = useState(false);
-  const [jobDepartments, setJobDepartments] = useState<string[]>([]);
+  const [jobTitles, setJobTitles] = useState<string[]>([]);
   const [jobSeniority, setJobSeniority] = useState<string[]>([]);
   const [jobSeniorityInput, setJobSeniorityInput] = useState("");
   const [datePosted, setDatePosted] = useState<DatePosted>("anytime");
   const jobSeniorityInputRef = useRef<HTMLInputElement>(null);
 
+  // Search summary (captured at submit time, passed to ProcessingStatus)
+  const [searchSummary, setSearchSummary] = useState<{
+    companyName: string; domain: string; functions: string[]; seniority: string[];
+    geography: string; resultsPerFunction: number; includeJobSearch: boolean;
+    jobTitles: string[]; jobSeniority: string[];
+  } | null>(null);
+
   // Seniority helpers
-  const removeSeniorityTag = (tag: string) => setSelectedSeniority(p => p.filter(t => t !== tag));
-  const handleSeniorityPresetClick = (level: string) => {
-    setSelectedSeniority(p => p.includes(level) ? p.filter(t => t !== level) : [...p, level]);
-  };
   const handleSelectAllSeniorities = () => {
     setSelectedSeniority(prev => prev.length === SENIORITY_LEVELS.length ? [] : [...SENIORITY_LEVELS]);
   };
@@ -369,7 +472,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   };
   const removeJobSeniorityTag = (tag: string) => setJobSeniority(p => p.filter(t => t !== tag));
   const handleJobSeniorityKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === "Enter" || e.key === ",") && jobSeniorityInput.trim()) {
+    if (e.key === "Enter" && jobSeniorityInput.trim()) {
       e.preventDefault(); addJobSeniorityTag(jobSeniorityInput);
     } else if (e.key === "Backspace" && !jobSeniorityInput && jobSeniority.length > 0) {
       setJobSeniority(p => p.slice(0, -1));
@@ -396,6 +499,13 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         .select().single();
 
       if (searchError) throw searchError;
+      setSearchSummary({
+        companyName: companyName.trim(), domain: domain.trim(),
+        functions: selectedFunctions, seniority: selectedSeniority,
+        geography, resultsPerFunction, includeJobSearch,
+        jobTitles: includeJobSearch ? jobTitles : [],
+        jobSeniority: includeJobSearch ? jobSeniority : [],
+      });
       setSearchId(search.id);
       setProcessingStatus("processing");
 
@@ -414,7 +524,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
       if (includeJobSearch) {
         searchData.job_search = {
-          departments: jobDepartments,
+          job_titles: jobTitles,
           seniority: jobSeniority,
           date_posted: datePosted,
         };
@@ -440,11 +550,12 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const handleReset = () => {
     setCompanyName(""); setDomain(""); setSelectedFunctions([]); setSelectedSeniority([]);
     setGeography(""); setResultsPerFunction(10); setSearchId(null); setProcessingStatus(null);
-    setIncludeJobSearch(false); setJobDepartments([]); setJobSeniority([]); setDatePosted("anytime");
+    setIncludeJobSearch(false); setJobTitles([]); setJobSeniority([]); setDatePosted("anytime");
+    setSearchSummary(null);
   };
 
   if (searchId && processingStatus) {
-    return <ProcessingStatus searchId={searchId} onReset={handleReset} />;
+    return <ProcessingStatus searchId={searchId} onReset={handleReset} searchSummary={searchSummary ?? undefined} />;
   }
 
   const valid = isFormValid();
@@ -554,7 +665,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 suggestions={SENIORITY_LEVELS}
                 keepSelectedInList={false}
               />
-              <HintLine>Pick from dropdown · Selected levels vanish from list · <Kbd>⌫</Kbd> removes last</HintLine>
+              <HintLine>Pick from dropdown · <Kbd>⌫</Kbd> removes last</HintLine>
             </div>
 
             <PaneDivider />
@@ -604,18 +715,15 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                  {/* 1 — Departments */}
+                  {/* 1 — Job Titles */}
                   <div>
-                    <FieldLabel hint="optional">Departments</FieldLabel>
-                    <TagDropdownInput
-                      selected={jobDepartments}
-                      onAdd={v => { if (!jobDepartments.includes(v)) setJobDepartments(p => [...p, v]); }}
-                      onRemove={v => setJobDepartments(p => p.filter(t => t !== v))}
-                      placeholder="e.g. Sales, Marketing…"
-                      suggestions={JOB_DEPARTMENTS}
-                      tagVariant="teal"
+                    <FieldLabel hint="optional">Job Titles</FieldLabel>
+                    <JobTitleInput
+                      tags={jobTitles}
+                      onAdd={v => { if (!jobTitles.includes(v)) setJobTitles(p => [...p, v]); }}
+                      onRemove={v => setJobTitles(p => p.filter(t => t !== v))}
                     />
-                    <HintLine>Suggestions from dropdown · Press <Kbd>Enter</Kbd> or <Kbd>,</Kbd> to add</HintLine>
+                    <HintLine>Type a job title & press <Kbd>Enter</Kbd> · <Kbd>⌫</Kbd> removes last</HintLine>
                   </div>
 
                   {/* 2 — Job Seniority */}

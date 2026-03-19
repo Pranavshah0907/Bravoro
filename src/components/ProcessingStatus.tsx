@@ -7,9 +7,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Download, RefreshCw, CheckCircle2, XCircle, Clock } from "lucide-react";
 import * as XLSX from "xlsx";
 
+interface SearchSummary {
+  companyName: string;
+  domain: string;
+  functions: string[];
+  seniority: string[];
+  geography: string;
+  resultsPerFunction: number;
+  includeJobSearch: boolean;
+  jobTitles: string[];
+  jobSeniority: string[];
+}
+
 interface ProcessingStatusProps {
   searchId: string;
   onReset: () => void;
+  searchSummary?: SearchSummary;
 }
 
 interface Contact {
@@ -33,7 +46,7 @@ interface SearchResult {
   result_type?: string;
 }
 
-export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) => {
+export const ProcessingStatus = ({ searchId, onReset, searchSummary }: ProcessingStatusProps) => {
   const { toast } = useToast();
   const [status, setStatus] = useState<"processing" | "completed" | "error" | "queued">("processing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -242,6 +255,49 @@ export const ProcessingStatus = ({ searchId, onReset }: ProcessingStatusProps) =
         <CardDescription>Track the progress of your lead enrichment request</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* ── Search Summary ── */}
+        {searchSummary && (
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-4">
+            <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-muted-foreground mb-3">Search Summary</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-sm">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Company</p>
+                <p className="font-semibold text-foreground">{searchSummary.companyName}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Domain</p>
+                <p className="font-semibold text-foreground">{searchSummary.domain}</p>
+              </div>
+              {searchSummary.geography && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Geography</p>
+                  <p className="font-semibold text-foreground">{searchSummary.geography}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Results / Function</p>
+                <p className="font-semibold text-foreground">{searchSummary.resultsPerFunction}</p>
+              </div>
+              {searchSummary.functions.length > 0 && (
+                <div className="col-span-2">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Functions</p>
+                  <p className="font-medium text-foreground">{searchSummary.functions.join(" · ")}</p>
+                </div>
+              )}
+              <div className="col-span-2">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Seniority</p>
+                <p className="font-medium text-foreground">{searchSummary.seniority.join(" · ")}</p>
+              </div>
+              {searchSummary.includeJobSearch && searchSummary.jobTitles.length > 0 && (
+                <div className="col-span-2">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Job Titles</p>
+                  <p className="font-medium text-foreground">{searchSummary.jobTitles.join(" · ")}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {status === "queued" && (
           <div className="flex flex-col items-center justify-center py-12">
             <Clock className="h-16 w-16 text-amber-500 mb-4" />
