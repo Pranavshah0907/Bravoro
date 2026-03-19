@@ -37,14 +37,14 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetch("/Final_template.xlsm");
+      const response = await fetch("/BulkSearch_Template_V2.xlsm");
       if (!response.ok) throw new Error('Download failed');
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "BulkSearch_Template.xlsm";
+      link.download = "BulkSearch_Template_V2.xlsm";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
