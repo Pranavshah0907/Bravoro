@@ -257,6 +257,7 @@
 
   .glass-effect {
     background: hsl(var(--card) / 0.8);
+    -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     border: 1px solid hsl(var(--border) / 0.5);
   }

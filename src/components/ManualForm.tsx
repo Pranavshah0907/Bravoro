@@ -287,8 +287,12 @@ const TagDropdownInput = ({
           onKeyDown={handleKeyDown}
           onFocus={() => setOpen(true)}
           onBlur={e => {
-            // Auto-commit pending text only if focus is leaving the whole dropdown component
-            if (dropdownRef.current && !dropdownRef.current.contains(e.relatedTarget as Node)) {
+            // Auto-commit pending text only if focus is leaving the whole dropdown component.
+            // Note: relatedTarget is null in Safari when clicking non-focusable elements,
+            // but onMouseDown preventDefault on all dropdown buttons prevents this blur from
+            // firing at all in that case. This branch only runs on true focus-away events.
+            const relatedTarget = e.relatedTarget as Node | null;
+            if (!relatedTarget || (dropdownRef.current && !dropdownRef.current.contains(relatedTarget))) {
               if (input.trim()) addTag(input);
               setOpen(false);
             }
@@ -300,6 +304,7 @@ const TagDropdownInput = ({
 
       <button
         type="button"
+        onMouseDown={e => e.preventDefault()}
         onClick={() => { setOpen(v => !v); inputRef.current?.focus(); }}
         className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 focus-visible:outline-none ${open ? "text-[#58dddd] bg-[#009da5]/10" : "text-[#5a9898] hover:text-[#58dddd] hover:bg-[#009da5]/10"}`}
       >
@@ -335,6 +340,7 @@ const TagDropdownInput = ({
                   <button
                     key={item}
                     type="button"
+                    onMouseDown={e => e.preventDefault()}
                     onClick={() => {
                       if (isChecked) {
                         onRemove(item);
@@ -363,7 +369,7 @@ const TagDropdownInput = ({
           {selected.length > 0 && (
             <div className="border-t border-[#1a3535]/60 px-3.5 py-2 flex items-center justify-between bg-[#091616]">
               <span className="text-[11px] text-[#6aacac] font-medium">{selected.length} selected</span>
-              <button type="button" onClick={() => selected.forEach(s => onRemove(s))} className="text-[11px] text-[#4d8080] hover:text-red-400 transition-colors font-medium">Clear all</button>
+              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => selected.forEach(s => onRemove(s))} className="text-[11px] text-[#4d8080] hover:text-red-400 transition-colors font-medium">Clear all</button>
             </div>
           )}
         </div>
@@ -467,6 +473,7 @@ const JobTitleInput = ({ tags, onAdd, onRemove }: {
               <span className="text-[10.5px] text-[#5e9898]">Did you mean</span>
               <button
                 type="button"
+                onMouseDown={e => e.preventDefault()}
                 onClick={() => addTag(suggestion)}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#009da5]/12 text-[#58dddd] border border-[#009da5]/30 hover:bg-[#009da5]/20 transition-colors duration-150 cursor-pointer"
               >
