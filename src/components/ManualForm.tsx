@@ -72,8 +72,8 @@ interface ManualFormProps { userId: string; }
 
 const SectionHeading = ({ num, children, right }: { num: string; children: React.ReactNode; right?: React.ReactNode }) => (
   <div className="flex items-center gap-3 mb-6">
-    <span className="text-[10px] font-black tracking-[0.3em] text-[#009da5]/70 shrink-0 tabular-nums">{num}</span>
-    <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#58dddd] shrink-0">{children}</span>
+    <span className="text-[11px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">{num}</span>
+    <span className="text-[14px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">{children}</span>
     <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
     {right && <div className="shrink-0 ml-2">{right}</div>}
   </div>
@@ -86,11 +86,11 @@ const FieldLabel = ({
 }) => (
   <div className="flex items-center justify-between mb-2.5">
     <div className="flex items-baseline gap-1.5">
-      <span className="text-[11px] font-bold text-[#9dd4d4] tracking-[0.08em] uppercase">
+      <span className="text-[11px] font-bold text-[#c4e8e8] tracking-[0.08em] uppercase">
         {children}
         {required && <span className="text-[#00c8d2] ml-0.5">*</span>}
       </span>
-      {hint && <span className="text-[11px] text-[#4a7878] normal-case tracking-normal font-normal">{hint}</span>}
+      {hint && <span className="text-[11px] text-[#5e9898] normal-case tracking-normal font-normal">{hint}</span>}
     </div>
     {action}
   </div>
@@ -159,7 +159,7 @@ const ToggleSwitch = ({ on, onToggle, label }: { on: boolean; onToggle: () => vo
     role="switch"
     aria-checked={on}
   >
-    <span className={`text-[11.5px] font-semibold tracking-wide transition-colors duration-200 ${on ? "text-[#58dddd]" : "text-[#6aacac] group-hover:text-[#88c4c4]"}`}>
+    <span className={`text-[11.5px] font-semibold tracking-wide transition-colors duration-200 ${on ? "text-[#58dddd]" : "text-[#8ac8c8] group-hover:text-[#a8e0e0]"}`}>
       {label}
     </span>
     <div className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ${on ? "bg-[#009da5]" : "bg-[#1e3d3d] group-hover:bg-[#254848]"}`}>
@@ -173,15 +173,16 @@ const Kbd = ({ children }: { children: React.ReactNode }) => (
 );
 
 const HintLine = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[10.5px] text-[#4d8080] mt-1.5 leading-relaxed">{children}</p>
+  <p className="text-[10.5px] text-[#5e9898] mt-1.5 leading-relaxed">{children}</p>
 );
 
 const PaneDivider = () => <div className="h-px bg-[#1a3535]" />;
 
-// Reusable searchable tag-dropdown input (used for Functions and Job Departments)
+// Reusable searchable tag-dropdown input (used for Functions, Seniority, and Job Departments)
 const TagDropdownInput = ({
   selected, onAdd, onRemove,
   placeholder, suggestions, tagVariant = "teal",
+  keepSelectedInList = false,
 }: {
   selected: string[];
   onAdd: (val: string) => void;
@@ -189,6 +190,8 @@ const TagDropdownInput = ({
   placeholder: string;
   suggestions: string[];
   tagVariant?: "teal" | "violet";
+  // true = items stay in list with checkmark (Functions); false = items vanish when selected (Seniority)
+  keepSelectedInList?: boolean;
 }) => {
   const [input, setInput] = useState("");
   const [open, setOpen] = useState(false);
@@ -209,7 +212,7 @@ const TagDropdownInput = ({
   const addTag = (val: string) => {
     const v = val.trim();
     if (v && !selected.includes(v)) onAdd(v);
-    setInput("");
+    setInput(""); setSearch("");
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -222,15 +225,14 @@ const TagDropdownInput = ({
     }
   };
 
+  // When keepSelectedInList=true, show all (with checkmarks); when false, hide selected items
   const filtered = suggestions.filter(s =>
-    s.toLowerCase().includes(search.toLowerCase()) && !selected.includes(s)
+    s.toLowerCase().includes(search.toLowerCase()) &&
+    (keepSelectedInList || !selected.includes(s))
   );
 
-  const accentClass = tagVariant === "violet"
-    ? "border-[#7c3aed]/30 bg-[#7c3aed]/08 text-[#a78bfa]"
-    : "border-[#009da5]/30 bg-[#009da5]/08 text-[#58dddd]";
   const checkBg = tagVariant === "violet" ? "bg-[#7c3aed] border-[#7c3aed]" : "bg-[#009da5] border-[#009da5]";
-  const checkBorder = tagVariant === "violet" ? "border-[#2a1a4a]" : "border-[#1a3838]";
+  const checkBorder = tagVariant === "violet" ? "border-[#2a1a4a]" : "border-[#254848]";
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -275,26 +277,44 @@ const TagDropdownInput = ({
           </div>
           <div className="max-h-44 overflow-y-auto py-1 px-1.5">
             {filtered.length === 0 ? (
-              <p className="px-3 py-4 text-xs text-center text-[#4d8080]">
+              <p className="px-3 py-4 text-xs text-center text-[#5a9090]">
                 {search ? `No match — press Enter to add "${search}"` : "All suggestions selected"}
               </p>
             ) : (
-              filtered.map(item => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => { onAdd(item); setOpen(true); inputRef.current?.focus(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-[13px] rounded-lg text-left text-[#88c4c4] hover:bg-white/[0.05] hover:text-white transition-colors duration-150"
-                >
-                  <div className={`w-[15px] h-[15px] rounded-[4px] border flex items-center justify-center shrink-0 ${checkBorder}`} />
-                  {item}
-                </button>
-              ))
+              filtered.map(item => {
+                const isChecked = keepSelectedInList && selected.includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => {
+                      if (isChecked) {
+                        onRemove(item);
+                      } else {
+                        onAdd(item);
+                        setInput(""); setSearch("");
+                      }
+                      setOpen(true);
+                      inputRef.current?.focus();
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-[13px] rounded-lg text-left transition-colors duration-150 ${
+                      isChecked
+                        ? "text-[#58dddd] hover:bg-white/[0.04]"
+                        : "text-[#b0d8d8] hover:bg-white/[0.05] hover:text-white"
+                    }`}
+                  >
+                    <div className={`w-[15px] h-[15px] rounded-[3px] border flex items-center justify-center shrink-0 transition-all duration-150 ${isChecked ? checkBg : checkBorder}`}>
+                      {isChecked && <Check className="h-2.5 w-2.5 text-white" />}
+                    </div>
+                    {item}
+                  </button>
+                );
+              })
             )}
           </div>
           {selected.length > 0 && (
             <div className="border-t border-[#1a3535]/60 px-3.5 py-2 flex items-center justify-between bg-[#091616]">
-              <span className="text-[11px] text-[#5a9898] font-medium">{selected.length} selected</span>
+              <span className="text-[11px] text-[#6aacac] font-medium">{selected.length} selected</span>
               <button type="button" onClick={() => selected.forEach(s => onRemove(s))} className="text-[11px] text-[#4d8080] hover:text-red-400 transition-colors font-medium">Clear all</button>
             </div>
           )}
@@ -499,6 +519,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 onRemove={v => setSelectedFunctions(p => p.filter(t => t !== v))}
                 placeholder="Search or type a function…"
                 suggestions={LINKEDIN_FUNCTIONS}
+                keepSelectedInList={true}
               />
               <HintLine>Pick from dropdown · Type custom & press <Kbd>Enter</Kbd> · <Kbd>⌫</Kbd> removes last</HintLine>
             </div>
@@ -516,7 +537,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                     className={`text-[11px] px-2.5 py-1 rounded-md font-semibold border transition-colors duration-200 cursor-pointer ${
                       allSenioritiesSelected
                         ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/40"
-                        : "bg-transparent text-[#6aacac] border-[#254848] hover:border-[#009da5]/40 hover:text-[#58dddd]"
+                        : "bg-transparent text-[#7ababa] border-[#254848] hover:border-[#009da5]/40 hover:text-[#58dddd]"
                     }`}
                   >
                     {allSenioritiesSelected ? "✓ All selected" : "Select all"}
@@ -525,33 +546,15 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               >
                 Seniority Level
               </FieldLabel>
-
-              {selectedSeniority.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {selectedSeniority.map(tag => <Tag key={tag} label={tag} onRemove={() => removeSeniorityTag(tag)} />)}
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-1.5">
-                {SENIORITY_LEVELS.map(level => {
-                  const active = selectedSeniority.includes(level);
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      onClick={() => handleSeniorityPresetClick(level)}
-                      className={`px-2.5 py-1 rounded-md text-[12px] font-medium border transition-all duration-150 cursor-pointer active:scale-[0.97] focus-visible:outline-none ${
-                        active
-                          ? "bg-[#009da5]/18 text-[#58dddd] border-[#009da5]/45"
-                          : "bg-transparent text-[#6aacac] border-[#254848] hover:border-[#009da5]/35 hover:text-[#88c4c4]"
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  );
-                })}
-              </div>
-              <HintLine>Click to toggle · Selected levels appear as tags above</HintLine>
+              <TagDropdownInput
+                selected={selectedSeniority}
+                onAdd={v => { if (!selectedSeniority.includes(v)) setSelectedSeniority(p => [...p, v]); }}
+                onRemove={v => setSelectedSeniority(p => p.filter(t => t !== v))}
+                placeholder="Search or pick a seniority level…"
+                suggestions={SENIORITY_LEVELS}
+                keepSelectedInList={false}
+              />
+              <HintLine>Pick from dropdown · Selected levels vanish from list · <Kbd>⌫</Kbd> removes last</HintLine>
             </div>
 
             <PaneDivider />
@@ -573,10 +576,10 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
           {/* Toggle header row */}
           <div className="px-7 py-4 flex items-center gap-3">
-            <span className="text-[10px] font-black tracking-[0.3em] text-[#009da5]/70 tabular-nums">03</span>
+            <span className="text-[11px] font-black tracking-[0.3em] text-[#009da5]/80 tabular-nums">03</span>
             <div className="flex items-center gap-2">
-              <Briefcase className="h-3.5 w-3.5 text-[#009da5]/70" />
-              <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#58dddd]">Job Search</span>
+              <Briefcase className="h-3.5 w-3.5 text-[#009da5]/80" />
+              <span className="text-[14px] font-bold tracking-[0.16em] uppercase text-[#70e8e8]">Job Search</span>
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/20 to-transparent" />
             <ToggleSwitch
