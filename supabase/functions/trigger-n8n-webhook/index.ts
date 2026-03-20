@@ -23,8 +23,8 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -32,19 +32,19 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Verify token by calling Supabase auth — accepts both anon key and user JWTs
+    // Manually verify the JWT via Supabase auth (handles ES256 tokens the platform rejects)
+    // Valid user session → 200, anon key → 400 "missing sub claim", invalid → 401
     const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
         'Authorization': `Bearer ${callerToken}`,
         'apikey': supabaseAnonKey,
       },
     });
-    // Allow anon key (returns 400 "missing sub claim") or valid user session (200)
     if (authCheck.status !== 200 && authCheck.status !== 400) {
-      console.error(`Auth check failed with status: ${authCheck.status}`);
+      console.error(`Auth rejected — status: ${authCheck.status}`);
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -53,8 +53,8 @@ serve(async (req) => {
 
     if (!searchId || !searchData) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Missing searchId or searchData' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Missing searchId or searchData' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
