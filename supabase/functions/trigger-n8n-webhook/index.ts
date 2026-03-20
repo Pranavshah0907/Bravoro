@@ -151,9 +151,10 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       }).eq('id', searchId);
 
+      // Return 200 so client doesn't show a hard error — DB status reflects the failure
       return new Response(
-        JSON.stringify({ error: `n8n webhook failed: ${response.status}` }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: `n8n webhook failed: ${response.status}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -165,8 +166,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('trigger-n8n-webhook error:', error);
     return new Response(
-      JSON.stringify({ error: String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, error: String(error) }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

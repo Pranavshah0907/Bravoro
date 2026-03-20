@@ -241,7 +241,15 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       );
 
       if (webhookError) {
-        throw new Error(`N8N webhook trigger failed: ${webhookError.message}`);
+        console.error('Webhook invoke error:', webhookError.message);
+        toast({
+          title: "Processing Failed",
+          description: "We couldn't reach the processing server. Please try again shortly.",
+          variant: "destructive",
+        });
+        setCurrentStep('idle');
+        setLoading(false);
+        return;
       }
 
       console.log('Webhook triggered successfully');
