@@ -15,6 +15,9 @@ import {
   Copy,
   Phone,
   MoreHorizontal,
+  Briefcase,
+  MapPin,
+  ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -95,6 +98,28 @@ interface Search {
   domain: string | null;
 }
 
+interface JobResult {
+  job_title: string;
+  job_link: string;
+  linkedin_job_link?: string;
+  last_posted_date: string;
+  company: string;
+  company_domain?: string;
+  location: string;
+  seniority?: string;
+  hiring_team_name?: string | null;
+  hiring_team_role?: string | null;
+  hiring_team_linkedin?: string | null;
+  hiring_team_image?: string | null;
+  recruiter_phone_number?: string | null;
+  credits_used?: number;
+}
+
+interface JobSearchResultData {
+  job_search_status: string;
+  results: JobResult[];
+}
+
 interface Contact {
   Record_ID?: string;       // User-provided record ID for people enrichment
   First_Name: string;
@@ -106,6 +131,10 @@ interface Contact {
   LinkedIn: string;
   Phone_Number_1: string;
   Phone_Number_2: string;
+  job_search_result?: JobSearchResultData;
+  Provider?: string;
+  People_Search_By?: string;
+  Credits_Used?: number;
 }
 
 interface SearchResult {
@@ -127,6 +156,127 @@ const getPhoneNumbers = (contact: Partial<Contact>): string[] => {
 };
 
 const CONTACTS_PER_PAGE = 10;
+
+// Collapsible panel showing deduped job listings for a company.
+// Returns null when no job_search_result data exists on any contact.
+const CompanyJobsPanel = ({ contacts }: { contacts: Contact[] }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const uniqueJobs = useMemo<JobResult[]>(() => {
+    const seen = new Set<string>();
+    const jobs: JobResult[] = [];
+    for (const c of contacts) {
+      if (
+        c.job_search_result?.job_search_status === "jobs_found" &&
+        Array.isArray(c.job_search_result.results)
+      ) {
+        for (const job of c.job_search_result.results) {
+          const key = job.job_link || job.job_title;
+          if (!seen.has(key)) {
+            seen.add(key);
+            jobs.push(job);
+          }
+        }
+      }
+    }
+    return jobs;
+  }, [contacts]);
+
+  if (uniqueJobs.length === 0) return null;
+
+  return (
+    <div className="mb-3 rounded-lg border border-[#173030] bg-[#06191a] overflow-hidden">
+      {/* Header */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-white/[0.03] transition-colors group"
+      >
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-3.5 w-3.5 text-emerald-400/70" />
+          <span className="text-[11px] font-semibold tracking-widest uppercase text-emerald-300/80">
+            Active Job Openings
+          </span>
+          <span className="text-[10px] font-semibold bg-emerald-400/12 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-400/20">
+            {uniqueJobs.length}
+          </span>
+        </div>
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-200 ${
+            expanded ? "" : "-rotate-90"
+          }`}
+        />
+      </button>
+
+      {/* Job cards grid */}
+      {expanded && (
+        <div className="px-3 pb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {uniqueJobs.map((job, idx) => (
+            <div
+              key={idx}
+              className="rounded-md border border-[#173030] bg-[#081f1f] p-3 hover:border-emerald-900/50 transition-colors"
+            >
+              {/* Title + open link */}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <p className="text-xs font-semibold text-[#d0f5ee] leading-snug line-clamp-2 flex-1">
+                  {job.job_title}
+                </p>
+                <a
+                  href={job.job_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-emerald-500/50 hover:text-emerald-300 transition-colors mt-0.5"
+                  title="View job posting"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+
+              {/* Location + date */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/60">
+                {job.location && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-2.5 w-2.5 text-muted-foreground/40" />
+                    {job.location}
+                  </span>
+                )}
+                {job.last_posted_date && (
+                  <span className="flex items-center gap-1">
+                    <CalendarIcon className="h-2.5 w-2.5 text-muted-foreground/40" />
+                    {job.last_posted_date}
+                  </span>
+                )}
+              </div>
+
+              {/* Hiring manager — only if present */}
+              {job.hiring_team_name && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                  <span className="text-emerald-400/40">Hiring:</span>
+                  {job.hiring_team_linkedin ? (
+                    <a
+                      href={job.hiring_team_linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400/80 hover:text-emerald-300 transition-colors underline underline-offset-2 decoration-emerald-400/30"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {job.hiring_team_name}
+                    </a>
+                  ) : (
+                    <span className="text-emerald-400/80">{job.hiring_team_name}</span>
+                  )}
+                  {job.hiring_team_role && (
+                    <span className="text-muted-foreground/40">· {job.hiring_team_role}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Results = () => {
   const navigate = useNavigate();
@@ -1128,6 +1278,8 @@ const Results = () => {
     }
 
     return (
+      <div>
+        <CompanyJobsPanel contacts={contacts} />
       <div className="overflow-x-auto rounded-lg border border-border/40 bg-card/80">
         <Table>
           <TableHeader>
@@ -1167,6 +1319,7 @@ const Results = () => {
             ))}
           </TableBody>
         </Table>
+      </div>
       </div>
     );
   };
