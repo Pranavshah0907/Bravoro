@@ -915,54 +915,69 @@ const Results = () => {
       (doc.internal as any).out(parts.join(" "));
     };
 
-    // Draw a thin white gap between slices by drawing slightly less than the full angle
-    const cx = ML + 30;         // pie centre x
-    const cy = cursorY + 28;    // pie centre y
-    const r  = 25;              // radius mm
+    // Pie layout constants — smaller chart, legend beside it
+    const r   = 16;              // radius mm (compact)
+    const cx  = ML + r + 4;     // centre x — snug to left margin
+    const chartTopY = cursorY;
+    const cy  = chartTopY + r;  // centre y
 
-    let angle = -Math.PI / 2;  // start from top
+    // Draw slices
+    let angle = -Math.PI / 2;   // start from 12-o'clock
     providerEntries.forEach(([, count], i) => {
       const sweep = (count / total) * 2 * Math.PI;
       const color = pieColors[i % pieColors.length];
-      drawPieSlice(cx, cy, r, angle, angle + sweep - 0.04, color);
+      drawPieSlice(cx, cy, r, angle, angle + sweep - 0.03, color);
       angle += sweep;
     });
 
-    // Thin white border circle over the slices for clean edges
+    // Outer white ring for clean slice edges
     doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.6);
     doc.circle(cx, cy, r, "S");
 
-    // Centre hole (donut effect)
+    // Donut hole
     doc.setFillColor(...C.white);
-    doc.circle(cx, cy, r * 0.42, "F");
+    doc.circle(cx, cy, r * 0.44, "F");
     doc.setDrawColor(...C.border);
-    doc.setLineWidth(0.2);
-    doc.circle(cx, cy, r * 0.42, "S");
+    doc.setLineWidth(0.15);
+    doc.circle(cx, cy, r * 0.44, "S");
 
-    // ── Legend ────────────────────────────────────────────────────────────────
-    const legendX = cx + r + 12;
-    const legendStartY = cy - (providerEntries.length * 8) / 2 + 3;
+    // ── Legend — vertically centred beside the chart ──────────────────────────
+    const legendX      = cx + r + 10;         // starts just right of the pie
+    const rowH         = 7;                    // mm per legend row
+    const legendH      = providerEntries.length * rowH;
+    const legendStartY = cy - legendH / 2 + rowH * 0.5; // vertically centred
+
+    // Right-aligned % column: fixed from legendX
+    const pctX = ML + TW;                     // flush to right margin
 
     providerEntries.forEach(([prov, count], i) => {
-      const pct = ((count / total) * 100).toFixed(1);
-      const ly = legendStartY + i * 8;
+      const pct   = ((count / total) * 100).toFixed(1);
+      const ly    = legendStartY + i * rowH;
       const color = pieColors[i % pieColors.length];
 
-      // Colour swatch
+      // Colour swatch — circle dot style
       doc.setFillColor(...color);
-      doc.roundedRect(legendX, ly - 3, 4, 4, 0.8, 0.8, "F");
+      doc.circle(legendX + 1.8, ly - 1.5, 2.2, "F");
 
       // Provider name
       doc.setTextColor(...C.text);
-      doc.setFontSize(8);
+      doc.setFontSize(8.5);
       doc.setFont("helvetica", "normal");
-      doc.text(prov, legendX + 6, ly);
+      doc.text(prov, legendX + 7, ly);
 
-      // Percentage (right-aligned to fixed column)
+      // Percentage right-aligned
       doc.setTextColor(...C.textMid);
       doc.setFont("helvetica", "bold");
-      doc.text(`${pct}%`, legendX + 80, ly, { align: "right" });
+      doc.text(`${pct}%`, pctX, ly, { align: "right" });
+
+      // Thin dotted leader line between name and %
+      doc.setDrawColor(...C.border);
+      doc.setLineWidth(0.15);
+      const nameEndX = legendX + 7 + doc.getStringUnitWidth(prov) * 8.5 / doc.internal.scaleFactor / (72 / 25.4) + 2;
+      doc.setLineDashPattern([0.8, 1.2], 0);
+      doc.line(nameEndX, ly - 1, pctX - doc.getStringUnitWidth(`${pct}%`) * 8.5 / doc.internal.scaleFactor / (72 / 25.4) - 3, ly - 1);
+      doc.setLineDashPattern([], 0);
     });
 
     // ── Footer ────────────────────────────────────────────────────────────────
