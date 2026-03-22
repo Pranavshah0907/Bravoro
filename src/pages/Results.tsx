@@ -155,6 +155,40 @@ const getPhoneNumbers = (contact: Partial<Contact>): string[] => {
   return Array.from(new Set(raw));
 };
 
+// Builds the open_job_positions cell value for a company's contacts.
+// Deduplicates jobs (n8n repeats the same job list on every contact).
+// Format per job: Title \n URL \n Location \n Date \n Hiring Person (if any)
+// Jobs separated by a blank line.
+const buildJobsCell = (contacts: Contact[]): string => {
+  const seen = new Set<string>();
+  const jobBlocks: string[] = [];
+
+  for (const c of contacts) {
+    if (
+      c.job_search_result?.job_search_status === "jobs_found" &&
+      Array.isArray(c.job_search_result.results)
+    ) {
+      for (const job of c.job_search_result.results) {
+        const key = job.job_link || job.job_title;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const lines = [
+          job.job_title || "",
+          job.job_link || "",
+          job.location || "",
+          job.last_posted_date || "",
+        ];
+        if (job.hiring_team_name) lines.push(job.hiring_team_name);
+
+        jobBlocks.push(lines.filter(Boolean).join("\n"));
+      }
+    }
+  }
+
+  return jobBlocks.join("\n\n");
+};
+
 const CONTACTS_PER_PAGE = 10;
 
 // Collapsible panel showing deduped job listings for a company.
@@ -460,6 +494,7 @@ const Results = () => {
 
     const allContacts: any[] = [];
     companyResults.forEach(result => {
+      const jobsCell = buildJobsCell(result.contact_data);
       result.contact_data.forEach(contact => {
         allContacts.push({
           Company: result.company_name,
@@ -471,6 +506,7 @@ const Results = () => {
           LinkedIn: contact.LinkedIn,
           Phone_1: contact.Phone_Number_1,
           Phone_2: contact.Phone_Number_2,
+          open_job_positions: jobsCell,
         });
       });
     });
@@ -512,6 +548,7 @@ const Results = () => {
 
     companyResults.forEach(result => {
       // Create sheet data for this company
+      const jobsCell = buildJobsCell(result.contact_data);
       const sheetData = result.contact_data.map(contact => ({
         First_Name: contact.First_Name,
         Last_Name: contact.Last_Name,
@@ -522,6 +559,7 @@ const Results = () => {
         LinkedIn: contact.LinkedIn,
         Phone_Number_1: contact.Phone_Number_1,
         Phone_Number_2: contact.Phone_Number_2,
+        open_job_positions: jobsCell,
       }));
 
       if (sheetData.length === 0) return;
