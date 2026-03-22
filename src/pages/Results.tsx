@@ -695,124 +695,120 @@ const Results = () => {
     const allContacts = companyResults.flatMap(r => r.contact_data);
     if (allContacts.length === 0) return;
 
-    // ── Colour palette ──────────────────────────────────────────────────────
+    // ── Colour palette — light/white theme ──────────────────────────────────
     const C = {
-      bg:        [6,  20,  20]  as [number,number,number],  // near-black bg
-      header:    [8,  40,  40]  as [number,number,number],  // dark teal header
-      accent:    [0, 179, 140]  as [number,number,number],  // brand teal
-      accentDim: [0, 110,  90]  as [number,number,number],
-      white:     [255,255,255]  as [number,number,number],
-      offWhite:  [220,245,240]  as [number,number,number],
-      gray:      [140,160,158]  as [number,number,number],
-      rowAlt:    [10,  30,  30] as [number,number,number],
-      rowBase:   [8,  22,  22]  as [number,number,number],
-      border:    [30,  70,  65] as [number,number,number],
+      white:      [255, 255, 255] as [number,number,number],
+      pageBg:     [250, 251, 251] as [number,number,number],
+      accent:     [0,  160, 125]  as [number,number,number],  // brand teal
+      accentDark: [0,  110,  88]  as [number,number,number],
+      accentPale: [220, 245, 240] as [number,number,number],
+      headerBg:   [15,  60,  55]  as [number,number,number],  // deep teal header
+      text:       [30,  40,  38]  as [number,number,number],  // near-black text
+      textMid:    [80,  95,  92]  as [number,number,number],  // secondary text
+      textLight:  [140,155,152]   as [number,number,number],  // muted text
+      rowAlt:     [244,250,248]   as [number,number,number],  // very light teal tint
+      border:     [210,230,226]   as [number,number,number],
+      totalRow:   [230, 245, 240] as [number,number,number],
     };
 
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const PW = doc.internal.pageSize.getWidth();   // 297
-    const PH = doc.internal.pageSize.getHeight();  // 210
+    // Portrait A4
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const PW = doc.internal.pageSize.getWidth();   // 210
+    const PH = doc.internal.pageSize.getHeight();  // 297
+    const ML = 15; // margin left
+    const MR = 15; // margin right
+    const TW = PW - ML - MR; // table width = 180
 
-    // ── Page background ──────────────────────────────────────────────────────
-    const paintBg = () => {
-      doc.setFillColor(...C.bg);
-      doc.rect(0, 0, PW, PH, "F");
-    };
-    paintBg();
-
-    // ── Header band ──────────────────────────────────────────────────────────
-    doc.setFillColor(...C.header);
-    doc.rect(0, 0, PW, 22, "F");
+    // ── Header band ─────────────────────────────────────────────────────────
+    doc.setFillColor(...C.headerBg);
+    doc.rect(0, 0, PW, 28, "F");
     // Accent left stripe
     doc.setFillColor(...C.accent);
-    doc.rect(0, 0, 4, 22, "F");
+    doc.rect(0, 0, 5, 28, "F");
 
+    // "BRAVORO" brand
     doc.setTextColor(...C.accent);
-    doc.setFontSize(15);
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("BRAVORO", 10, 14);
+    doc.text("BRAVORO", ML + 4, 13);
 
-    doc.setTextColor(...C.offWhite);
-    doc.setFontSize(10);
+    // Report subtitle
+    doc.setTextColor(200, 230, 226);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text("Enrichment Report", 50, 14);
+    doc.text("Enrichment Report", ML + 4, 21);
 
-    // Company / search label
+    // Company / search label (right-aligned)
     const label = search?.company_name
-      ? `Company: ${search.company_name}`
+      ? search.company_name
       : search?.excel_file_name
-        ? `File: ${search.excel_file_name}`
-        : `Search ID: ${searchId.slice(0, 8)}`;
-    doc.setTextColor(...C.gray);
+        ? search.excel_file_name
+        : `ID: ${searchId.slice(0, 8)}`;
+    doc.setTextColor(160, 200, 195);
     doc.setFontSize(8);
-    doc.text(label, PW - 10, 10, { align: "right" });
-    doc.text(`Generated: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`, PW - 10, 16, { align: "right" });
+    doc.text(label, PW - MR, 13, { align: "right" });
+    doc.text(
+      new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      PW - MR, 21, { align: "right" }
+    );
 
-    let cursorY = 30;
+    let cursorY = 36;
 
-    // ── Section label helper ─────────────────────────────────────────────────
-    const sectionLabel = (title: string, y: number) => {
-      doc.setTextColor(...C.accent);
-      doc.setFontSize(7.5);
+    // ── Section heading helper ────────────────────────────────────────────────
+    const sectionHeading = (title: string, y: number) => {
+      doc.setFillColor(...C.accentPale);
+      doc.rect(ML, y - 4, TW, 7, "F");
+      doc.setFillColor(...C.accent);
+      doc.rect(ML, y - 4, 3, 7, "F");
+      doc.setTextColor(...C.accentDark);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text(title.toUpperCase(), 10, y);
-      doc.setDrawColor(...C.accentDim);
-      doc.setLineWidth(0.3);
-      doc.line(10, y + 1, PW - 10, y + 1);
+      doc.text(title.toUpperCase(), ML + 6, y + 0.5);
     };
 
     // ── TABLE 1: Contacts ────────────────────────────────────────────────────
-    sectionLabel("Contact Details", cursorY);
+    sectionHeading("Contact Details", cursorY);
     cursorY += 5;
 
     const contactRows = allContacts.map(c => {
       const name = [c.First_Name, c.Last_Name].filter(Boolean).join(" ") || "—";
-      const phones = [c.Phone_Number_1, c.Phone_Number_2].filter(p => p && p.toString().trim());
+      const phones = [c.Phone_Number_1, c.Phone_Number_2].filter(p => p && String(p).trim());
       const provider = (c.Provider || "").trim();
       const phoneStr = phones.length
         ? (provider ? `[${provider}]  ${phones.join("  ·  ")}` : phones.join("  ·  "))
         : "—";
-      return [
-        name,
-        c.Organization || "—",
-        c.Title || "—",
-        phoneStr,
-      ];
+      return [name, c.Organization || "—", c.Title || "—", phoneStr];
     });
 
     autoTable(doc, {
       startY: cursorY,
       head: [["Name", "Organisation", "Title", "Phone (Provider)"]],
       body: contactRows,
-      margin: { left: 10, right: 10 },
+      margin: { left: ML, right: MR },
       styles: {
-        fontSize: 7.5,
-        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
-        textColor: C.offWhite,
+        fontSize: 8,
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+        textColor: C.text,
         lineColor: C.border,
-        lineWidth: 0.2,
-        fillColor: C.rowBase,
+        lineWidth: 0.15,
+        fillColor: C.white,
         font: "helvetica",
         overflow: "linebreak",
       },
       headStyles: {
-        fillColor: C.header,
-        textColor: C.accent,
+        fillColor: C.headerBg,
+        textColor: [200, 230, 226] as [number,number,number],
         fontStyle: "bold",
-        fontSize: 7.5,
-        lineColor: C.accentDim,
-        lineWidth: 0.3,
+        fontSize: 8,
+        lineWidth: 0,
       },
-      alternateRowStyles: {
-        fillColor: C.rowAlt,
-      },
+      alternateRowStyles: { fillColor: C.rowAlt },
       columnStyles: {
-        0: { cellWidth: 42 },
-        1: { cellWidth: 48 },
-        2: { cellWidth: 80 },
+        0: { cellWidth: 38 },
+        1: { cellWidth: 42 },
+        2: { cellWidth: 52 },
         3: { cellWidth: "auto" },
       },
-      didDrawPage: () => { paintBg(); },
     });
 
     // ── Provider statistics ───────────────────────────────────────────────────
@@ -824,19 +820,17 @@ const Results = () => {
     const total = allContacts.length;
     const providerEntries = Object.entries(providerMap).sort((a, b) => b[1] - a[1]);
 
-    // Check if we need a new page for the stats section
     const tableEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
-    const statsHeight = 12 + providerEntries.length * 6 + 28; // label + table rows + chart
-    if (tableEndY + statsHeight + 10 > PH - 10) {
+    const statsBlockH = 10 + (providerEntries.length + 1) * 8 + 14 + providerEntries.length * 9 + 10;
+    if (tableEndY + statsBlockH + 10 > PH - 14) {
       doc.addPage();
-      paintBg();
-      cursorY = 15;
+      cursorY = 20;
     } else {
       cursorY = tableEndY + 10;
     }
 
-    // ── TABLE 2: Provider Stats ───────────────────────────────────────────────
-    sectionLabel("Provider Summary", cursorY);
+    // ── TABLE 2: Provider Summary ─────────────────────────────────────────────
+    sectionHeading("Provider Summary", cursorY);
     cursorY += 5;
 
     const statsRows = providerEntries.map(([prov, count]) => [
@@ -850,105 +844,102 @@ const Results = () => {
       startY: cursorY,
       head: [["Provider", "Contacts Found", "Share"]],
       body: statsRows,
-      margin: { left: 10, right: 10 },
-      tableWidth: 90,
+      margin: { left: ML, right: MR },
+      tableWidth: TW,
       styles: {
-        fontSize: 7.5,
-        cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 },
-        textColor: C.offWhite,
+        fontSize: 8,
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+        textColor: C.text,
         lineColor: C.border,
-        lineWidth: 0.2,
-        fillColor: C.rowBase,
+        lineWidth: 0.15,
+        fillColor: C.white,
       },
       headStyles: {
-        fillColor: C.header,
-        textColor: C.accent,
+        fillColor: C.headerBg,
+        textColor: [200, 230, 226] as [number,number,number],
         fontStyle: "bold",
-        fontSize: 7.5,
-        lineColor: C.accentDim,
-        lineWidth: 0.3,
+        fontSize: 8,
+        lineWidth: 0,
       },
       alternateRowStyles: { fillColor: C.rowAlt },
-      // Bold the total row
       didParseCell: (data) => {
         if (data.row.index === statsRows.length - 1 && data.section === "body") {
           data.cell.styles.fontStyle = "bold";
-          data.cell.styles.textColor = C.accent;
-          data.cell.styles.fillColor = C.header;
+          data.cell.styles.textColor = C.accentDark;
+          data.cell.styles.fillColor = C.totalRow;
         }
       },
       columnStyles: {
-        0: { cellWidth: 36 },
-        1: { cellWidth: 30, halign: "center" },
-        2: { cellWidth: 24, halign: "center" },
+        0: { cellWidth: "auto" },
+        1: { cellWidth: 50, halign: "center" },
+        2: { cellWidth: 36, halign: "center" },
       },
-      didDrawPage: () => { paintBg(); },
     });
 
-    // ── Bar chart ─────────────────────────────────────────────────────────────
+    // ── Bar chart: "Provider Breakdown" ──────────────────────────────────────
     const statsEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
-    const chartX = 110;
-    const chartY = (doc as any).lastAutoTable?.startY ?? cursorY;  // align top with table
-    const chartW = PW - chartX - 10;                               // fills remaining width
-    const barMaxW = chartW - 50;                                   // max bar length
-    const rowH = 7;
-    const barH = 3.5;
+    cursorY = statsEndY + 8;
 
-    // Chart title
-    doc.setTextColor(...C.accent);
+    // Section mini-label
+    doc.setTextColor(...C.accentDark);
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
-    doc.text("PROVIDER BREAKDOWN", chartX, chartY - 2);
+    doc.text("PROVIDER BREAKDOWN", ML, cursorY);
+    cursorY += 4;
 
-    // Draw bars (skip the "Total" row)
-    const chartProviders = providerEntries; // already sorted desc
+    const labelW = 45;        // provider name column width
+    const barMaxW = TW - labelW - 22; // max bar length (leaving room for % label)
+    const barH = 5;
+    const rowGap = 9;
+
     const barColors: [number,number,number][] = [
-      [0, 179, 140],
-      [0, 140, 110],
-      [0, 105,  82],
+      [0, 160, 125],
+      [0, 130, 100],
+      [0, 100,  78],
       [0,  75,  60],
-      [50,200,170],
+      [40, 190, 155],
     ];
 
-    chartProviders.forEach(([prov, count], i) => {
-      const y = chartY + i * rowH;
+    providerEntries.forEach(([prov, count], i) => {
+      const y = cursorY + i * rowGap;
       const pct = count / total;
-      const barW = Math.max(1, pct * barMaxW);
+      const barW = Math.max(1.5, pct * barMaxW);
       const color = barColors[i % barColors.length];
 
       // Background track
       doc.setFillColor(...C.rowAlt);
-      doc.roundedRect(chartX + 32, y - 0.5, barMaxW, barH, 1, 1, "F");
+      doc.roundedRect(ML + labelW, y, barMaxW, barH, 1.2, 1.2, "F");
 
       // Filled bar
       doc.setFillColor(...color);
-      doc.roundedRect(chartX + 32, y - 0.5, barW, barH, 1, 1, "F");
+      doc.roundedRect(ML + labelW, y, barW, barH, 1.2, 1.2, "F");
 
       // Provider label
-      doc.setTextColor(...C.offWhite);
-      doc.setFontSize(7);
+      doc.setTextColor(...C.text);
+      doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
-      doc.text(prov, chartX, y + barH - 1.2);
+      doc.text(prov, ML, y + barH - 0.8);
 
-      // Percentage label at bar end
-      doc.setTextColor(...color);
-      doc.setFontSize(6.5);
-      doc.text(`${(pct * 100).toFixed(1)}%`, chartX + 32 + barW + 2, y + barH - 1.2);
+      // Percentage label
+      doc.setTextColor(...C.accentDark);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${(pct * 100).toFixed(1)}%`, ML + labelW + barW + 3, y + barH - 0.8);
     });
 
     // ── Footer ────────────────────────────────────────────────────────────────
     const totalPages = (doc.internal as any).getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.setFillColor(...C.header);
-      doc.rect(0, PH - 8, PW, 8, "F");
-      doc.setFillColor(...C.accent);
-      doc.rect(0, PH - 8, 4, 8, "F");
-      doc.setTextColor(...C.gray);
+      // Thin teal rule above footer
+      doc.setDrawColor(...C.accent);
+      doc.setLineWidth(0.4);
+      doc.line(ML, PH - 10, PW - MR, PH - 10);
+      doc.setTextColor(...C.textLight);
       doc.setFontSize(6.5);
       doc.setFont("helvetica", "normal");
-      doc.text("Bravoro · Confidential", 10, PH - 3);
-      doc.text(`Page ${i} of ${totalPages}`, PW - 10, PH - 3, { align: "right" });
+      doc.text("Bravoro · Confidential", ML, PH - 5);
+      doc.text(`Page ${i} of ${totalPages}`, PW - MR, PH - 5, { align: "right" });
     }
 
     const filename = search?.company_name
