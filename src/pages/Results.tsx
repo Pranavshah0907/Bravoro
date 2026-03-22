@@ -18,6 +18,7 @@ import {
   Briefcase,
   MapPin,
   ExternalLink,
+  FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -82,6 +83,8 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import { CompanyBrowserDialog } from "@/components/CompanyBrowserDialog";
 
@@ -683,6 +686,279 @@ const Results = () => {
     });
   };
 
+  const handleExportAdminPDF = (searchId: string) => {
+    const results = searchResults[searchId];
+    if (!results || results.length === 0) return;
+
+    const search = searches.find(s => s.id === searchId);
+    const companyResults = results.filter(r => r.result_type !== 'missing_company');
+    const allContacts = companyResults.flatMap(r => r.contact_data);
+    if (allContacts.length === 0) return;
+
+    // ── Colour palette ──────────────────────────────────────────────────────
+    const C = {
+      bg:        [6,  20,  20]  as [number,number,number],  // near-black bg
+      header:    [8,  40,  40]  as [number,number,number],  // dark teal header
+      accent:    [0, 179, 140]  as [number,number,number],  // brand teal
+      accentDim: [0, 110,  90]  as [number,number,number],
+      white:     [255,255,255]  as [number,number,number],
+      offWhite:  [220,245,240]  as [number,number,number],
+      gray:      [140,160,158]  as [number,number,number],
+      rowAlt:    [10,  30,  30] as [number,number,number],
+      rowBase:   [8,  22,  22]  as [number,number,number],
+      border:    [30,  70,  65] as [number,number,number],
+    };
+
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const PW = doc.internal.pageSize.getWidth();   // 297
+    const PH = doc.internal.pageSize.getHeight();  // 210
+
+    // ── Page background ──────────────────────────────────────────────────────
+    const paintBg = () => {
+      doc.setFillColor(...C.bg);
+      doc.rect(0, 0, PW, PH, "F");
+    };
+    paintBg();
+
+    // ── Header band ──────────────────────────────────────────────────────────
+    doc.setFillColor(...C.header);
+    doc.rect(0, 0, PW, 22, "F");
+    // Accent left stripe
+    doc.setFillColor(...C.accent);
+    doc.rect(0, 0, 4, 22, "F");
+
+    doc.setTextColor(...C.accent);
+    doc.setFontSize(15);
+    doc.setFont("helvetica", "bold");
+    doc.text("BRAVORO", 10, 14);
+
+    doc.setTextColor(...C.offWhite);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Enrichment Report", 50, 14);
+
+    // Company / search label
+    const label = search?.company_name
+      ? `Company: ${search.company_name}`
+      : search?.excel_file_name
+        ? `File: ${search.excel_file_name}`
+        : `Search ID: ${searchId.slice(0, 8)}`;
+    doc.setTextColor(...C.gray);
+    doc.setFontSize(8);
+    doc.text(label, PW - 10, 10, { align: "right" });
+    doc.text(`Generated: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`, PW - 10, 16, { align: "right" });
+
+    let cursorY = 30;
+
+    // ── Section label helper ─────────────────────────────────────────────────
+    const sectionLabel = (title: string, y: number) => {
+      doc.setTextColor(...C.accent);
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "bold");
+      doc.text(title.toUpperCase(), 10, y);
+      doc.setDrawColor(...C.accentDim);
+      doc.setLineWidth(0.3);
+      doc.line(10, y + 1, PW - 10, y + 1);
+    };
+
+    // ── TABLE 1: Contacts ────────────────────────────────────────────────────
+    sectionLabel("Contact Details", cursorY);
+    cursorY += 5;
+
+    const contactRows = allContacts.map(c => {
+      const name = [c.First_Name, c.Last_Name].filter(Boolean).join(" ") || "—";
+      const phones = [c.Phone_Number_1, c.Phone_Number_2].filter(p => p && p.toString().trim());
+      const provider = (c.Provider || "").trim();
+      const phoneStr = phones.length
+        ? (provider ? `[${provider}]  ${phones.join("  ·  ")}` : phones.join("  ·  "))
+        : "—";
+      return [
+        name,
+        c.Organization || "—",
+        c.Title || "—",
+        phoneStr,
+      ];
+    });
+
+    autoTable(doc, {
+      startY: cursorY,
+      head: [["Name", "Organisation", "Title", "Phone (Provider)"]],
+      body: contactRows,
+      margin: { left: 10, right: 10 },
+      styles: {
+        fontSize: 7.5,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+        textColor: C.offWhite,
+        lineColor: C.border,
+        lineWidth: 0.2,
+        fillColor: C.rowBase,
+        font: "helvetica",
+        overflow: "linebreak",
+      },
+      headStyles: {
+        fillColor: C.header,
+        textColor: C.accent,
+        fontStyle: "bold",
+        fontSize: 7.5,
+        lineColor: C.accentDim,
+        lineWidth: 0.3,
+      },
+      alternateRowStyles: {
+        fillColor: C.rowAlt,
+      },
+      columnStyles: {
+        0: { cellWidth: 42 },
+        1: { cellWidth: 48 },
+        2: { cellWidth: 80 },
+        3: { cellWidth: "auto" },
+      },
+      didDrawPage: () => { paintBg(); },
+    });
+
+    // ── Provider statistics ───────────────────────────────────────────────────
+    const providerMap: Record<string, number> = {};
+    allContacts.forEach(c => {
+      const p = (c.Provider || "Unknown").trim();
+      providerMap[p] = (providerMap[p] || 0) + 1;
+    });
+    const total = allContacts.length;
+    const providerEntries = Object.entries(providerMap).sort((a, b) => b[1] - a[1]);
+
+    // Check if we need a new page for the stats section
+    const tableEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
+    const statsHeight = 12 + providerEntries.length * 6 + 28; // label + table rows + chart
+    if (tableEndY + statsHeight + 10 > PH - 10) {
+      doc.addPage();
+      paintBg();
+      cursorY = 15;
+    } else {
+      cursorY = tableEndY + 10;
+    }
+
+    // ── TABLE 2: Provider Stats ───────────────────────────────────────────────
+    sectionLabel("Provider Summary", cursorY);
+    cursorY += 5;
+
+    const statsRows = providerEntries.map(([prov, count]) => [
+      prov,
+      String(count),
+      `${((count / total) * 100).toFixed(1)}%`,
+    ]);
+    statsRows.push(["Total", String(total), "100%"]);
+
+    autoTable(doc, {
+      startY: cursorY,
+      head: [["Provider", "Contacts Found", "Share"]],
+      body: statsRows,
+      margin: { left: 10, right: 10 },
+      tableWidth: 90,
+      styles: {
+        fontSize: 7.5,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 },
+        textColor: C.offWhite,
+        lineColor: C.border,
+        lineWidth: 0.2,
+        fillColor: C.rowBase,
+      },
+      headStyles: {
+        fillColor: C.header,
+        textColor: C.accent,
+        fontStyle: "bold",
+        fontSize: 7.5,
+        lineColor: C.accentDim,
+        lineWidth: 0.3,
+      },
+      alternateRowStyles: { fillColor: C.rowAlt },
+      // Bold the total row
+      didParseCell: (data) => {
+        if (data.row.index === statsRows.length - 1 && data.section === "body") {
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.textColor = C.accent;
+          data.cell.styles.fillColor = C.header;
+        }
+      },
+      columnStyles: {
+        0: { cellWidth: 36 },
+        1: { cellWidth: 30, halign: "center" },
+        2: { cellWidth: 24, halign: "center" },
+      },
+      didDrawPage: () => { paintBg(); },
+    });
+
+    // ── Bar chart ─────────────────────────────────────────────────────────────
+    const statsEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
+    const chartX = 110;
+    const chartY = (doc as any).lastAutoTable?.startY ?? cursorY;  // align top with table
+    const chartW = PW - chartX - 10;                               // fills remaining width
+    const barMaxW = chartW - 50;                                   // max bar length
+    const rowH = 7;
+    const barH = 3.5;
+
+    // Chart title
+    doc.setTextColor(...C.accent);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROVIDER BREAKDOWN", chartX, chartY - 2);
+
+    // Draw bars (skip the "Total" row)
+    const chartProviders = providerEntries; // already sorted desc
+    const barColors: [number,number,number][] = [
+      [0, 179, 140],
+      [0, 140, 110],
+      [0, 105,  82],
+      [0,  75,  60],
+      [50,200,170],
+    ];
+
+    chartProviders.forEach(([prov, count], i) => {
+      const y = chartY + i * rowH;
+      const pct = count / total;
+      const barW = Math.max(1, pct * barMaxW);
+      const color = barColors[i % barColors.length];
+
+      // Background track
+      doc.setFillColor(...C.rowAlt);
+      doc.roundedRect(chartX + 32, y - 0.5, barMaxW, barH, 1, 1, "F");
+
+      // Filled bar
+      doc.setFillColor(...color);
+      doc.roundedRect(chartX + 32, y - 0.5, barW, barH, 1, 1, "F");
+
+      // Provider label
+      doc.setTextColor(...C.offWhite);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.text(prov, chartX, y + barH - 1.2);
+
+      // Percentage label at bar end
+      doc.setTextColor(...color);
+      doc.setFontSize(6.5);
+      doc.text(`${(pct * 100).toFixed(1)}%`, chartX + 32 + barW + 2, y + barH - 1.2);
+    });
+
+    // ── Footer ────────────────────────────────────────────────────────────────
+    const totalPages = (doc.internal as any).getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFillColor(...C.header);
+      doc.rect(0, PH - 8, PW, 8, "F");
+      doc.setFillColor(...C.accent);
+      doc.rect(0, PH - 8, 4, 8, "F");
+      doc.setTextColor(...C.gray);
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "normal");
+      doc.text("Bravoro · Confidential", 10, PH - 3);
+      doc.text(`Page ${i} of ${totalPages}`, PW - 10, PH - 3, { align: "right" });
+    }
+
+    const filename = search?.company_name
+      ? `bravoro_report_${search.company_name.replace(/\s+/g, "_").toLowerCase()}.pdf`
+      : `bravoro_report_${searchId.slice(0, 8)}.pdf`;
+    doc.save(filename);
+
+    toast({ title: "PDF Exported", description: "Admin report downloaded" });
+  };
+
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
 
@@ -1040,41 +1316,55 @@ const Results = () => {
       <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h4 className="text-sm font-semibold text-foreground">Contact Results</h4>
-          {search.search_type === "manual" ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleExportSegregatedExcel(search.id)}
-              className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Export
-                  <ChevronDown className="h-4 w-4 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
-                <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Combined Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Segregated Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <div className="flex items-center gap-2">
+            {search.search_type === "manual" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleExportSegregatedExcel(search.id)}
+                className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Excel
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Export
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
+                  <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Combined Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Segregated Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleExportAdminPDF(search.id)}
+                className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                title="Admin: Export PDF Report"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                PDF Report
+              </Button>
+            )}
+          </div>
         </div>
 
         {companyResults.length > 1 || missingCompanyResults.length > 0 ? (
