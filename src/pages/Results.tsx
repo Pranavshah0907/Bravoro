@@ -876,55 +876,93 @@ const Results = () => {
       },
     });
 
-    // ── Bar chart: "Provider Breakdown" ──────────────────────────────────────
+    // ── Pie chart: "Provider Breakdown" ──────────────────────────────────────
     const statsEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
-    cursorY = statsEndY + 8;
+    cursorY = statsEndY + 10;
 
     // Section mini-label
     doc.setTextColor(...C.accentDark);
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
     doc.text("PROVIDER BREAKDOWN", ML, cursorY);
-    cursorY += 4;
+    cursorY += 5;
 
-    const labelW = 45;        // provider name column width
-    const barMaxW = TW - labelW - 22; // max bar length (leaving room for % label)
-    const barH = 5;
-    const rowGap = 9;
-
-    const barColors: [number,number,number][] = [
-      [0, 160, 125],
-      [0, 130, 100],
-      [0, 100,  78],
-      [0,  75,  60],
+    const pieColors: [number,number,number][] = [
+      [0,  160, 125],
+      [230, 90,  60],
+      [60, 130, 200],
+      [200,160,  30],
+      [140, 80, 200],
       [40, 190, 155],
     ];
 
-    providerEntries.forEach(([prov, count], i) => {
-      const y = cursorY + i * rowGap;
-      const pct = count / total;
-      const barW = Math.max(1.5, pct * barMaxW);
-      const color = barColors[i % barColors.length];
-
-      // Background track
-      doc.setFillColor(...C.rowAlt);
-      doc.roundedRect(ML + labelW, y, barMaxW, barH, 1.2, 1.2, "F");
-
-      // Filled bar
+    // Helper: draw a filled pie slice using raw PDF path commands
+    const sf = doc.internal.scaleFactor;
+    const pageH = doc.internal.pageSize.getHeight();
+    const drawPieSlice = (cx: number, cy: number, r: number, startAng: number, endAng: number, color: [number,number,number]) => {
+      if (Math.abs(endAng - startAng) < 0.0001) return;
       doc.setFillColor(...color);
-      doc.roundedRect(ML + labelW, y, barW, barH, 1.2, 1.2, "F");
+      const steps = 48;
+      const toX = (x: number) => (x * sf).toFixed(3);
+      const toY = (y: number) => ((pageH - y) * sf).toFixed(3);
+      const parts: string[] = [];
+      parts.push(`${toX(cx)} ${toY(cy)} m`);
+      for (let s = 0; s <= steps; s++) {
+        const a = startAng + (endAng - startAng) * s / steps;
+        parts.push(`${toX(cx + r * Math.cos(a))} ${toY(cy + r * Math.sin(a))} l`);
+      }
+      parts.push(`${toX(cx)} ${toY(cy)} l f`);
+      (doc.internal as any).out(parts.join(" "));
+    };
 
-      // Provider label
+    // Draw a thin white gap between slices by drawing slightly less than the full angle
+    const cx = ML + 30;         // pie centre x
+    const cy = cursorY + 28;    // pie centre y
+    const r  = 25;              // radius mm
+
+    let angle = -Math.PI / 2;  // start from top
+    providerEntries.forEach(([, count], i) => {
+      const sweep = (count / total) * 2 * Math.PI;
+      const color = pieColors[i % pieColors.length];
+      drawPieSlice(cx, cy, r, angle, angle + sweep - 0.04, color);
+      angle += sweep;
+    });
+
+    // Thin white border circle over the slices for clean edges
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.5);
+    doc.circle(cx, cy, r, "S");
+
+    // Centre hole (donut effect)
+    doc.setFillColor(...C.white);
+    doc.circle(cx, cy, r * 0.42, "F");
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.2);
+    doc.circle(cx, cy, r * 0.42, "S");
+
+    // ── Legend ────────────────────────────────────────────────────────────────
+    const legendX = cx + r + 12;
+    const legendStartY = cy - (providerEntries.length * 8) / 2 + 3;
+
+    providerEntries.forEach(([prov, count], i) => {
+      const pct = ((count / total) * 100).toFixed(1);
+      const ly = legendStartY + i * 8;
+      const color = pieColors[i % pieColors.length];
+
+      // Colour swatch
+      doc.setFillColor(...color);
+      doc.roundedRect(legendX, ly - 3, 4, 4, 0.8, 0.8, "F");
+
+      // Provider name
       doc.setTextColor(...C.text);
-      doc.setFontSize(7.5);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text(prov, ML, y + barH - 0.8);
+      doc.text(prov, legendX + 6, ly);
 
-      // Percentage label
-      doc.setTextColor(...C.accentDark);
-      doc.setFontSize(7);
+      // Percentage (right-aligned to fixed column)
+      doc.setTextColor(...C.textMid);
       doc.setFont("helvetica", "bold");
-      doc.text(`${(pct * 100).toFixed(1)}%`, ML + labelW + barW + 3, y + barH - 0.8);
+      doc.text(`${pct}%`, legendX + 80, ly, { align: "right" });
     });
 
     // ── Footer ────────────────────────────────────────────────────────────────
