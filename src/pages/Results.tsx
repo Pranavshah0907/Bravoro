@@ -811,13 +811,15 @@ const Results = () => {
       },
     });
 
-    // ── Provider statistics ───────────────────────────────────────────────────
+    // ── Provider statistics — only count contacts where a phone was found ──────
     const providerMap: Record<string, number> = {};
     allContacts.forEach(c => {
-      const p = (c.Provider || "Unknown").trim();
-      providerMap[p] = (providerMap[p] || 0) + 1;
+      const hasPhone = [c.Phone_Number_1, c.Phone_Number_2].some(p => p && String(p).trim());
+      if (!hasPhone) return;
+      const provider = (c.Provider || "Unknown").trim();
+      providerMap[provider] = (providerMap[provider] || 0) + 1;
     });
-    const total = allContacts.length;
+    const total = Object.values(providerMap).reduce((a, b) => a + b, 0);
     const providerEntries = Object.entries(providerMap).sort((a, b) => b[1] - a[1]);
 
     const tableEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
