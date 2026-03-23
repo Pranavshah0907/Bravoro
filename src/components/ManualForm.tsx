@@ -498,6 +498,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const [domain, setDomain] = useState("");
   const [geography, setGeography] = useState("");
   const [resultsPerFunction, setResultsPerFunction] = useState<number>(10);
+  const [resultsPerFunctionRaw, setResultsPerFunctionRaw] = useState<string>("10");
   const [searchId, setSearchId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<"processing" | "completed" | "error" | "queued" | null>(null);
 
@@ -514,6 +515,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const [jobSeniorityInput, setJobSeniorityInput] = useState("");
   const [datePosted, setDatePosted] = useState<DatePosted>("anytime");
   const [customDays, setCustomDays] = useState<number>(7);
+  const [customDaysRaw, setCustomDaysRaw] = useState<string>("7");
   const customDaysInputRef = useRef<HTMLInputElement>(null);
   const jobSeniorityInputRef = useRef<HTMLInputElement>(null);
 
@@ -742,8 +744,18 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               <FieldLabel required hint="per function">Results</FieldLabel>
               <LineInput
                 type="number" min="1" placeholder="10"
-                value={resultsPerFunction}
-                onChange={e => setResultsPerFunction(parseInt(e.target.value) || 0)}
+                value={resultsPerFunctionRaw}
+                onChange={e => {
+                  setResultsPerFunctionRaw(e.target.value);
+                  const n = parseInt(e.target.value);
+                  if (!isNaN(n) && n >= 1) setResultsPerFunction(n);
+                }}
+                onBlur={() => {
+                  const n = parseInt(resultsPerFunctionRaw);
+                  const valid = !isNaN(n) && n >= 1 ? n : 1;
+                  setResultsPerFunction(valid);
+                  setResultsPerFunctionRaw(String(valid));
+                }}
               />
             </div>
           </div>
@@ -887,8 +899,18 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                             type="number"
                             min="1"
                             max="365"
-                            value={customDays}
-                            onChange={e => setCustomDays(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
+                            value={customDaysRaw}
+                            onChange={e => {
+                              setCustomDaysRaw(e.target.value);
+                              const n = parseInt(e.target.value);
+                              if (!isNaN(n) && n >= 1 && n <= 365) setCustomDays(n);
+                            }}
+                            onBlur={() => {
+                              const n = parseInt(customDaysRaw);
+                              const valid = !isNaN(n) && n >= 1 ? Math.min(365, n) : 1;
+                              setCustomDays(valid);
+                              setCustomDaysRaw(String(valid));
+                            }}
                             onClick={e => e.stopPropagation()}
                             className="w-12 mx-0.5 text-center border border-[#009da5]/50 rounded-md text-[13px] text-[#58dddd] font-bold outline-none focus:border-[#009da5] px-1 py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             style={{ background: "#0a1f1f" }}
