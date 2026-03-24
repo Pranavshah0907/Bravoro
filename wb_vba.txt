@@ -1,0 +1,11 @@
+Private Sub Workbook_Open()
+    Dim ws As Worksheet
+    For Each ws In Me.Worksheets
+        If ws.Name = "Main_Data" Then
+            On Error Resume Next
+            ws.Unprotect "@Gurudev108!!"
+            ws.Protect "@Gurudev108!!", UserInterfaceOnly:=True
+            On Error GoTo 0
+        End If
+    Next ws
+End Sub

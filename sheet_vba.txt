@@ -1,0 +1,76 @@
+Private prevVal As String
+
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+    If Target.Count > 1 Then Exit Sub
+    If Not Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then
+        PersonTitles.Show
+        Exit Sub
+    End If
+    If Not Intersect(Target, Me.Range("F2:F1000")) Is Nothing Then
+        PersonSeniorities.Show
+        Exit Sub
+    End If
+    If Not Intersect(Target, Me.Range("J2:J101")) Is Nothing Then
+        If Me.Cells(Target.Row, 8).Value = "Yes" Then
+            prevVal = Target.Value
+        End If
+    End If
+End Sub
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    ' --- H column: toggle lock/unlock on I J K ---
+    Dim hRng As Range
+    Set hRng = Intersect(Target, Me.Range("H2:H101"))
+    If Not hRng Is Nothing Then
+        Application.EnableEvents = False
+        Me.Unprotect "@Gurudev108!!"
+        Dim hCell As Range
+        For Each hCell In hRng
+            Dim r As Long: r = hCell.Row
+            If UCase(Trim(CStr(hCell.Value))) = "YES" Then
+                Me.Range("I" & r & ":K" & r).Locked = False
+            Else
+                Me.Range("I" & r).ClearContents
+                Me.Range("J" & r).ClearContents
+                Me.Range("K" & r).ClearContents
+                Me.Range("I" & r & ":K" & r).Locked = True
+            End If
+        Next hCell
+        Me.Protect "@Gurudev108!!", UserInterfaceOnly:=True
+        Application.EnableEvents = True
+        Exit Sub
+    End If
+
+    ' --- J column: multi-select toggle ---
+    Dim jRng As Range
+    Set jRng = Intersect(Target, Me.Range("J2:J101"))
+    If jRng Is Nothing Then Exit Sub
+    If Target.Cells.Count > 1 Then Exit Sub
+    Application.EnableEvents = False
+    Me.Unprotect "@Gurudev108!!"
+    If Me.Cells(Target.Row, 8).Value <> "Yes" Then
+        Target.ClearContents
+        Me.Protect "@Gurudev108!!", UserInterfaceOnly:=True
+        Application.EnableEvents = True
+        Exit Sub
+    End If
+    Dim picked As String: picked = Target.Value
+    Dim newVal As String
+    If prevVal = "" Then
+        newVal = picked
+    ElseIf InStr(1, ", " & prevVal & ",", ", " & Trim(picked) & ",") > 0 Then
+        Dim vals() As String: vals = Split(prevVal, ", ")
+        Dim i As Integer: newVal = ""
+        For i = 0 To UBound(vals)
+            If Trim(vals(i)) <> Trim(picked) Then
+                If newVal = "" Then newVal = Trim(vals(i)) Else newVal = newVal & ", " & Trim(vals(i))
+            End If
+        Next i
+    Else
+        If prevVal = "" Then newVal = picked Else newVal = prevVal & ", " & picked
+    End If
+    Target.Value = newVal
+    prevVal = newVal
+    Me.Protect "@Gurudev108!!", UserInterfaceOnly:=True
+    Application.EnableEvents = True
+End Sub

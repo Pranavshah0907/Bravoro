@@ -1,0 +1,225 @@
+Sub FixSheet()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Main_Data")
+    Dim pwd As String: pwd = "@Gurudev108!!"
+    ws.Unprotect pwd
+
+    ' H1 header
+    With ws.Cells(1, 8)
+        .Value = "Toggle job search"
+        .Font.Bold = True: .Font.Size = 14
+        .Font.Name = "Calibri": .Font.Color = 0
+        .Interior.Color = 11389944: .Locked = True
+    End With
+
+    ' H2:H101 Yes/No dropdown, always unlocked
+    Dim hRng As Range: Set hRng = ws.Range("H2:H101")
+    hRng.Interior.ColorIndex = xlNone
+    hRng.Locked = False
+    hRng.Validation.Delete
+    hRng.Validation.Add xlValidateList, xlValidAlertStop, xlBetween, "Yes,No"
+    hRng.Validation.ShowError = True
+    hRng.Validation.ErrorTitle = "Invalid Entry"
+    hRng.Validation.ErrorMessage = "Please select Yes or No."
+
+    ' I1 header
+    With ws.Cells(1, 9)
+        .Value = "Job Title"
+        .Font.Bold = True: .Font.Size = 14
+        .Font.Name = "Calibri": .Font.Color = 0
+        .Interior.Color = 11389944: .Locked = True
+    End With
+
+    ' I2:I101 locked initially, CF for gray when H is blank/No
+    Dim iRng As Range: Set iRng = ws.Range("I2:I101")
+    iRng.Interior.ColorIndex = xlNone
+    iRng.Locked = True
+    iRng.FormatConditions.Delete
+    iRng.FormatConditions.Add xlExpression, 1, "=OR(H2="""",H2=""No"")"
+    iRng.FormatConditions(1).Interior.Color = 15921906
+    ws.Columns("I").ColumnWidth = 26
+
+    ' J1 header
+    With ws.Cells(1, 10)
+        .Value = "Job seniority"
+        .Font.Bold = True: .Font.Size = 14
+        .Font.Name = "Calibri": .Font.Color = 0
+        .Interior.Color = 11389944: .Locked = True
+    End With
+
+    ' J2:J101 locked initially, seniority dropdown, CF for gray
+    Dim jRng As Range: Set jRng = ws.Range("J2:J101")
+    jRng.Interior.ColorIndex = xlNone
+    jRng.Locked = True
+    jRng.Validation.Delete
+    jRng.Validation.Add xlValidateList, xlValidAlertStop, xlBetween, "Internship,Entry level,Associate,Mid-Senior level,Director,Executive"
+    jRng.Validation.ShowError = True
+    jRng.Validation.ErrorTitle = "Invalid Entry"
+    jRng.Validation.ErrorMessage = "Please choose from the seniority list."
+    jRng.FormatConditions.Delete
+    jRng.FormatConditions.Add xlExpression, 1, "=OR(H2="""",H2=""No"")"
+    jRng.FormatConditions(1).Interior.Color = 15921906
+
+    ' K1 header
+    With ws.Cells(1, 11)
+        .Value = "Date Posted (days)"
+        .Font.Bold = True: .Font.Size = 14
+        .Font.Name = "Calibri": .Font.Color = 0
+        .Interior.Color = 11389944: .Locked = True
+    End With
+
+    ' K2:K101 locked initially, integer-only validation, CF for gray
+    Dim kRng As Range: Set kRng = ws.Range("K2:K101")
+    kRng.Interior.ColorIndex = xlNone
+    kRng.Locked = True
+    kRng.Validation.Delete
+    kRng.Validation.Add xlValidateWholeNumber, xlValidAlertStop, xlBetween, 1, 9999
+    kRng.Validation.ShowError = True
+    kRng.Validation.ErrorTitle = "Whole number required"
+    kRng.Validation.ErrorMessage = "Enter number of days back. 7 = last week, 30 = last month, 90 = last quarter."
+    kRng.FormatConditions.Delete
+    kRng.FormatConditions.Add xlExpression, 1, "=OR(H2="""",H2=""No"")"
+    kRng.FormatConditions(1).Interior.Color = 15921906
+
+    ' Borders for H1:K1
+    Dim c As Integer, s As Integer
+    For c = 8 To 11
+        For s = 7 To 10
+            With ws.Cells(1, c).Borders(s)
+                .LineStyle = xlContinuous
+                .Weight = xlThin
+                .Color = 0
+            End With
+        Next s
+    Next c
+    ws.Range("I1:I101").Borders(xlEdgeRight).LineStyle = xlNone
+    With ws.Range("K1:K101").Borders(xlEdgeRight)
+        .LineStyle = xlContinuous: .Weight = xlThin: .Color = 0
+    End With
+    ws.Columns("J").AutoFit
+    ws.Columns("K").AutoFit
+
+    ' Unlock rows where H is already "Yes" (preserve existing data)
+    Dim r As Long
+    For r = 2 To 101
+        If UCase(Trim(CStr(ws.Cells(r, 8).Value))) = "YES" Then
+            ws.Range("I" & r & ":K" & r).Locked = False
+        End If
+    Next r
+
+    ' ---- Inject sheet VBA ----
+    Dim v As String
+    v = "Private prevVal As String" & vbCrLf
+    v = v & "" & vbCrLf
+    v = v & "Private Sub Worksheet_SelectionChange(ByVal Target As Range)" & vbCrLf
+    v = v & "    If Target.Count > 1 Then Exit Sub" & vbCrLf
+    v = v & "    If Not Intersect(Target, Me.Range(""E2:E1000"")) Is Nothing Then" & vbCrLf
+    v = v & "        PersonTitles.Show" & vbCrLf
+    v = v & "        Exit Sub" & vbCrLf
+    v = v & "    End If" & vbCrLf
+    v = v & "    If Not Intersect(Target, Me.Range(""F2:F1000"")) Is Nothing Then" & vbCrLf
+    v = v & "        PersonSeniorities.Show" & vbCrLf
+    v = v & "        Exit Sub" & vbCrLf
+    v = v & "    End If" & vbCrLf
+    v = v & "    If Not Intersect(Target, Me.Range(""J2:J101"")) Is Nothing Then" & vbCrLf
+    v = v & "        If Me.Cells(Target.Row, 8).Value = ""Yes"" Then" & vbCrLf
+    v = v & "            prevVal = Target.Value" & vbCrLf
+    v = v & "        End If" & vbCrLf
+    v = v & "    End If" & vbCrLf
+    v = v & "End Sub" & vbCrLf
+    v = v & "" & vbCrLf
+    v = v & "Private Sub Worksheet_Change(ByVal Target As Range)" & vbCrLf
+    v = v & "    ' --- H column: toggle lock/unlock on I J K ---" & vbCrLf
+    v = v & "    Dim hRng As Range" & vbCrLf
+    v = v & "    Set hRng = Intersect(Target, Me.Range(""H2:H101""))" & vbCrLf
+    v = v & "    If Not hRng Is Nothing Then" & vbCrLf
+    v = v & "        Application.EnableEvents = False" & vbCrLf
+    v = v & "        Me.Unprotect ""@Gurudev108!!""" & vbCrLf
+    v = v & "        Dim hCell As Range" & vbCrLf
+    v = v & "        For Each hCell In hRng" & vbCrLf
+    v = v & "            Dim r As Long: r = hCell.Row" & vbCrLf
+    v = v & "            If UCase(Trim(CStr(hCell.Value))) = ""YES"" Then" & vbCrLf
+    v = v & "                Me.Range(""I"" & r & "":K"" & r).Locked = False" & vbCrLf
+    v = v & "            Else" & vbCrLf
+    v = v & "                Me.Range(""I"" & r).ClearContents" & vbCrLf
+    v = v & "                Me.Range(""J"" & r).ClearContents" & vbCrLf
+    v = v & "                Me.Range(""K"" & r).ClearContents" & vbCrLf
+    v = v & "                Me.Range(""I"" & r & "":K"" & r).Locked = True" & vbCrLf
+    v = v & "            End If" & vbCrLf
+    v = v & "        Next hCell" & vbCrLf
+    v = v & "        Me.Protect ""@Gurudev108!!"", UserInterfaceOnly:=True" & vbCrLf
+    v = v & "        Application.EnableEvents = True" & vbCrLf
+    v = v & "        Exit Sub" & vbCrLf
+    v = v & "    End If" & vbCrLf
+    v = v & "    ' --- J column: multi-select toggle ---" & vbCrLf
+    v = v & "    Dim jRng As Range" & vbCrLf
+    v = v & "    Set jRng = Intersect(Target, Me.Range(""J2:J101""))" & vbCrLf
+    v = v & "    If jRng Is Nothing Then Exit Sub" & vbCrLf
+    v = v & "    If Target.Cells.Count > 1 Then Exit Sub" & vbCrLf
+    v = v & "    Application.EnableEvents = False" & vbCrLf
+    v = v & "    Me.Unprotect ""@Gurudev108!!""" & vbCrLf
+    v = v & "    If Me.Cells(Target.Row, 8).Value <> ""Yes"" Then" & vbCrLf
+    v = v & "        Target.ClearContents" & vbCrLf
+    v = v & "        Me.Protect ""@Gurudev108!!"", UserInterfaceOnly:=True" & vbCrLf
+    v = v & "        Application.EnableEvents = True" & vbCrLf
+    v = v & "        Exit Sub" & vbCrLf
+    v = v & "    End If" & vbCrLf
+    v = v & "    Dim picked As String: picked = Target.Value" & vbCrLf
+    v = v & "    Dim newVal As String" & vbCrLf
+    v = v & "    If prevVal = """" Then" & vbCrLf
+    v = v & "        newVal = picked" & vbCrLf
+    v = v & "    ElseIf InStr(1, "", "" & prevVal & "","", "", "" & Trim(picked) & "","") > 0 Then" & vbCrLf
+    v = v & "        Dim vals() As String: vals = Split(prevVal, "", "")" & vbCrLf
+    v = v & "        Dim i As Integer: newVal = """"" & vbCrLf
+    v = v & "        For i = 0 To UBound(vals)" & vbCrLf
+    v = v & "            If Trim(vals(i)) <> Trim(picked) Then" & vbCrLf
+    v = v & "                If newVal = """" Then newVal = Trim(vals(i)) Else newVal = newVal & "", "" & Trim(vals(i))" & vbCrLf
+    v = v & "            End If" & vbCrLf
+    v = v & "        Next i" & vbCrLf
+    v = v & "    Else" & vbCrLf
+    v = v & "        If prevVal = """" Then newVal = picked Else newVal = prevVal & "", "" & picked" & vbCrLf
+    v = v & "    End If" & vbCrLf
+    v = v & "    Target.Value = newVal" & vbCrLf
+    v = v & "    prevVal = newVal" & vbCrLf
+    v = v & "    Me.Protect ""@Gurudev108!!"", UserInterfaceOnly:=True" & vbCrLf
+    v = v & "    Application.EnableEvents = True" & vbCrLf
+    v = v & "End Sub"
+
+    Dim shComp As Object
+    For Each shComp In ThisWorkbook.VBProject.VBComponents
+        If shComp.Name = ws.CodeName Then
+            Dim shCm As Object: Set shCm = shComp.CodeModule
+            If shCm.CountOfLines > 0 Then shCm.DeleteLines 1, shCm.CountOfLines
+            shCm.AddFromString v
+            Exit For
+        End If
+    Next shComp
+
+    ' ---- Inject Workbook_Open ----
+    Dim w As String
+    w = "Private Sub Workbook_Open()" & vbCrLf
+    w = w & "    Dim ws As Worksheet" & vbCrLf
+    w = w & "    For Each ws In Me.Worksheets" & vbCrLf
+    w = w & "        If ws.Name = ""Main_Data"" Then" & vbCrLf
+    w = w & "            On Error Resume Next" & vbCrLf
+    w = w & "            ws.Unprotect ""@Gurudev108!!""" & vbCrLf
+    w = w & "            ws.Protect ""@Gurudev108!!"", UserInterfaceOnly:=True" & vbCrLf
+    w = w & "            On Error GoTo 0" & vbCrLf
+    w = w & "        End If" & vbCrLf
+    w = w & "    Next ws" & vbCrLf
+    w = w & "End Sub"
+
+    Dim wbComp As Object
+    For Each wbComp In ThisWorkbook.VBProject.VBComponents
+        If wbComp.Type = 100 And wbComp.Name <> ws.CodeName Then
+            Dim wbCm As Object: Set wbCm = wbComp.CodeModule
+            If wbCm.CountOfLines > 0 Then wbCm.DeleteLines 1, wbCm.CountOfLines
+            wbCm.AddFromString w
+            Exit For
+        End If
+    Next wbComp
+
+    ' Protect (UserInterfaceOnly=True so VBA can still write) and save
+    ws.Protect pwd, False, True, False, True
+    ThisWorkbook.Save
+End Sub

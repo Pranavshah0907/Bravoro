@@ -113,8 +113,8 @@ interface ManualFormProps { userId: string; }
 
 const SectionHeading = ({ num, children, right }: { num: string; children: React.ReactNode; right?: React.ReactNode }) => (
   <div className="flex items-center gap-3 mb-6">
-    <span className="text-[11px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">{num}</span>
-    <span className="text-[14px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">{children}</span>
+    <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">{num}</span>
+    <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">{children}</span>
     <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
     {right && <div className="shrink-0 ml-2">{right}</div>}
   </div>
@@ -127,11 +127,11 @@ const FieldLabel = ({
 }) => (
   <div className="flex items-center justify-between mb-2.5">
     <div className="flex items-baseline gap-1.5">
-      <span className="text-[11px] font-bold text-[#c4e8e8] tracking-[0.08em] uppercase">
+      <span className="text-[13px] font-bold text-[#c4e8e8] tracking-[0.08em] uppercase">
         {children}
         {required && <span className="text-[#00c8d2] ml-0.5">*</span>}
       </span>
-      {hint && <span className="text-[11px] text-[#5e9898] normal-case tracking-normal font-normal">{hint}</span>}
+      {hint && <span className="text-[12px] text-[#5e9898] normal-case tracking-normal font-normal">{hint}</span>}
     </div>
     {action}
   </div>
@@ -143,7 +143,7 @@ const LineInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     className={`
       w-full py-2.5 px-0 bg-transparent
       border-0 border-b border-[#254848]
-      text-[15px] text-white
+      text-[16px] text-white
       outline-none transition-colors duration-200
       focus:border-[#009da5]
       placeholder:text-[#3a6060]
@@ -161,7 +161,7 @@ const Tag = ({ label, onRemove, variant = "teal" }: { label: string; onRemove: (
     ? "bg-[#7c3aed]/10 text-[#a78bfa] border-[#7c3aed]/25"
     : "bg-[#009da5]/10 text-[#58dddd] border-[#009da5]/25";
   return (
-    <span className={`tag-bubble inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium border select-none whitespace-nowrap ${colors}`}>
+    <span className={`tag-bubble inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[12px] font-medium border select-none whitespace-nowrap ${colors}`}>
       {label}
       <button
         type="button"
@@ -200,7 +200,7 @@ const ToggleSwitch = ({ on, onToggle, label }: { on: boolean; onToggle: () => vo
     role="switch"
     aria-checked={on}
   >
-    <span className={`text-[11.5px] font-semibold tracking-wide transition-colors duration-200 ${on ? "text-[#58dddd]" : "text-[#8ac8c8] group-hover:text-[#a8e0e0]"}`}>
+    <span className={`text-[13px] font-semibold tracking-wide transition-colors duration-200 ${on ? "text-[#58dddd]" : "text-[#8ac8c8] group-hover:text-[#a8e0e0]"}`}>
       {label}
     </span>
     <div className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ${on ? "bg-[#009da5]" : "bg-[#1e3d3d] group-hover:bg-[#254848]"}`}>
@@ -210,11 +210,11 @@ const ToggleSwitch = ({ on, onToggle, label }: { on: boolean; onToggle: () => vo
 );
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
-  <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-[#0d2020] border border-[#254848] font-mono text-[#5a9898] leading-none">{children}</kbd>
+  <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-[#0d2020] border border-[#254848] font-mono text-[#5a9898] leading-none">{children}</kbd>
 );
 
 const HintLine = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[10.5px] text-[#5e9898] mt-1.5 leading-relaxed">{children}</p>
+  <p className="text-[12px] text-[#5e9898] mt-1.5 leading-relaxed">{children}</p>
 );
 
 const PaneDivider = () => <div className="h-px bg-[#1a3535]" />;
@@ -298,7 +298,7 @@ const TagDropdownInput = ({
             }
           }}
           placeholder={selected.length === 0 ? placeholder : "Add more…"}
-          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[13px] text-white outline-none py-0.5"
+          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-white outline-none py-0.5"
         />
       </TagBox>
 
@@ -320,7 +320,7 @@ const TagDropdownInput = ({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search…"
-              className="mf-bare flex-1 bg-transparent text-[13px] text-white outline-none"
+              className="mf-bare flex-1 bg-transparent text-[14px] text-white outline-none"
             />
             {search && (
               <button type="button" onClick={() => setSearch("")} className="text-[#2e5c5c] hover:text-[#3d8080] transition-colors">
@@ -351,7 +351,7 @@ const TagDropdownInput = ({
                       setOpen(true);
                       inputRef.current?.focus();
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-[13px] rounded-lg text-left transition-colors duration-150 ${
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-[14px] rounded-lg text-left transition-colors duration-150 ${
                       isChecked
                         ? "text-[#58dddd] hover:bg-white/[0.04]"
                         : "text-[#b0d8d8] hover:bg-white/[0.05] hover:text-white"
@@ -368,8 +368,8 @@ const TagDropdownInput = ({
           </div>
           {selected.length > 0 && (
             <div className="border-t border-[#1a3535]/60 px-3.5 py-2 flex items-center justify-between bg-[#091616]">
-              <span className="text-[11px] text-[#6aacac] font-medium">{selected.length} selected</span>
-              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => selected.forEach(s => onRemove(s))} className="text-[11px] text-[#4d8080] hover:text-red-400 transition-colors font-medium">Clear all</button>
+              <span className="text-[12px] text-[#6aacac] font-medium">{selected.length} selected</span>
+              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => selected.forEach(s => onRemove(s))} className="text-[12px] text-[#4d8080] hover:text-red-400 transition-colors font-medium">Clear all</button>
             </div>
           )}
         </div>
@@ -458,28 +458,28 @@ const JobTitleInput = ({ tags, onAdd, onRemove }: {
           onKeyDown={handleKeyDown}
           onBlur={() => { if (input.trim()) addTag(input); }}
           placeholder={tags.length === 0 ? "e.g. Sales, Marketing…" : "Add more…"}
-          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[13px] text-white outline-none py-0.5"
+          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-white outline-none py-0.5"
         />
       </TagBox>
       {(suggestion || checking) && (
         <div className="flex items-center gap-1.5 mt-1.5 min-h-[20px]">
           {checking && !suggestion && (
-            <span className="text-[10.5px] text-[#3d6464] flex items-center gap-1">
+            <span className="text-[12px] text-[#3d6464] flex items-center gap-1">
               <Loader2 className="h-2.5 w-2.5 animate-spin" /> checking…
             </span>
           )}
           {suggestion && (
             <>
-              <span className="text-[10.5px] text-[#5e9898]">Did you mean</span>
+              <span className="text-[12px] text-[#5e9898]">Did you mean</span>
               <button
                 type="button"
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => addTag(suggestion)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#009da5]/12 text-[#58dddd] border border-[#009da5]/30 hover:bg-[#009da5]/20 transition-colors duration-150 cursor-pointer"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] font-semibold bg-[#009da5]/12 text-[#58dddd] border border-[#009da5]/30 hover:bg-[#009da5]/20 transition-colors duration-150 cursor-pointer"
               >
                 {suggestion} <Check className="h-2.5 w-2.5" />
               </button>
-              <span className="text-[10px] text-[#3d6060]">?</span>
+              <span className="text-[11px] text-[#3d6060]">?</span>
             </>
           )}
         </div>
@@ -667,12 +667,12 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             <div>
               <FieldLabel hint="optional">Geography</FieldLabel>
               <Select value={geography} onValueChange={setGeography}>
-                <SelectTrigger className="h-auto py-2.5 px-0 w-full bg-transparent border-0 border-b border-[#254848] text-[15px] text-white rounded-none shadow-none outline-none ring-0 ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:border-[#009da5] data-[placeholder]:text-[#3a6060] [&>svg]:text-[#5a9898] [&>svg]:opacity-80 transition-colors duration-200">
+                <SelectTrigger className="h-auto py-2.5 px-0 w-full bg-transparent border-0 border-b border-[#254848] text-[16px] text-white rounded-none shadow-none outline-none ring-0 ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:border-[#009da5] data-[placeholder]:text-[#3a6060] [&>svg]:text-[#5a9898] [&>svg]:opacity-80 transition-colors duration-200">
                   <SelectValue placeholder="Select a country" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0c1d1d] border border-[#1a3535] rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.75)] max-h-64">
                   {COUNTRIES.map(country => (
-                    <SelectItem key={country} value={country} className="text-[13px] text-[#88c0c0] rounded-lg focus:bg-[#009da5]/15 focus:text-[#58dddd] cursor-pointer">
+                    <SelectItem key={country} value={country} className="text-[14px] text-[#88c0c0] rounded-lg focus:bg-[#009da5]/15 focus:text-[#58dddd] cursor-pointer">
                       {country}
                     </SelectItem>
                   ))}
@@ -682,7 +682,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
             <div className="mt-auto pt-4 flex items-center gap-2 opacity-55">
               <div className="w-5 h-px bg-[#009da5]" />
-              <span className="text-[11px] text-[#009da5] tracking-[0.12em]">* required</span>
+              <span className="text-[12px] text-[#009da5] tracking-[0.12em]">* required</span>
             </div>
           </div>
 
@@ -714,7 +714,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                   <button
                     type="button"
                     onClick={handleSelectAllSeniorities}
-                    className={`text-[11px] px-2.5 py-1 rounded-md font-semibold border transition-colors duration-200 cursor-pointer ${
+                    className={`text-[12px] px-2.5 py-1 rounded-md font-semibold border transition-colors duration-200 cursor-pointer ${
                       allSenioritiesSelected
                         ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/40"
                         : "bg-transparent text-[#7ababa] border-[#254848] hover:border-[#009da5]/40 hover:text-[#58dddd]"
@@ -766,10 +766,10 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
           {/* Toggle header row */}
           <div className="px-7 py-4 flex items-center gap-3">
-            <span className="text-[11px] font-black tracking-[0.3em] text-[#009da5]/80 tabular-nums">03</span>
+            <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 tabular-nums">03</span>
             <div className="flex items-center gap-2">
               <Briefcase className="h-3.5 w-3.5 text-[#009da5]/80" />
-              <span className="text-[14px] font-bold tracking-[0.16em] uppercase text-[#70e8e8]">Job Search</span>
+              <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8]">Job Search</span>
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/20 to-transparent" />
             <ToggleSwitch
@@ -818,7 +818,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                         onKeyDown={handleJobSeniorityKeyDown}
                         onBlur={() => { if (jobSeniorityInput.trim()) addJobSeniorityTag(jobSeniorityInput); }}
                         placeholder={jobSeniority.length === 0 ? "e.g. Manager, Director…" : "Add more…"}
-                        className="mf-bare flex-1 min-w-[100px] bg-transparent text-[13px] text-white outline-none py-0.5"
+                        className="mf-bare flex-1 min-w-[100px] bg-transparent text-[14px] text-white outline-none py-0.5"
                       />
                     </TagBox>
                     {/* Quick presets */}
@@ -830,7 +830,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                             key={level}
                             type="button"
                             onClick={() => active ? removeJobSeniorityTag(level) : addJobSeniorityTag(level)}
-                            className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-all duration-150 cursor-pointer active:scale-[0.97] focus-visible:outline-none ${
+                            className={`px-2 py-0.5 rounded-md text-[12px] font-medium border transition-all duration-150 cursor-pointer active:scale-[0.97] focus-visible:outline-none ${
                               active
                                 ? "bg-[#009da5]/18 text-[#58dddd] border-[#009da5]/45"
                                 : "bg-transparent text-[#5a9090] border-[#254848] hover:border-[#009da5]/35 hover:text-[#7ab8b8]"
@@ -855,7 +855,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                             key={opt.value}
                             type="button"
                             onClick={() => setDatePosted(opt.value)}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium border text-left transition-all duration-150 cursor-pointer focus-visible:outline-none ${
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[14px] font-medium border text-left transition-all duration-150 cursor-pointer focus-visible:outline-none ${
                               active
                                 ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/42"
                                 : "bg-transparent text-[#7ab8b8] border-[#254848] hover:border-[#009da5]/30 hover:text-[#9dd4d4]"
@@ -877,7 +877,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                           setDatePosted("custom");
                           setTimeout(() => customDaysInputRef.current?.focus(), 50);
                         }}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium border text-left transition-all duration-150 cursor-pointer select-none ${
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[14px] font-medium border text-left transition-all duration-150 cursor-pointer select-none ${
                           datePosted === "custom"
                             ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/42"
                             : "bg-transparent text-[#7ab8b8] border-[#254848] hover:border-[#009da5]/30 hover:text-[#9dd4d4]"
@@ -912,7 +912,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                               setCustomDaysRaw(String(valid));
                             }}
                             onClick={e => e.stopPropagation()}
-                            className="w-12 mx-0.5 text-center border border-[#009da5]/50 rounded-md text-[13px] text-[#58dddd] font-bold outline-none focus:border-[#009da5] px-1 py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            className="w-12 mx-0.5 text-center border border-[#009da5]/50 rounded-md text-[14px] text-[#58dddd] font-bold outline-none focus:border-[#009da5] px-1 py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             style={{ background: "#0a1f1f" }}
                           />
                         ) : (
@@ -937,7 +937,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             onClick={handleSubmit as any}
             disabled={!valid || loading}
             className={`
-              w-full h-11 rounded-xl font-semibold text-[13px] tracking-wide
+              w-full h-12 rounded-xl font-semibold text-[15px] tracking-wide
               transition-all duration-200
               disabled:opacity-25 disabled:cursor-not-allowed
               active:scale-[0.99] cursor-pointer
