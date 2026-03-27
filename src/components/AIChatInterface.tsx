@@ -278,7 +278,11 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
           }
         );
 
-        if (!res.ok) throw new Error("Service unavailable");
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => "");
+          console.error("[AIChatInterface] n8n HTTP error:", res.status, res.statusText, errBody);
+          throw new Error("Service unavailable");
+        }
         const raw = await res.text();
         if (!raw?.trim()) throw new Error("Empty response");
         const data = JSON.parse(raw);
@@ -300,7 +304,8 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
               data[0]?.message)) ??
           (typeof data === "string" ? data : null);
         if (reply) replyContent = String(reply);
-      } catch {
+      } catch (err) {
+        console.error("[AIChatInterface] n8n fetch failed:", err);
         // replyContent stays as offline message
       }
 

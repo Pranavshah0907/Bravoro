@@ -20,25 +20,28 @@ interface CreditData {
   apollo_credits: number;
   aleads_credits: number;
   lusha_credits: number;
+  cognism_credits: number;
+  theirstack_credits: number;
   created_at: string;
 }
 
-interface EnrichmentData {
-  enrichment_limit: number;
-  enrichment_used: number;
-}
 
 // Helper function to get platform names based on admin status
+// Platform A = Cognism, B = Apollo, C = ALeads, D = Lusha, Job Search = Theirstack
 const getPlatformNames = (isAdmin: boolean) => ({
-  apollo: isAdmin ? "Apollo" : "Platform A",
-  aleads: isAdmin ? "A-Leads" : "Platform B",
-  lusha: isAdmin ? "Lusha" : "Platform C",
+  cognism: isAdmin ? "Cognism" : "Platform A",
+  apollo: isAdmin ? "Apollo" : "Platform B",
+  aleads: isAdmin ? "ALeads" : "Platform C",
+  lusha: isAdmin ? "Lusha" : "Platform D",
+  theirstack: isAdmin ? "Theirstack" : "Job Search Platform",
 });
 
 const COLORS = {
-  apollo: "hsl(var(--chart-1))",
-  aleads: "hsl(var(--chart-2))",
-  lusha: "hsl(var(--chart-3))",
+  cognism: "#8b5cf6",
+  apollo: "#06b6d4",
+  aleads: "#10b981",
+  lusha: "#3b82f6",
+  theirstack: "#f59e0b",
 };
 
 // Custom active shape for pie chart hover effect
@@ -96,7 +99,6 @@ const UsageAnalytics = () => {
     to: new Date(),
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [enrichmentData, setEnrichmentData] = useState<EnrichmentData>({ enrichment_limit: 0, enrichment_used: 0 });
 
   const dateRangeRef = useRef<DateRange | undefined>(dateRange);
   useEffect(() => {
@@ -135,19 +137,6 @@ const UsageAnalytics = () => {
         .single();
       setIsAdmin(roleData?.role === "admin");
 
-      // Fetch enrichment data from profiles
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("enrichment_limit, enrichment_used")
-        .eq("id", user.id)
-        .single();
-      
-      if (profileData) {
-        setEnrichmentData({
-          enrichment_limit: profileData.enrichment_limit ?? 0,
-          enrichment_used: profileData.enrichment_used ?? 0,
-        });
-      }
 
       const { data, error } = await supabase
         .from("credit_usage")
@@ -180,55 +169,46 @@ const UsageAnalytics = () => {
   const getTotalCredits = () => {
     return creditData.reduce(
       (acc, curr) => ({
+        cognism: acc.cognism + (curr.cognism_credits ?? 0),
         apollo: acc.apollo + curr.apollo_credits,
         aleads: acc.aleads + curr.aleads_credits,
         lusha: acc.lusha + curr.lusha_credits,
+        theirstack: acc.theirstack + (curr.theirstack_credits ?? 0),
       }),
-      { apollo: 0, aleads: 0, lusha: 0 }
+      { cognism: 0, apollo: 0, aleads: 0, lusha: 0, theirstack: 0 }
     );
   };
 
   const platformNames = getPlatformNames(isAdmin);
 
-  const getPieChartData = () => {
-    const totals = getTotalCredits();
-    return [
-      { name: platformNames.apollo, value: totals.apollo, color: COLORS.apollo },
-      { name: platformNames.aleads, value: totals.aleads, color: COLORS.aleads },
-      { name: platformNames.lusha, value: totals.lusha, color: COLORS.lusha },
-    ];
-  };
 
   const getBarChartData = () => {
     const now = new Date();
-    
+    type PeriodEntry = { date: string; Cognism: number; Apollo: number; ALeads: number; Lusha: number; Theirstack: number; sortDate: Date };
+
     // Handle custom date range
     if (timePeriod === "custom" && dateRange?.from && dateRange?.to) {
       const days = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
-      const periods: { date: string; Apollo: number; "A-Leads": number; Lusha: number; sortDate: Date }[] = [];
-      
+      const periods: PeriodEntry[] = [];
+
       // Group by appropriate interval based on range size
       const dayCount = days.length;
-      
+
       if (dayCount <= 14) {
         // Show daily for up to 2 weeks
         days.forEach(day => {
-          periods.push({
-            date: format(day, "MMM d"),
-            Apollo: 0,
-            "A-Leads": 0,
-            Lusha: 0,
-            sortDate: day,
-          });
+          periods.push({ date: format(day, "MMM d"), Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: day });
         });
-        
+
         creditData.forEach((item) => {
           const date = new Date(item.created_at);
           periods.forEach((period) => {
             if (format(date, "MMM d yyyy") === format(period.sortDate, "MMM d yyyy")) {
+              period.Cognism += item.cognism_credits ?? 0;
               period.Apollo += item.apollo_credits;
-              period["A-Leads"] += item.aleads_credits;
+              period.ALeads += item.aleads_credits;
               period.Lusha += item.lusha_credits;
+              period.Theirstack += item.theirstack_credits ?? 0;
             }
           });
         });
@@ -236,23 +216,19 @@ const UsageAnalytics = () => {
         // Show weekly for up to 3 months
         const weeks = eachWeekOfInterval({ start: dateRange.from, end: dateRange.to });
         weeks.forEach(week => {
-          periods.push({
-            date: format(week, "MMM d"),
-            Apollo: 0,
-            "A-Leads": 0,
-            Lusha: 0,
-            sortDate: week,
-          });
+          periods.push({ date: format(week, "MMM d"), Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: week });
         });
-        
+
         creditData.forEach((item) => {
           const date = new Date(item.created_at);
           const itemWeekStart = startOfWeek(date);
           periods.forEach((period) => {
             if (format(itemWeekStart, "MMM d yyyy") === format(period.sortDate, "MMM d yyyy")) {
+              period.Cognism += item.cognism_credits ?? 0;
               period.Apollo += item.apollo_credits;
-              period["A-Leads"] += item.aleads_credits;
+              period.ALeads += item.aleads_credits;
               period.Lusha += item.lusha_credits;
+              period.Theirstack += item.theirstack_credits ?? 0;
             }
           });
         });
@@ -260,43 +236,34 @@ const UsageAnalytics = () => {
         // Show monthly for longer ranges
         const months = eachMonthOfInterval({ start: dateRange.from, end: dateRange.to });
         months.forEach(month => {
-          periods.push({
-            date: format(month, "MMM yyyy"),
-            Apollo: 0,
-            "A-Leads": 0,
-            Lusha: 0,
-            sortDate: month,
-          });
+          periods.push({ date: format(month, "MMM yyyy"), Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: month });
         });
-        
+
         creditData.forEach((item) => {
           const date = new Date(item.created_at);
           periods.forEach((period) => {
             if (format(date, "MMM yyyy") === period.date) {
+              period.Cognism += item.cognism_credits ?? 0;
               period.Apollo += item.apollo_credits;
-              period["A-Leads"] += item.aleads_credits;
+              period.ALeads += item.aleads_credits;
               period.Lusha += item.lusha_credits;
+              period.Theirstack += item.theirstack_credits ?? 0;
             }
           });
         });
       }
-      
-      return periods.map(({ date, Apollo, "A-Leads": ALeads, Lusha }) => ({
-        date,
-        Apollo,
-        "A-Leads": ALeads,
-        Lusha,
-      }));
+
+      return periods.map(({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }) => ({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }));
     }
-    
-    const limit = timePeriod === "daily" ? 5 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
-    
-    const periods: { date: string; Apollo: number; "A-Leads": number; Lusha: number; sortDate: Date }[] = [];
-    
+
+    const limit = timePeriod === "daily" ? 7 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
+
+    const periods: PeriodEntry[] = [];
+
     for (let i = limit - 1; i >= 0; i--) {
       let periodDate: Date;
       let dateLabel: string;
-      
+
       switch (timePeriod) {
         case "daily":
           periodDate = subDays(now, i);
@@ -323,25 +290,19 @@ const UsageAnalytics = () => {
           periodDate = subDays(now, i);
           dateLabel = format(periodDate, "MMM d");
       }
-      
-      periods.push({
-        date: dateLabel,
-        Apollo: 0,
-        "A-Leads": 0,
-        Lusha: 0,
-        sortDate: periodDate,
-      });
+
+      periods.push({ date: dateLabel, Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: periodDate });
     }
-    
+
     creditData.forEach((item) => {
       const date = new Date(item.created_at);
-      
+
       periods.forEach((period) => {
         let matches = false;
-        
+
         switch (timePeriod) {
           case "daily":
-            matches = format(date, "MMM d") === period.date && 
+            matches = format(date, "MMM d") === period.date &&
                      date.getFullYear() === period.sortDate.getFullYear();
             break;
           case "weekly":
@@ -355,25 +316,22 @@ const UsageAnalytics = () => {
           case "quarterly":
             const itemQuarter = Math.floor(date.getMonth() / 3) + 1;
             const periodQuarter = Math.floor(period.sortDate.getMonth() / 3) + 1;
-            matches = itemQuarter === periodQuarter && 
+            matches = itemQuarter === periodQuarter &&
                      date.getFullYear() === period.sortDate.getFullYear();
             break;
         }
-        
+
         if (matches) {
+          period.Cognism += item.cognism_credits ?? 0;
           period.Apollo += item.apollo_credits;
-          period["A-Leads"] += item.aleads_credits;
+          period.ALeads += item.aleads_credits;
           period.Lusha += item.lusha_credits;
+          period.Theirstack += item.theirstack_credits ?? 0;
         }
       });
     });
 
-    return periods.map(({ date, Apollo, "A-Leads": ALeads, Lusha }) => ({
-      date,
-      Apollo,
-      "A-Leads": ALeads,
-      Lusha,
-    }));
+    return periods.map(({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }) => ({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }));
   };
 
   // Calculate period totals for the selected time range
@@ -381,22 +339,24 @@ const UsageAnalytics = () => {
     const barData = getBarChartData();
     return barData.reduce(
       (acc, curr) => ({
+        cognism: acc.cognism + curr.Cognism,
         apollo: acc.apollo + curr.Apollo,
-        aleads: acc.aleads + curr["A-Leads"],
+        aleads: acc.aleads + curr.ALeads,
         lusha: acc.lusha + curr.Lusha,
+        theirstack: acc.theirstack + curr.Theirstack,
       }),
-      { apollo: 0, aleads: 0, lusha: 0 }
+      { cognism: 0, apollo: 0, aleads: 0, lusha: 0, theirstack: 0 }
     );
   }, [creditData, timePeriod, dateRange]);
 
-  const periodGrandTotal = periodTotals.apollo + periodTotals.aleads + periodTotals.lusha;
+  const periodGrandTotal = periodTotals.cognism + periodTotals.apollo + periodTotals.aleads + periodTotals.lusha + periodTotals.theirstack;
 
   const getPeriodLabel = () => {
     if (timePeriod === "custom" && dateRange?.from && dateRange?.to) {
       return `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`;
     }
     switch (timePeriod) {
-      case "daily": return "Last 5 Days";
+      case "daily": return "Last 7 Days";
       case "weekly": return "Last 5 Weeks";
       case "monthly": return "Last 6 Months";
       case "quarterly": return "Last 4 Quarters";
@@ -404,34 +364,56 @@ const UsageAnalytics = () => {
     }
   };
 
-  const pieData = getPieChartData();
   const barData = getBarChartData();
   const totals = getTotalCredits();
+  const grandTotal = totals.cognism + totals.apollo + totals.aleads + totals.lusha + totals.theirstack;
 
-  const grandTotal = totals.apollo + totals.aleads + totals.lusha;
+  // Billing cycle = 1st of current month → today
+  const billingCycleStart = startOfMonth(new Date());
+  const billingCycleData = creditData.filter(item => new Date(item.created_at) >= billingCycleStart);
+  const billingCyclePlatformTotals = billingCycleData.reduce(
+    (acc, item) => ({
+      cognism: acc.cognism + (item.cognism_credits ?? 0),
+      apollo: acc.apollo + item.apollo_credits,
+      aleads: acc.aleads + item.aleads_credits,
+      lusha: acc.lusha + item.lusha_credits,
+      theirstack: acc.theirstack + (item.theirstack_credits ?? 0),
+    }),
+    { cognism: 0, apollo: 0, aleads: 0, lusha: 0, theirstack: 0 }
+  );
+  const billingCycleTotal = billingCyclePlatformTotals.cognism + billingCyclePlatformTotals.apollo + billingCyclePlatformTotals.aleads + billingCyclePlatformTotals.lusha + billingCyclePlatformTotals.theirstack;
+  const billingCycleDateLabel = `${format(billingCycleStart, "MMM d")} – ${format(new Date(), "MMM d, yyyy")}`;
+
+  // Pie chart reflects the currently selected bar chart period
+  const pieData = [
+    { name: platformNames.cognism, value: periodTotals.cognism, color: COLORS.cognism },
+    { name: platformNames.apollo, value: periodTotals.apollo, color: COLORS.apollo },
+    { name: platformNames.aleads, value: periodTotals.aleads, color: COLORS.aleads },
+    { name: platformNames.lusha, value: periodTotals.lusha, color: COLORS.lusha },
+    { name: platformNames.theirstack, value: periodTotals.theirstack, color: COLORS.theirstack },
+  ];
 
   return (
     <div className="min-h-screen bg-background flex">
       <AppSidebar isAdmin={isAdmin} onSignOut={handleSignOut} />
       
       <main className="flex-1 ml-16 min-h-screen">
-        {/* Background Effects */}
+        {/* Background Effects — same as Dashboard */}
         <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
-          <div 
-            className="absolute -top-1/4 -right-1/4 w-[700px] h-[700px] rounded-full opacity-15"
-            style={{
-              background: "radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 60%)",
-            }}
-          />
-          <div 
-            className="absolute bottom-0 left-1/4 w-[500px] h-[500px] rounded-full opacity-10"
-            style={{
-              background: "radial-gradient(circle, hsl(var(--accent) / 0.15) 0%, transparent 60%)",
-            }}
-          />
+          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-25" style={{
+            background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
+            filter: "blur(60px)",
+            animation: "float 22s ease-in-out infinite",
+          }} />
+          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{
+            background: "radial-gradient(circle, #58dddd 0%, transparent 65%)",
+            filter: "blur(80px)",
+            opacity: 0.15,
+            animation: "float 18s ease-in-out infinite reverse",
+          }} />
         </div>
 
-        <div className="relative z-10 p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="relative z-10 p-6 md:p-8 max-w-7xl mx-auto space-y-10">
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
             <div>
@@ -459,99 +441,84 @@ const UsageAnalytics = () => {
             </Button>
           </div>
 
-          {/* Enrichment Contacts Remaining Card */}
-          {enrichmentData.enrichment_limit > 0 && (
-            <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card/90 animate-fade-in" style={{ animationDelay: "0.03s" }}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Enriched Contacts Remaining</p>
-                    <p className="text-3xl font-bold text-foreground mt-1">
-                      {Math.max(0, enrichmentData.enrichment_limit - enrichmentData.enrichment_used).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-xl bg-primary/10">
-                    <Activity className="h-6 w-6 text-primary" />
-                  </div>
+          {/* Stats Section */}
+          <div className="space-y-3 animate-fade-in" style={{ animationDelay: "0.05s" }}>
+            {/* Billing cycle header — outside the tiles */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-[3px] h-5 rounded-full bg-primary" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold text-foreground">Total Credits</span>
+                  <span className="text-muted-foreground/35 select-none">·</span>
+                  <span className="text-xs font-medium text-primary">Billing Cycle</span>
+                  <span className="text-muted-foreground/35 select-none">·</span>
+                  <span className="text-xs text-muted-foreground">{billingCycleDateLabel}</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Used: {enrichmentData.enrichment_used.toLocaleString()}</span>
-                    <span>Limit: {enrichmentData.enrichment_limit.toLocaleString()}</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full transition-all duration-500",
-                        enrichmentData.enrichment_used / enrichmentData.enrichment_limit > 0.9 
-                          ? "bg-destructive" 
-                          : enrichmentData.enrichment_used / enrichmentData.enrichment_limit > 0.7 
-                            ? "bg-yellow-500" 
-                            : "bg-gradient-to-r from-primary to-accent"
-                      )}
-                      style={{ width: `${Math.min((enrichmentData.enrichment_used / enrichmentData.enrichment_limit) * 100, 100)}%` }}
-                    />
-                  </div>
-                  {enrichmentData.enrichment_used / enrichmentData.enrichment_limit > 0.9 && (
-                    <p className="text-xs text-destructive font-medium">⚠️ Almost at limit - contact admin for more</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold text-foreground tabular-nums leading-none">{billingCycleTotal.toLocaleString()}</span>
+                <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-medium">credits</span>
+              </div>
+            </div>
 
-          {/* Stats Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-fade-in" style={{ animationDelay: "0.05s" }}>
-            <Card className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-primary/30 transition-all duration-300 group">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Total Credits</p>
-                    <p className="text-xl font-bold text-foreground mt-0.5">{grandTotal.toLocaleString()}</p>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {[
-              { name: platformNames.apollo, value: totals.apollo, color: COLORS.apollo, icon: Zap },
-              { name: platformNames.aleads, value: totals.aleads, color: COLORS.aleads, icon: Activity },
-              { name: platformNames.lusha, value: totals.lusha, color: COLORS.lusha, icon: TrendingUp },
-            ].map((item, index) => (
-              <Card 
-                key={item.name} 
-                className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-border/60 transition-all duration-300 group"
-                style={{ animationDelay: `${0.1 + index * 0.05}s` }}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{item.name}</p>
-                      <p className="text-xl font-bold text-foreground mt-0.5">{item.value.toLocaleString()}</p>
+            {/* Separator */}
+            <div className="h-px bg-gradient-to-r from-primary/40 via-border/60 to-transparent" />
+
+            {/* Platform breakdown tiles */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {[
+                { name: platformNames.cognism, value: billingCyclePlatformTotals.cognism, color: COLORS.cognism },
+                { name: platformNames.apollo, value: billingCyclePlatformTotals.apollo, color: COLORS.apollo },
+                { name: platformNames.aleads, value: billingCyclePlatformTotals.aleads, color: COLORS.aleads },
+                { name: platformNames.lusha, value: billingCyclePlatformTotals.lusha, color: COLORS.lusha },
+                { name: platformNames.theirstack, value: billingCyclePlatformTotals.theirstack, color: COLORS.theirstack },
+              ].map((item, index) => (
+                <Card
+                  key={item.name}
+                  className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-border/60 transition-all duration-300 group"
+                  style={{ animationDelay: `${0.08 + index * 0.04}s` }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{item.name}</p>
+                        <p className="text-xl font-bold text-foreground mt-0.5 tabular-nums">{item.value.toLocaleString()}</p>
+                      </div>
+                      <div
+                        className="p-2.5 rounded-lg transition-transform duration-300 group-hover:scale-110"
+                        style={{ backgroundColor: `${item.color}20` }}
+                      >
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      </div>
                     </div>
-                    <div 
-                      className="p-2.5 rounded-lg transition-all duration-300 group-hover:scale-105"
-                      style={{ backgroundColor: `${item.color}20` }}
-                    >
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Charts section */}
+          <div className="space-y-3">
+            {/* Section header */}
+            <div className="flex items-center gap-3">
+              <div className="w-[3px] h-5 rounded-full bg-accent" />
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-foreground">Usage Breakdown</span>
+                <span className="text-muted-foreground/35 select-none">·</span>
+                <span className="text-xs text-muted-foreground">Credit distribution &amp; usage over time</span>
+              </div>
+            </div>
+            <div className="h-px bg-gradient-to-r from-accent/40 via-border/60 to-transparent" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             {/* Pie Chart Card */}
-            <Card className="lg:col-span-4 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative" style={{ animationDelay: "0.15s" }}>
+            <Card className="lg:col-span-4 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative flex flex-col" style={{ animationDelay: "0.15s" }}>
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-accent to-primary opacity-60" />
               <CardHeader className="pb-2 pt-4">
                 <CardTitle className="text-base text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   Credit Distribution
+                  <span className="text-[10px] font-normal text-muted-foreground ml-1">({getPeriodLabel()})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-4">
@@ -604,11 +571,13 @@ const UsageAnalytics = () => {
                   {/* Legend */}
                   <div className="space-y-2">
                     {[
-                      { name: platformNames.apollo, value: totals.apollo, color: COLORS.apollo },
-                      { name: platformNames.aleads, value: totals.aleads, color: COLORS.aleads },
-                      { name: platformNames.lusha, value: totals.lusha, color: COLORS.lusha },
+                      { name: platformNames.cognism, value: periodTotals.cognism, color: COLORS.cognism },
+                      { name: platformNames.apollo, value: periodTotals.apollo, color: COLORS.apollo },
+                      { name: platformNames.aleads, value: periodTotals.aleads, color: COLORS.aleads },
+                      { name: platformNames.lusha, value: periodTotals.lusha, color: COLORS.lusha },
+                      { name: platformNames.theirstack, value: periodTotals.theirstack, color: COLORS.theirstack },
                     ].map((item, index) => {
-                      const percentage = grandTotal > 0 ? ((item.value / grandTotal) * 100).toFixed(1) : "0";
+                      const percentage = periodGrandTotal > 0 ? ((item.value / periodGrandTotal) * 100).toFixed(1) : "0";
                       return (
                         <div 
                           key={item.name}
@@ -642,7 +611,7 @@ const UsageAnalytics = () => {
             </Card>
 
             {/* Bar Chart Card */}
-            <Card className="lg:col-span-8 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative" style={{ animationDelay: "0.2s" }}>
+            <Card className="lg:col-span-8 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative flex flex-col" style={{ animationDelay: "0.2s" }}>
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent via-primary to-accent opacity-60" />
               <CardHeader className="flex flex-col gap-3 pb-3 pt-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -746,9 +715,11 @@ const UsageAnalytics = () => {
                   <div className="h-4 w-px bg-border/50 hidden sm:block" />
                   <div className="flex items-center gap-3 flex-wrap">
                     {[
+                      { name: platformNames.cognism, value: periodTotals.cognism, color: COLORS.cognism },
                       { name: platformNames.apollo, value: periodTotals.apollo, color: COLORS.apollo },
                       { name: platformNames.aleads, value: periodTotals.aleads, color: COLORS.aleads },
                       { name: platformNames.lusha, value: periodTotals.lusha, color: COLORS.lusha },
+                      { name: platformNames.theirstack, value: periodTotals.theirstack, color: COLORS.theirstack },
                     ].map((item) => (
                       <div key={item.name} className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
@@ -759,28 +730,37 @@ const UsageAnalytics = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pb-4">
+              <CardContent className="pb-4 flex-1 flex flex-col min-h-0">
                 {barData.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
+                  <div className="flex flex-col items-center justify-center flex-1 min-h-[280px] text-muted-foreground">
                     <Activity className="h-10 w-10 mb-3 opacity-40" />
                     <p className="text-sm font-medium">No usage data yet</p>
                     <p className="text-xs opacity-70">Start using credits to see analytics</p>
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
+                  <div className="flex-1 min-h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barData} margin={{ top: 10, right: 10, left: -15, bottom: 10 }}>
                       <defs>
+                        <linearGradient id="cognismGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.cognism} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={COLORS.cognism} stopOpacity={0.7}/>
+                        </linearGradient>
                         <linearGradient id="apolloGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0.7}/>
+                          <stop offset="0%" stopColor={COLORS.apollo} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={COLORS.apollo} stopOpacity={0.7}/>
                         </linearGradient>
                         <linearGradient id="aleadsGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.7}/>
+                          <stop offset="0%" stopColor={COLORS.aleads} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={COLORS.aleads} stopOpacity={0.7}/>
                         </linearGradient>
                         <linearGradient id="lushaGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--chart-3))" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="hsl(var(--chart-3))" stopOpacity={0.7}/>
+                          <stop offset="0%" stopColor={COLORS.lusha} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={COLORS.lusha} stopOpacity={0.7}/>
+                        </linearGradient>
+                        <linearGradient id="theirstackGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS.theirstack} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={COLORS.theirstack} stopOpacity={0.7}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
@@ -818,40 +798,58 @@ const UsageAnalytics = () => {
                         iconSize={6}
                         formatter={(value) => {
                           const nameMap: Record<string, string> = {
+                            "Cognism": platformNames.cognism,
                             "Apollo": platformNames.apollo,
-                            "A-Leads": platformNames.aleads,
+                            "ALeads": platformNames.aleads,
                             "Lusha": platformNames.lusha,
+                            "Theirstack": platformNames.theirstack,
                           };
                           return <span className="text-xs text-foreground ml-0.5">{nameMap[value] || value}</span>;
                         }}
                       />
-                      <Bar 
+                      <Bar
+                        dataKey="Cognism"
+                        name={platformNames.cognism}
+                        stackId="a"
+                        fill="url(#cognismGradient)"
+                        radius={[0, 0, 0, 0]}
+                      />
+                      <Bar
                         dataKey="Apollo"
                         name={platformNames.apollo}
-                        stackId="a" 
-                        fill="url(#apolloGradient)" 
+                        stackId="a"
+                        fill="url(#apolloGradient)"
                         radius={[0, 0, 0, 0]}
                       />
-                      <Bar 
-                        dataKey="A-Leads"
+                      <Bar
+                        dataKey="ALeads"
                         name={platformNames.aleads}
-                        stackId="a" 
-                        fill="url(#aleadsGradient)" 
+                        stackId="a"
+                        fill="url(#aleadsGradient)"
                         radius={[0, 0, 0, 0]}
                       />
-                      <Bar 
+                      <Bar
                         dataKey="Lusha"
                         name={platformNames.lusha}
-                        stackId="a" 
-                        fill="url(#lushaGradient)" 
+                        stackId="a"
+                        fill="url(#lushaGradient)"
+                        radius={[0, 0, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Theirstack"
+                        name={platformNames.theirstack}
+                        stackId="a"
+                        fill="url(#theirstackGradient)"
                         radius={[3, 3, 0, 0]}
                       />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </div>
+          </div>{/* end Charts section */}
         </div>
       </main>
     </div>

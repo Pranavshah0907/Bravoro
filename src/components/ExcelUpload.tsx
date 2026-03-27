@@ -367,7 +367,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2.5">
             <div className="flex items-baseline gap-1.5 mb-2.5">
-              <span className="text-[13px] font-bold text-[#c4e8e8] tracking-[0.08em] uppercase">Upload Filled Template</span>
+              <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">Upload Filled Template</span>
             </div>
 
             <div

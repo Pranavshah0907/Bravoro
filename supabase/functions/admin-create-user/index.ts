@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     }
 
     // Get the request body
-    const { email, fullName, tempPassword, role = 'user', enrichmentLimit = 0 } = await req.json();
+    const { email, fullName, tempPassword, role = 'user', enrichmentLimit = 0, workspaceId = null } = await req.json();
 
     console.log(`[${requestId}] Creating user with email:`, email, 'enrichmentLimit:', enrichmentLimit);
 
@@ -143,14 +143,17 @@ Deno.serve(async (req) => {
     }
 
     if (authData.user) {
-      // Update profile with password reset flag and enrichment limit
+      // Update profile with password reset flag, enrichment limit, and workspace
+      const profileUpdate: Record<string, unknown> = {
+        requires_password_reset: true,
+        enrichment_limit: enrichmentLimit,
+        enrichment_used: 0,
+      };
+      if (workspaceId) profileUpdate.workspace_id = workspaceId;
+
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .update({ 
-          requires_password_reset: true,
-          enrichment_limit: enrichmentLimit,
-          enrichment_used: 0
-        })
+        .update(profileUpdate)
         .eq('id', authData.user.id);
 
       if (profileError) {

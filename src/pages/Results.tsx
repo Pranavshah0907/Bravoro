@@ -1182,15 +1182,29 @@ const Results = () => {
               <h4 className="text-sm font-semibold text-foreground">
                 Enriched Contacts <span className="text-muted-foreground font-normal">({allContacts.length} total)</span>
               </h4>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleExportPeopleEnrichment(search.id)}
-                className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export Excel
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExportPeopleEnrichment(search.id)}
+                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Excel
+                </Button>
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExportAdminPDF(search.id)}
+                    className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                    title="Admin: Export PDF Report"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    PDF Report
+                  </Button>
+                )}
+              </div>
             </div>
             {renderContactsTable(search.id, 'all', allContacts)}
             {totalPages > 1 && (
@@ -1240,15 +1254,29 @@ const Results = () => {
         <div className="p-4 md:p-6 bg-muted/30 border-t border-border/30">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h4 className="text-sm font-semibold text-foreground">People Enrichment Results</h4>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleExportPeopleEnrichment(search.id)}
-              className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleExportPeopleEnrichment(search.id)}
+                className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Excel
+              </Button>
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleExportAdminPDF(search.id)}
+                  className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  title="Admin: Export PDF Report"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  PDF Report
+                </Button>
+              )}
+            </div>
           </div>
 
           <Tabs

@@ -140,6 +140,7 @@ export type Database = {
           apollo_credits: number
           apollo_email_credits: number
           apollo_phone_credits: number
+          cognism_credits: number
           contacts_count: number
           created_at: string
           enriched_contacts_count: number
@@ -147,6 +148,7 @@ export type Database = {
           id: string
           lusha_credits: number
           search_id: string | null
+          theirstack_credits: number
           updated_at: string
           user_id: string
         }
@@ -155,6 +157,7 @@ export type Database = {
           apollo_credits?: number
           apollo_email_credits?: number
           apollo_phone_credits?: number
+          cognism_credits?: number
           contacts_count?: number
           created_at?: string
           enriched_contacts_count?: number
@@ -162,6 +165,7 @@ export type Database = {
           id?: string
           lusha_credits?: number
           search_id?: string | null
+          theirstack_credits?: number
           updated_at?: string
           user_id: string
         }
@@ -170,6 +174,7 @@ export type Database = {
           apollo_credits?: number
           apollo_email_credits?: number
           apollo_phone_credits?: number
+          cognism_credits?: number
           contacts_count?: number
           created_at?: string
           enriched_contacts_count?: number
@@ -177,6 +182,7 @@ export type Database = {
           id?: string
           lusha_credits?: number
           search_id?: string | null
+          theirstack_credits?: number
           updated_at?: string
           user_id?: string
         }
@@ -328,6 +334,7 @@ export type Database = {
           id: string
           requires_password_reset: boolean | null
           updated_at: string | null
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -338,6 +345,7 @@ export type Database = {
           id: string
           requires_password_reset?: boolean | null
           updated_at?: string | null
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -348,6 +356,48 @@ export type Database = {
           id?: string
           requires_password_reset?: boolean | null
           updated_at?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          id: string
+          company_name: string
+          company_address: string | null
+          primary_contact_name: string
+          primary_contact_email: string | null
+          primary_contact_phone: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_name: string
+          company_address?: string | null
+          primary_contact_name: string
+          primary_contact_email?: string | null
+          primary_contact_phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_name?: string
+          company_address?: string | null
+          primary_contact_name?: string
+          primary_contact_email?: string | null
+          primary_contact_phone?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }

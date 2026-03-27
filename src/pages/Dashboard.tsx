@@ -339,7 +339,7 @@ const Dashboard = () => {
 
                         {/* Title */}
                         <span className={cn(
-                          "text-[12.5px] font-semibold leading-tight truncate transition-colors duration-200",
+                          "text-[14px] font-semibold leading-tight truncate transition-colors duration-200",
                           isSelected ? "text-white" : "text-[#5a9090]"
                         )}>
                           {option.title}

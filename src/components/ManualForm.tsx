@@ -127,7 +127,7 @@ const FieldLabel = ({
 }) => (
   <div className="flex items-center justify-between mb-2.5">
     <div className="flex items-baseline gap-1.5">
-      <span className="text-[13px] font-bold text-[#c4e8e8] tracking-[0.08em] uppercase">
+      <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">
         {children}
         {required && <span className="text-[#00c8d2] ml-0.5">*</span>}
       </span>
