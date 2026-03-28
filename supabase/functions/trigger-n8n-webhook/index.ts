@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const WEBHOOK_URLS: Record<string, string> = {
   manual_entry: 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual',
-  bulk_upload: 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual',
+  bulk_upload: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_search',
   bulk_people_enrichment: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich',
 };
 
