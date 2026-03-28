@@ -22,7 +22,7 @@ const PROCESSING_STEPS: { key: ProcessingStep; label: string; progress: number }
   { key: 'complete', label: 'Complete!', progress: 100 },
 ];
 
-const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1RzADGJX8kzBRVk4M1RHFD3oIjcCwJNYhYj4_veuyvFw/copy";
+const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1Z4p1HJf5sMGgnNy_wGI04D-Jd0YNjSYq5A-PcEt-mbs/copy";
 
 export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   const { toast } = useToast();
