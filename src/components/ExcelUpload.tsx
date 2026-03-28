@@ -7,7 +7,7 @@ import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen, Che
 import * as XLSX from 'xlsx';
 
 // Expected headers for Bulk Search template
-const EXPECTED_HEADERS = ['Sr No', 'Organization Name', 'Organization Locations', 'Organization Domains', 'Person Titles', 'Person Seniorities', 'Results per title'];
+const EXPECTED_HEADERS = ['Sr No', 'Organization Name', 'Organization Locations', 'Organization Domains', 'Person Functions', 'Person Seniorities / Titles', 'Results per title', 'Toggle job search', 'Job Title (comma separated)', 'Job Seniority', 'Date Posted (max age days)'];
 
 interface ExcelUploadProps {
   userId: string;
