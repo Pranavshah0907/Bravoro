@@ -5,19 +5,21 @@ const GITHUB_RAW_URL =
   "https://raw.githubusercontent.com/Pranavshah0907/Bravoro/main/public/version.json";
 
 export function DevVersionBadge() {
-  const localVersion = localVersionData.version;
-  const [liveVersion, setLiveVersion] = useState<number | null>(null);
+  const localVersion = String(localVersionData.version);
+  const [liveVersion, setLiveVersion] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
     fetch(`${GITHUB_RAW_URL}?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setLiveVersion(d.version ?? null))
+      .then((d) => setLiveVersion(d.version != null ? String(d.version) : null))
       .catch(() => setLiveVersion(null))
       .finally(() => setFetching(false));
   }, []);
 
-  const diff = liveVersion !== null ? localVersion - liveVersion : null;
+  const localMinor = parseInt(localVersion.split(".")[1] ?? "0");
+  const liveMinor  = liveVersion !== null ? parseInt(liveVersion.split(".")[1] ?? "0") : null;
+  const diff = liveMinor !== null ? localMinor - liveMinor : null;
   const status =
     diff === null ? "unknown" : diff === 0 ? "synced" : diff > 0 ? "ahead" : "behind";
 
