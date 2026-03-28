@@ -1,4 +1,5 @@
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { DevVersionBadge } from "@/components/DevVersionBadge";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <UpdateBanner />
+      {import.meta.env.DEV && <DevVersionBadge />}
       <Toaster />
       <Sonner />
       <BrowserRouter>
