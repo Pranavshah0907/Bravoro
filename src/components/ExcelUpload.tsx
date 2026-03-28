@@ -153,7 +153,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
   };
 
   const validateHeaders = (headers: string[]): boolean => {
-    const normalizedHeaders = headers.map(h => String(h).trim().toLowerCase());
+    const normalizedHeaders = headers.map(h => String(h).replace(/\r\n|\r|\n/g, ' ').trim().toLowerCase());
     const normalizedExpected = EXPECTED_HEADERS.map(h => h.toLowerCase());
     
     for (const expected of normalizedExpected) {
@@ -190,7 +190,11 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       const { data: excelData, headers } = await parseExcelToJSON(selectedFile);
       
       // Validate headers first
+      console.log('Parsed headers from file:', JSON.stringify(headers));
+      console.log('Expected headers:', JSON.stringify(EXPECTED_HEADERS));
       if (!validateHeaders(headers)) {
+        const missing = EXPECTED_HEADERS.filter(e => !headers.map(h => String(h).replace(/\r\n|\r|\n/g, ' ').trim().toLowerCase()).includes(e.toLowerCase()));
+        console.error('Missing headers:', missing);
         toast({
           title: "Header Names Mismatch",
           description: "Please use the same headers as in the template file and try again.",
