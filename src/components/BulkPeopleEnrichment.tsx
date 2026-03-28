@@ -303,9 +303,11 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
       // Step 4: Trigger processing via backend function
       console.log('Triggering processing...');
+      const { data: { session } } = await supabase.auth.getSession();
       const { error: webhookError } = await supabase.functions.invoke(
         "trigger-n8n-webhook",
         {
+          headers: { Authorization: `Bearer ${session?.access_token}` },
           body: {
             searchId: search.id,
             entryType: 'bulk_people_enrichment',

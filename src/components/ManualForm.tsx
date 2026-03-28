@@ -599,7 +599,9 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         };
       }
 
+      const { data: { session } } = await supabase.auth.getSession();
       const { error: fnError } = await supabase.functions.invoke("trigger-n8n-webhook", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
         body: { searchId: search.id, entryType: "manual_entry", searchData },
       });
 

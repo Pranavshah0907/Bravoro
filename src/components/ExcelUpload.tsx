@@ -223,9 +223,11 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       setCurrentStep('triggering');
 
       // Step 3: Trigger N8N webhook via edge function
+      const { data: { session } } = await supabase.auth.getSession();
       const { error: webhookError } = await supabase.functions.invoke(
         "trigger-n8n-webhook",
         {
+          headers: { Authorization: `Bearer ${session?.access_token}` },
           body: {
             searchId: search.id,
             entryType: 'bulk_upload',
