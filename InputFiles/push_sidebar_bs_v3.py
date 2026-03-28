@@ -23,7 +23,6 @@ MANIFEST = json.dumps({
     "runtimeVersion": "V8",
     "oauthScopes": [
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/script.scriptapp",
         "https://www.googleapis.com/auth/script.container.ui"
     ],
 }, indent=2)
@@ -474,10 +473,6 @@ function openSidebarPanel() {
   );
 }
 
-function getToken() { return ScriptApp.getOAuthToken(); }
-function installSelectionTrigger() {
-  SpreadsheetApp.getUi().alert('Sidebars are active and polling automatically.');
-}
 
 var TITLES_HTML_  = '""" + titles_esc + """';
 var SEN_HTML_     = '""" + sen_esc + """';
