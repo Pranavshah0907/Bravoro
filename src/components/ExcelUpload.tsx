@@ -238,7 +238,7 @@ export const ExcelUpload = ({ userId }: ExcelUploadProps) => {
       );
 
       if (webhookError) {
-        console.error('Webhook invoke error:', webhookError.message);
+        console.error('Webhook invoke error (full):', webhookError, JSON.stringify(webhookError));
         toast({
           title: "Processing Failed",
           description: "We couldn't reach the processing server. Please try again shortly.",

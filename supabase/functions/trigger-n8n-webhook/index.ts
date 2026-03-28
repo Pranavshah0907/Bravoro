@@ -28,25 +28,10 @@ serve(async (req) => {
       );
     }
 
-    const callerToken = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Manually verify the JWT via Supabase auth (handles ES256 tokens the platform rejects)
-    // Valid user session → 200, anon key → 400 "missing sub claim", invalid → 401
-    const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        'Authorization': `Bearer ${callerToken}`,
-        'apikey': supabaseAnonKey,
-      },
-    });
-    if (authCheck.status !== 200 && authCheck.status !== 400) {
-      console.error(`Auth rejected — status: ${authCheck.status}`);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // JWT already verified by the Supabase runtime (verify_jwt: true).
+    // No manual re-verification needed.
 
     const body = await req.json();
     const { searchId, entryType, searchData } = body;
