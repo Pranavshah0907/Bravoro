@@ -100,6 +100,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   // ── Grid state ───────────────────────────────────────────────────────────────
   const [rows,       setRows]       = useState<GridRow[]>(() => Array.from({ length: ROWS_DEFAULT }, emptyRow));
   const [active,     setActive]     = useState<{ r: number; c: number } | null>(null);
+  const [anchor,     setAnchor]     = useState<{ r: number; c: number } | null>(null);
   const [editing,    setEditing]    = useState(false);
   const [pickerQ,    setPickerQ]    = useState("");
   const [colWidths,  setColWidths]  = useState<Record<ColKey, number>>(() => ({ ...INITIAL_WIDTHS }));
@@ -134,6 +135,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const pickerInputRef = useRef<HTMLInputElement>(null);
   const inputRefs      = useRef<Map<string, HTMLInputElement>>(new Map());
   const resizingRef    = useRef<{ key: ColKey; startX: number; startW: number } | null>(null);
+  const isDraggingRef  = useRef(false);
   const draftRenameRef = useRef<HTMLInputElement>(null);
   const toolbarRef     = useRef<HTMLDivElement>(null);
   // Refs for auto-save (avoids stale closure in setTimeout)
@@ -174,20 +176,26 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     return () => clearTimeout(t);
   }, [rows, draftId, draftStatus]);
 
-  // Close dropdowns on outside click
+  // Close dropdowns on outside click; stop drag on mouseup
   useEffect(() => {
-    const h = (e: MouseEvent) => {
+    const onDown = (e: MouseEvent) => {
       if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
         setShowDrafts(false);
         setShowSheetsMenu(false);
       }
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setActive(null);
+        setAnchor(null);
         setEditing(false);
       }
     };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    const onUp = () => { isDraggingRef.current = false; };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("mouseup", onUp);
+    };
   }, []);
 
   useEffect(() => { setPickerQ(""); }, [active?.c]);
@@ -410,27 +418,64 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const navigate = (r: number, c: number, dr: number, dc: number) => {
     const nr = r + dr; const nc = c + dc;
     if (nr < 0 || nr >= rows.length || nc < 0 || nc >= COLS.length) return;
+    setAnchor({ r: nr, c: nc });
     setActive({ r: nr, c: nc }); setEditing(false);
     focusCell(nr, nc);
   };
 
   const handleCellKeyDown = (e: React.KeyboardEvent, r: number, c: number) => {
     const col = COLS[c];
+
     if (e.key === "F2")     { e.preventDefault(); setEditing(prev => !prev); return; }
-    if (e.key === "Escape") { e.preventDefault(); setEditing(false); return; }
+    if (e.key === "Escape") { e.preventDefault(); setEditing(false); setAnchor({ r, c }); return; }
+
     if (!editing && (e.key === "Delete" || e.key === "Backspace") && col.type !== "yesno") {
       e.preventDefault(); setCell(r, col.key, col.type === "number" ? "0" : ""); return;
     }
-    if (e.key === "Tab")    { e.preventDefault(); navigate(r, c, 0, e.shiftKey ? -1 : 1); return; }
-    if (e.key === "Enter")  { e.preventDefault(); navigate(r, c, 1, 0); return; }
-    if (e.key === "ArrowUp")   { e.preventDefault(); navigate(r, c, -1, 0); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); navigate(r, c,  1, 0); return; }
-    const inTextEdit = editing && (col.type === "text" || col.type === "number");
-    if (!inTextEdit) {
-      if (e.key === "ArrowLeft")  { e.preventDefault(); navigate(r, c, 0, -1); return; }
-      if (e.key === "ArrowRight") { e.preventDefault(); navigate(r, c, 0,  1); return; }
+
+    if (e.key === "Tab")   { e.preventDefault(); navigate(r, c, 0, e.shiftKey ? -1 : 1); return; }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); navigate(r, c, 1, 0); return; }
+
+    const isArrow = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key);
+    if (isArrow) {
+      const inTextEdit = editing && (col.type === "text" || col.type === "number");
+      const isHoriz = e.key === "ArrowLeft" || e.key === "ArrowRight";
+      // Let cursor move freely inside text edit unless Shift/Ctrl override
+      if (inTextEdit && isHoriz && !e.shiftKey && !e.ctrlKey) return;
+
+      e.preventDefault();
+
+      const dr = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+      const dc = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
+
+      let nr: number, nc: number;
+      if (e.ctrlKey) {
+        // Jump to grid edge
+        nr = dr !== 0 ? (dr < 0 ? 0 : rows.length - 1) : r;
+        nc = dc !== 0 ? (dc < 0 ? 0 : COLS.length - 1) : c;
+      } else {
+        nr = Math.max(0, Math.min(rows.length - 1, r + dr));
+        nc = Math.max(0, Math.min(COLS.length - 1, c + dc));
+        if (nr === r && nc === c) return; // at boundary, nothing to do
+      }
+
+      if (e.shiftKey) {
+        // Extend selection — anchor stays, active moves
+        if (!anchor) setAnchor({ r, c });
+        setActive({ r: nr, c: nc });
+        setEditing(false);
+        focusCell(nr, nc);
+      } else {
+        // Normal move — collapse selection
+        setAnchor({ r: nr, c: nc });
+        setActive({ r: nr, c: nc });
+        setEditing(false);
+        focusCell(nr, nc);
+      }
+      return;
     }
-    // Typing while in selection mode: enter edit mode and start with the pressed character
+
+    // Typing while in selection mode: enter edit mode immediately
     if (!editing && (col.type === "text" || col.type === "number") && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       setEditing(true);
       setCell(r, col.key, e.key);
@@ -814,22 +859,46 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, ri) => {
+                {/* Pre-compute selection rectangle once for all cells */}
+                {(() => {
+                const selR1 = anchor && active ? Math.min(anchor.r, active.r) : -1;
+                const selR2 = anchor && active ? Math.max(anchor.r, active.r) : -1;
+                const selC1 = anchor && active ? Math.min(anchor.c, active.c) : -1;
+                const selC2 = anchor && active ? Math.max(anchor.c, active.c) : -1;
+                return rows.map((row, ri) => {
                   const isActiveRow = active?.r === ri;
                   const rowBg = isActiveRow ? "#f0fafa" : ri % 2 === 0 ? "#ffffff" : "#fafefe";
                   return (
                     <tr key={ri} style={{ background: rowBg }}>
-                      <td className="sticky left-0 z-10 border-r border-b text-center" style={{ height: 32, background: isActiveRow ? "#e4f4f4" : "#f5fafa", padding: 0, borderColor: "#daeaea" }}>
+                      <td className="sticky left-0 z-10 border-r border-b text-center select-none" style={{ height: 32, background: isActiveRow ? "#e4f4f4" : (selR1 >= 0 && ri >= selR1 && ri <= selR2) ? "rgba(0,157,165,0.07)" : "#f5fafa", padding: 0, borderColor: "#daeaea" }}>
                         <span className="text-[11px] font-semibold tabular-nums" style={{ color: "#9abcbc" }}>{ri + 1}</span>
                       </td>
                       {COLS.map((col, ci) => {
                         const isActive = active?.r === ri && active?.c === ci;
+                        const inSel = selR1 >= 0 && ri >= selR1 && ri <= selR2 && ci >= selC1 && ci <= selC2;
                         const isPicker = col.type === "picker-multi";
                         const hasValue = !!row[col.key].trim();
                         const isEditing = isActive && editing;
                         return (
-                          <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)" : undefined, ...(isActive ? { outline: isEditing ? "1px solid #009da5" : "3px solid #009da5", outlineOffset: isEditing ? "-1px" : "-3px", position: "relative", zIndex: 20 } : {}) }}
-                            onClick={() => { setActive({ r: ri, c: ci }); setEditing(false); if (col.type === "yesno") { setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes"); } else { setTimeout(() => inputRefs.current.get(`${ri}-${ci}`)?.focus(), 0); } }}
+                          <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: inSel && !isActive ? "rgba(0,157,165,0.14)" : isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)" : undefined, ...(isActive ? { outline: isEditing ? "1px solid #009da5" : "3px solid #009da5", outlineOffset: isEditing ? "-1px" : "-3px", position: "relative", zIndex: 20 } : {}) }}
+                            onMouseDown={(e) => {
+                              if (e.button !== 0) return;
+                              e.preventDefault();
+                              setAnchor({ r: ri, c: ci });
+                              setActive({ r: ri, c: ci });
+                              setEditing(false);
+                              isDraggingRef.current = true;
+                              if (col.type === "yesno") {
+                                setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes");
+                                focusCell(ri, ci);
+                              } else {
+                                focusCell(ri, ci);
+                              }
+                            }}
+                            onMouseEnter={() => {
+                              if (!isDraggingRef.current) return;
+                              setActive({ r: ri, c: ci });
+                            }}
                             onDoubleClick={() => {
                               if (col.type === "yesno") return;
                               if (col.key === "personJobTitle") {
@@ -872,7 +941,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                       })}
                     </tr>
                   );
-                })}
+                });})()}
               </tbody>
             </table>
             {rows.length < ROWS_MAX && (
