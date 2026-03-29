@@ -104,6 +104,7 @@ export const SheetsManager = ({
       .select("id, excel_file_name, status, created_at, grid_data")
       .eq("user_id", userId)
       .eq("search_type", "bulk")
+      .not("grid_data", "is", null)
       .order("created_at", { ascending: false })
       .limit(50);
     setSent((data ?? []) as unknown as SentItem[]);
@@ -356,7 +357,7 @@ export const SheetsManager = ({
 
         <div className="w-px h-4 bg-[#c8e2e2]" />
 
-        <h2 className="text-[14px] font-bold tracking-tight" style={{ color: "#0c2e2e" }}>
+        <h2 className="text-[18px] font-extrabold tracking-tight" style={{ color: "#0c2e2e" }}>
           My Sheets
         </h2>
 
@@ -378,8 +379,8 @@ export const SheetsManager = ({
           className="flex items-center gap-3 px-4 py-2.5"
           style={{ background: "#fafefe", borderBottom: "1px solid #edf6f6" }}
         >
-          <FileText className="h-3.5 w-3.5 shrink-0" style={{ color: "#009da5" }} />
-          <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "#007980" }}>
+          <FileText className="h-4 w-4 shrink-0" style={{ color: "#009da5" }} />
+          <span className="text-[15px] font-bold tracking-tight" style={{ color: "#0c2e2e" }}>
             Drafts
           </span>
           {!loadingDrafts && (
@@ -424,8 +425,8 @@ export const SheetsManager = ({
           className="flex items-center gap-3 px-4 py-2.5"
           style={{ background: "#fafefe", borderBottom: "1px solid #edf6f6" }}
         >
-          <Send className="h-3.5 w-3.5 shrink-0" style={{ color: "#009da5" }} />
-          <span className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "#007980" }}>
+          <Send className="h-4 w-4 shrink-0" style={{ color: "#009da5" }} />
+          <span className="text-[15px] font-bold tracking-tight" style={{ color: "#0c2e2e" }}>
             Sent
           </span>
           {!loadingSent && (
