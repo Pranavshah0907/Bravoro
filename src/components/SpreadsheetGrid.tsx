@@ -540,22 +540,33 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   };
 
   // ── New sheet ─────────────────────────────────────────────────────────────────
-  const doReset = () => {
+  const doReset = (name = "Untitled Draft") => {
     sessionStorage.removeItem(`sg_session_${userId}`);
     skipDirtyRef.current = true;
     setRows(Array.from({ length: ROWS_DEFAULT }, emptyRow));
     setDraftId(null);
-    setDraftName("Untitled Draft");
+    setDraftName(name);
     setDraftStatus("idle");
     setActive(null);
     setEditing(false);
   };
 
-  const handleNewSheet = () => {
+  const handleNewSheet = async () => {
     const validCount = rows.filter(r => r.orgName.trim()).length;
     const hasUnsaved = validCount > 0 && draftStatus !== "saved";
     if (hasUnsaved && !window.confirm("You have unsaved changes. Discard them and open a new sheet?")) return;
-    doReset();
+
+    // Find a unique name: "Untitled Draft", then "Untitled Draft (1)", "(2)", …
+    const { data: existing } = await supabase
+      .from("bulk_search_drafts")
+      .select("name")
+      .eq("user_id", userId);
+    const names = new Set((existing ?? []).map(d => d.name));
+    let name = "Untitled Draft";
+    let n = 1;
+    while (names.has(name)) name = `Untitled Draft (${n++})`;
+
+    doReset(name);
   };
 
   const validCount = rows.filter(r => r.orgName.trim()).length;
