@@ -104,8 +104,9 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const [editing,    setEditing]    = useState(false);
   const [pickerQ,    setPickerQ]    = useState("");
   const [colWidths,  setColWidths]  = useState<Record<ColKey, number>>(() => ({ ...INITIAL_WIDTHS }));
-  const [submitting,       setSubmitting]       = useState(false);
-  const [sessionRestored,  setSessionRestored]  = useState(false);
+  const [submitting,        setSubmitting]        = useState(false);
+  const [sessionRestored,   setSessionRestored]   = useState(false);
+  const [missingDomainRows, setMissingDomainRows] = useState<Set<number>>(new Set());
 
   // ── Draft state ──────────────────────────────────────────────────────────────
   const [draftId,        setDraftId]        = useState<string | null>(null);
@@ -597,21 +598,40 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
       toast({ title: "No Data", description: "Add at least one company name.", variant: "destructive" });
       return;
     }
+
+    // Validate: all filled rows must have Organization Domain
+    const missingIndices = new Set(
+      rows.reduce<number[]>((acc, r, i) => {
+        if (r.orgName.trim() && !r.orgDomains.trim()) acc.push(i);
+        return acc;
+      }, [])
+    );
+    if (missingIndices.size > 0) {
+      setMissingDomainRows(missingIndices);
+      toast({
+        title: "Missing Organization Domains",
+        description: `${missingIndices.size} row${missingIndices.size === 1 ? "" : "s"} with a company name are missing an Organization Domain. Please fill the highlighted cells.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
+      const toArr = (s: string) => s.trim() ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
       const mainData = valid.map((r, idx) => ({
-        "Sr No":                       idx + 1,
-        "Organization Name":           r.orgName.trim(),
-        "Organization Locations":      r.orgLocations.trim(),
-        "Organization Domains":        r.orgDomains.trim(),
-        "Person Functions":            r.personFunctions.trim(),
-        "Person Seniorities / Titles": r.personSeniorities.trim(),
-        "Person Job Title":            r.personJobTitle.trim(),
-        "Results per title":           parseInt(r.resultsPerTitle) || 3,
-        "Toggle job search":           r.toggleJobSearch || "No",
-        "Job Title (comma separated)": r.jobTitle.trim(),
-        "Job Seniority":               r.jobSeniority.trim(),
-        "Date Posted (max age days)":  parseInt(r.datePosted) || 0,
+        "Sr No":                  idx + 1,
+        "Organization Name":      r.orgName.trim(),
+        "Organization Locations": r.orgLocations.trim(),
+        "Organization Domains":   r.orgDomains.trim(),
+        "Person Functions":       toArr(r.personFunctions),
+        "Person Seniorities":     toArr(r.personSeniorities),
+        "Person Job Title":       r.personJobTitle.trim(),
+        "Results per Function":   parseInt(r.resultsPerTitle) || 3,
+        "Toggle job search":      r.toggleJobSearch || "No",
+        "Job Title":              toArr(r.jobTitle),
+        "Job Seniority":          toArr(r.jobSeniority),
+        "Date Posted":            parseInt(r.datePosted) || 0,
       }));
 
       const { data: search, error: se } = await supabase
@@ -923,7 +943,9 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                     return (
                       <th key={col.key} className="sticky top-0 z-20 text-left border-b border-r" style={{ height: 36, background: "#edf6f6", borderColor: "#c8e2e2", position: "relative", padding: 0, overflow: "visible" }}>
                         <div className="flex items-center gap-1.5 pl-2.5 pr-4 h-full overflow-hidden">
-                          <span className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: isPicker ? "#007980" : "#5a8888" }}>{col.label}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: isPicker ? "#007980" : "#5a8888" }}>
+                            {col.label}{col.key === "orgDomains" && <span style={{ color: "#e05555", marginLeft: 2 }}>*</span>}
+                          </span>
                           {isPicker && <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: "#009da5", opacity: 0.8 }} />}
                         </div>
                         <div className="absolute right-0 top-0 h-full flex items-center justify-center group/rh" style={{ width: 8, cursor: "col-resize", zIndex: 1 }} onMouseDown={e => startResize(e, col.key)}>
@@ -955,11 +977,19 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                         const isPicker = col.type === "picker-multi";
                         const hasValue = !!row[col.key].trim();
                         const isEditing = isActive && editing;
+                        const isMissingDomain = missingDomainRows.has(ri) && col.key === "orgDomains";
+                        const cellBg = isMissingDomain && !isActive ? "rgba(239,68,68,0.08)"
+                          : inSel && !isActive ? "rgba(0,157,165,0.14)"
+                          : isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)"
+                          : undefined;
+                        const activeStyle = isActive ? { outline: isEditing ? "1px solid #009da5" : "3px solid #009da5", outlineOffset: isEditing ? "-1px" : "-3px", position: "relative" as const, zIndex: 20 } : {};
+                        const missingStyle = isMissingDomain && !isActive ? { outline: "1px solid rgba(220,50,50,0.45)", outlineOffset: "-1px" } : {};
                         return (
-                          <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: inSel && !isActive ? "rgba(0,157,165,0.14)" : isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)" : undefined, ...(isActive ? { outline: isEditing ? "1px solid #009da5" : "3px solid #009da5", outlineOffset: isEditing ? "-1px" : "-3px", position: "relative", zIndex: 20 } : {}) }}
+                          <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: cellBg, ...activeStyle, ...missingStyle }}
                             onMouseDown={(e) => {
                               if (e.button !== 0) return;
                               e.preventDefault();
+                              if (missingDomainRows.size > 0) setMissingDomainRows(new Set());
                               setAnchor({ r: ri, c: ci });
                               setActive({ r: ri, c: ci });
                               setEditing(false);
