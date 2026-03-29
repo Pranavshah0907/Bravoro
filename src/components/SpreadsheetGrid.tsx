@@ -136,6 +136,9 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const inputRefs      = useRef<Map<string, HTMLInputElement>>(new Map());
   const resizingRef    = useRef<{ key: ColKey; startX: number; startW: number } | null>(null);
   const isDraggingRef  = useRef(false);
+  const colElsRef      = useRef<Map<ColKey, HTMLElement>>(new Map());
+  const tableRef       = useRef<HTMLTableElement>(null);
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const draftRenameRef = useRef<HTMLInputElement>(null);
   const toolbarRef     = useRef<HTMLDivElement>(null);
   // Refs for auto-save (avoids stale closure in setTimeout)
@@ -189,12 +192,20 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         setEditing(false);
       }
     };
-    const onUp = () => { isDraggingRef.current = false; };
+    const onUp = () => { isDraggingRef.current = false; dragStartPosRef.current = null; };
+    const onMove = (e: MouseEvent) => {
+      if (!dragStartPosRef.current || isDraggingRef.current) return;
+      const dx = e.clientX - dragStartPosRef.current.x;
+      const dy = e.clientY - dragStartPosRef.current.y;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) isDraggingRef.current = true;
+    };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("mouseup", onUp);
+    document.addEventListener("mousemove", onMove);
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("mousemove", onMove);
     };
   }, []);
 
@@ -392,23 +403,29 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const setCell = (r: number, k: ColKey, v: string) =>
     setRows(p => p.map((row, i) => i === r ? { ...row, [k]: v } : row));
 
-  // Column resize
+  // Column resize — DOM-direct during drag, commit to state only on mouseup
   const startResize = (e: React.MouseEvent, key: ColKey) => {
     e.preventDefault(); e.stopPropagation();
-    resizingRef.current = { key, startX: e.clientX, startW: colWidths[key] };
+    const startX = e.clientX;
+    const startW = colWidths[key];
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
     const onMove = (ev: MouseEvent) => {
-      if (!resizingRef.current) return;
-      const newW = Math.max(48, resizingRef.current.startW + ev.clientX - resizingRef.current.startX);
-      setColWidths(prev => ({ ...prev, [resizingRef.current!.key]: newW }));
+      const newW = Math.max(48, startW + ev.clientX - startX);
+      const colEl = colElsRef.current.get(key);
+      if (colEl) colEl.style.width = `${newW}px`;
+      if (tableRef.current) {
+        const total = 44 + COLS.reduce((s, c) => s + (c.key === key ? newW : colWidths[c.key]), 0);
+        tableRef.current.style.minWidth = `${total}px`;
+      }
     };
-    const onUp = () => {
-      resizingRef.current = null;
+    const onUp = (ev: MouseEvent) => {
+      const newW = Math.max(48, startW + ev.clientX - startX);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
+      setColWidths(prev => ({ ...prev, [key]: newW }));
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
@@ -437,10 +454,11 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     if (!editing && (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")) {
       e.preventDefault();
       const selAnchor = anchor ?? { r, c };
-      const selR1 = Math.min(selAnchor.r, r);
-      const selR2 = Math.max(selAnchor.r, r);
-      const selC1 = Math.min(selAnchor.c, c);
-      const selC2 = Math.max(selAnchor.c, c);
+      const selActive = active ?? { r, c };
+      const selR1 = Math.min(selAnchor.r, selActive.r);
+      const selR2 = Math.max(selAnchor.r, selActive.r);
+      const selC1 = Math.min(selAnchor.c, selActive.c);
+      const selC2 = Math.max(selAnchor.c, selActive.c);
       const tsv = rows
         .slice(selR1, selR2 + 1)
         .map(row => COLS.slice(selC1, selC2 + 1).map(col => row[col.key] ?? "").join("\t"))
@@ -498,7 +516,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     }
   };
 
-  // Paste (TSV from Excel)
+  // Paste (TSV from Excel / Ctrl+V)
   const handlePaste = (e: React.ClipboardEvent) => {
     if (!active || !tableWrapRef.current) return;
     if (!tableWrapRef.current.contains(e.target as Node)) return;
@@ -507,16 +525,36 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     const text = e.clipboardData.getData("text/plain");
     if (!text) return;
     const pastedRows = text.trim().split(/\r?\n/).map(r => r.split("\t"));
+    const isSingleCell = pastedRows.length === 1 && pastedRows[0].length === 1;
+    const hasMultiSel = anchor && (anchor.r !== active.r || anchor.c !== active.c);
     setRows(prev => {
       const next = [...prev];
-      pastedRows.forEach((pr, dr) => {
-        const ri = active.r + dr;
-        if (ri >= ROWS_MAX) return;
-        while (next.length <= ri) next.push(emptyRow());
-        const row = { ...next[ri] };
-        pr.forEach((val, dc) => { const ci = active.c + dc; if (ci < COLS.length) row[COLS[ci].key] = val.trim(); });
-        next[ri] = row;
-      });
+      if (isSingleCell && hasMultiSel) {
+        // Single copied cell fills entire selection (Excel behaviour)
+        const selR1 = Math.min(anchor!.r, active.r);
+        const selR2 = Math.max(anchor!.r, active.r);
+        const selC1 = Math.min(anchor!.c, active.c);
+        const selC2 = Math.max(anchor!.c, active.c);
+        const val = pastedRows[0][0].trim();
+        for (let ri = selR1; ri <= selR2; ri++) {
+          if (ri >= ROWS_MAX) break;
+          while (next.length <= ri) next.push(emptyRow());
+          const row = { ...next[ri] };
+          for (let ci = selC1; ci <= selC2; ci++) {
+            if (COLS[ci]?.type !== "yesno") row[COLS[ci].key] = val;
+          }
+          next[ri] = row;
+        }
+      } else {
+        pastedRows.forEach((pr, dr) => {
+          const ri = active.r + dr;
+          if (ri >= ROWS_MAX) return;
+          while (next.length <= ri) next.push(emptyRow());
+          const row = { ...next[ri] };
+          pr.forEach((val, dc) => { const ci = active.c + dc; if (ci < COLS.length) row[COLS[ci].key] = val.trim(); });
+          next[ri] = row;
+        });
+      }
       return next.slice(0, ROWS_MAX);
     });
   };
@@ -638,6 +676,17 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     doReset(name);
   };
 
+  // Clear sheet
+  const handleClearSheet = () => {
+    if (!rows.some(r => r.orgName.trim())) return;
+    if (!window.confirm("Clear all cell data? Your saved draft will not be deleted.")) return;
+    skipDirtyRef.current = true;
+    setRows(Array.from({ length: ROWS_DEFAULT }, emptyRow));
+    setActive(null);
+    setAnchor(null);
+    setEditing(false);
+  };
+
   const validCount = rows.filter(r => r.orgName.trim()).length;
   const selected   = getSelected();
   const filtered   = getFiltered();
@@ -652,7 +701,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         .sg-input:focus { outline: none; }
       `}</style>
 
-      <div ref={containerRef} onPaste={handlePaste} className="space-y-3">
+      <div ref={containerRef} onPaste={handlePaste} className="space-y-3 w-full overflow-x-hidden">
 
         {/* ── Draft & Sheets Toolbar ───────────────────────────────────────── */}
         <div
@@ -704,6 +753,17 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
 
           {/* Actions */}
           <div className="flex items-center gap-1.5 shrink-0">
+
+            {/* Clear Sheet */}
+            <button
+              onClick={handleClearSheet}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+              style={{ color: "#994444", border: "1px solid #f0d8d8", background: "#fff" }}
+              title="Clear all cell data (draft is kept)"
+            >
+              <Trash2 className="h-3 w-3" />
+              <span>Clear</span>
+            </button>
 
             {/* New Sheet */}
             <button
@@ -840,7 +900,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         </div>
 
         {/* ── Grid + Picker ─────────────────────────────────────────────────── */}
-        <div className="flex gap-3 items-start">
+        <div className="flex gap-3 items-start w-full min-w-0">
 
           {/* Table */}
           <div
@@ -848,10 +908,10 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
             className="flex-1 min-w-0 rounded-xl overflow-auto"
             style={{ maxHeight: 540, background: "#ffffff", border: "1px solid #c8e2e2", boxShadow: "0 4px 24px rgba(0,157,165,0.10), 0 1px 4px rgba(0,0,0,0.06)" }}
           >
-            <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 44 + Object.values(colWidths).reduce((s, w) => s + w, 0), tableLayout: "fixed" }}>
+            <table ref={tableRef} style={{ borderCollapse: "collapse", width: "100%", minWidth: 44 + Object.values(colWidths).reduce((s, w) => s + w, 0), tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: 44 }} />
-                {COLS.map(c => <col key={c.key} style={{ width: colWidths[c.key] }} />)}
+                {COLS.map(c => <col key={c.key} ref={el => { if (el) colElsRef.current.set(c.key, el as HTMLElement); else colElsRef.current.delete(c.key); }} style={{ width: colWidths[c.key] }} />)}
               </colgroup>
               <thead>
                 <tr>
@@ -903,7 +963,8 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                               setAnchor({ r: ri, c: ci });
                               setActive({ r: ri, c: ci });
                               setEditing(false);
-                              isDraggingRef.current = true;
+                              isDraggingRef.current = false;
+                              dragStartPosRef.current = { x: e.clientX, y: e.clientY };
                               if (col.type === "yesno") {
                                 setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes");
                                 focusCell(ri, ci);
