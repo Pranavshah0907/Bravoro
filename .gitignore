@@ -55,3 +55,6 @@ supabase/.temp/
 
 # Migration data (one-time migration scripts, not part of the app)
 migration_data/
+
+# Sensitive credential files
+InputFiles/*.json
