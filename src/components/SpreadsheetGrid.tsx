@@ -107,6 +107,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const [submitting,        setSubmitting]        = useState(false);
   const [sessionRestored,   setSessionRestored]   = useState(false);
   const [missingDomainRows, setMissingDomainRows] = useState<Set<number>>(new Set());
+  const [copyRange,         setCopyRange]         = useState<{ r1: number; r2: number; c1: number; c2: number } | null>(null);
 
   // ── Draft state ──────────────────────────────────────────────────────────────
   const [draftId,        setDraftId]        = useState<string | null>(null);
@@ -445,7 +446,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     const col = COLS[c];
 
     if (e.key === "F2")     { e.preventDefault(); setEditing(prev => !prev); return; }
-    if (e.key === "Escape") { e.preventDefault(); setEditing(false); setAnchor({ r, c }); return; }
+    if (e.key === "Escape") { e.preventDefault(); setEditing(false); setAnchor({ r, c }); setCopyRange(null); return; }
 
     if (!editing && (e.key === "Delete" || e.key === "Backspace") && col.type !== "yesno") {
       e.preventDefault(); setCell(r, col.key, col.type === "number" ? "0" : ""); return;
@@ -465,6 +466,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         .map(row => COLS.slice(selC1, selC2 + 1).map(col => row[col.key] ?? "").join("\t"))
         .join("\n");
       navigator.clipboard.writeText(tsv).catch(() => {});
+      setCopyRange({ r1: selR1, r2: selR2, c1: selC1, c2: selC2 });
       return;
     }
 
@@ -719,6 +721,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         .sg-input:focus::placeholder { color: #c5d8d8; }
         .sg-picker-input::placeholder { color: #9ab8b8; }
         .sg-input:focus { outline: none; }
+        @keyframes marchingAnts { to { stroke-dashoffset: -24; } }
       `}</style>
 
       <div ref={containerRef} onPaste={handlePaste} className="space-y-3 w-full overflow-x-hidden">
@@ -928,6 +931,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
             className="flex-1 min-w-0 rounded-xl overflow-auto"
             style={{ maxHeight: 540, background: "#ffffff", border: "1px solid #c8e2e2", boxShadow: "0 4px 24px rgba(0,157,165,0.10), 0 1px 4px rgba(0,0,0,0.06)" }}
           >
+            <div style={{ position: "relative" }}>
             <table ref={tableRef} style={{ borderCollapse: "collapse", width: "100%", minWidth: 44 + Object.values(colWidths).reduce((s, w) => s + w, 0), tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: 44 }} />
@@ -1051,6 +1055,23 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                 });})()}
               </tbody>
             </table>
+            {/* Copy-range marching-ants overlay */}
+            {copyRange && (() => {
+              const left   = 44 + COLS.slice(0, copyRange.c1).reduce((s, c) => s + colWidths[c.key], 0);
+              const width  = COLS.slice(copyRange.c1, copyRange.c2 + 1).reduce((s, c) => s + colWidths[c.key], 0);
+              const top    = 36 + copyRange.r1 * 32;
+              const height = (copyRange.r2 - copyRange.r1 + 1) * 32;
+              return (
+                <svg style={{ position: "absolute", top, left, width, height, pointerEvents: "none", zIndex: 25, overflow: "visible" }}>
+                  <rect x={1} y={1} width={width - 2} height={height - 2}
+                    fill="none" stroke="#1a73e8" strokeWidth={2}
+                    strokeDasharray="8 4"
+                    style={{ animation: "marchingAnts 0.45s linear infinite" }}
+                  />
+                </svg>
+              );
+            })()}
+            </div>
             {rows.length < ROWS_MAX && (
               <div style={{ borderTop: "1px solid #daeaea" }}>
                 <button type="button" onClick={() => setRows(r => [...r, ...Array.from({ length: Math.min(10, ROWS_MAX - r.length) }, emptyRow)])}
