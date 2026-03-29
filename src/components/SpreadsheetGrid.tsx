@@ -433,6 +433,22 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
       e.preventDefault(); setCell(r, col.key, col.type === "number" ? "0" : ""); return;
     }
 
+    // Copy selected range as TSV (Ctrl+C / Cmd+C) — not in edit mode
+    if (!editing && (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")) {
+      e.preventDefault();
+      const selAnchor = anchor ?? { r, c };
+      const selR1 = Math.min(selAnchor.r, r);
+      const selR2 = Math.max(selAnchor.r, r);
+      const selC1 = Math.min(selAnchor.c, c);
+      const selC2 = Math.max(selAnchor.c, c);
+      const tsv = rows
+        .slice(selR1, selR2 + 1)
+        .map(row => COLS.slice(selC1, selC2 + 1).map(col => row[col.key] ?? "").join("\t"))
+        .join("\n");
+      navigator.clipboard.writeText(tsv).catch(() => {});
+      return;
+    }
+
     if (e.key === "Tab")   { e.preventDefault(); navigate(r, c, 0, e.shiftKey ? -1 : 1); return; }
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); navigate(r, c, 1, 0); return; }
 
@@ -810,7 +826,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
           <div className="flex items-center gap-1.5">
             <Clipboard className="h-3 w-3 text-[#009da5]" />
-            <span className="text-[11px] text-[#4a7878]">Click a cell · paste from Excel or Google Sheets</span>
+            <span className="text-[11px] text-[#4a7878]">Click a cell · Ctrl+C to copy selection · paste from Excel or Google Sheets</span>
           </div>
           <span className="text-[#2a5050]">·</span>
           <div className="flex items-center gap-1">
