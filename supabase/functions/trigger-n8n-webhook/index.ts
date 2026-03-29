@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import * as jose from 'https://deno.land/x/jose@v4.15.4/index.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +20,6 @@ serve(async (req) => {
   }
 
   try {
-    // Verify the caller has a valid Supabase JWT (anon or user session)
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
@@ -28,10 +28,31 @@ serve(async (req) => {
       );
     }
 
+    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 
-    // JWT already verified by the Supabase runtime (verify_jwt: true).
-    // No manual re-verification needed.
+    // Cryptographically verify the JWT against Supabase's JWKS endpoint.
+    // This handles ES256 tokens correctly (the Supabase runtime verify_jwt only supports HS256).
+    // jose.createRemoteJWKSet caches the JWKS after the first fetch — negligible overhead.
+    let userId: string;
+    try {
+      const JWKS = jose.createRemoteJWKSet(
+        new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`)
+      );
+      const { payload } = await jose.jwtVerify(token, JWKS, {
+        issuer: `${supabaseUrl}/auth/v1`,
+        audience: 'authenticated',
+      });
+      userId = payload.sub as string;
+      if (!userId) throw new Error('no sub');
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // userId cryptographically verified from JWT
 
     const body = await req.json();
     const { searchId, entryType, searchData } = body;
