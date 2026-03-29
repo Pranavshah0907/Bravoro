@@ -431,10 +431,6 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     if (!editing && (col.type === "text" || col.type === "number") && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       setEditing(true);
       setCell(r, col.key, e.key);
-      requestAnimationFrame(() => {
-        const el = inputRefs.current.get(`${r}-${c}`);
-        if (el) { el.focus(); el.setSelectionRange(1, 1); }
-      });
     }
   };
 
