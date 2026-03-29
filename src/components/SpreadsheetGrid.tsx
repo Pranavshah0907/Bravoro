@@ -427,6 +427,15 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
       if (e.key === "ArrowLeft")  { e.preventDefault(); navigate(r, c, 0, -1); return; }
       if (e.key === "ArrowRight") { e.preventDefault(); navigate(r, c, 0,  1); return; }
     }
+    // Typing while in selection mode: enter edit mode and start with the pressed character
+    if (!editing && (col.type === "text" || col.type === "number") && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      setEditing(true);
+      setCell(r, col.key, e.key);
+      requestAnimationFrame(() => {
+        const el = inputRefs.current.get(`${r}-${c}`);
+        if (el) { el.focus(); el.setSelectionRange(1, 1); }
+      });
+    }
   };
 
   // Paste (TSV from Excel)
