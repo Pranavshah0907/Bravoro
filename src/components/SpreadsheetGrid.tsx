@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, Play, X, Check, Search, Plus, ChevronRight, Clipboard,
-  Pencil, FolderOpen, ChevronDown, FileSpreadsheet, ExternalLink,
+  Pencil, FolderOpen, FileSpreadsheet, ExternalLink,
   Save, Upload, Download, Trash2,
 } from "lucide-react";
 
@@ -45,13 +45,14 @@ interface ColDef {
   placeholder?: string;
 }
 
-type GridRow = Record<ColKey, string>;
+export type GridRow = Record<ColKey, string>;
 
-interface DraftMeta {
-  id:         string;
-  name:       string;
-  row_count:  number;
-  updated_at: string;
+// ── Imperative handle exposed to parent (ExcelUpload) ─────────────────────────
+export interface SpreadsheetGridHandle {
+  hasUnsavedData:    () => boolean;
+  getCurrentDraftId: () => string | null;
+  loadRows:          (rows: GridRow[], draftId?: string | null, draftName?: string) => void;
+  notifyDraftDeleted:(id: string) => void;
 }
 
 const INITIAL_WIDTHS: Record<ColKey, number> = {
@@ -81,20 +82,15 @@ const emptyRow = (): GridRow => ({
   jobTitle: "", jobSeniority: "", datePosted: "0",
 });
 
-function formatRelativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1)  return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+// ── Component ──────────────────────────────────────────────────────────────────
+interface SpreadsheetGridProps {
+  userId:          string;
+  userEmail?:      string;
+  onOpenManager?:  () => void;
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
-interface SpreadsheetGridProps { userId: string; userEmail?: string; }
-
-export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps) => {
+export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGridProps>(
+({ userId, userEmail = "", onOpenManager }, ref) => {
   const { toast } = useToast();
 
   // ── Grid state ───────────────────────────────────────────────────────────────
@@ -116,10 +112,8 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const [draftStatus,    setDraftStatus]    = useState<"idle"|"dirty"|"saving"|"saved">("idle");
   const [renamingDraft,  setRenamingDraft]  = useState(false);
   const [draftRenameVal, setDraftRenameVal] = useState("");
-  const [drafts,         setDrafts]         = useState<DraftMeta[]>([]);
-  const [showDrafts,     setShowDrafts]     = useState(false);
-  const [showSheetsMenu, setShowSheetsMenu] = useState(false);
   const [draftSaving,    setDraftSaving]    = useState(false);
+  const [showSheetsMenu, setShowSheetsMenu] = useState(false);
 
   // ── Sheets modal state ───────────────────────────────────────────────────────
   const [sheetsModal,    setSheetsModal]    = useState<"closed"|"export"|"import">("closed");
@@ -186,7 +180,6 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
-        setShowDrafts(false);
         setShowSheetsMenu(false);
       }
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -303,39 +296,30 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     } finally { setDraftSaving(false); }
   };
 
-  const fetchDrafts = async () => {
-    const { data } = await supabase.from("bulk_search_drafts")
-      .select("id, name, row_count, updated_at")
-      .eq("user_id", userId)
-      .order("updated_at", { ascending: false })
-      .limit(30);
-    if (data) setDrafts(data as DraftMeta[]);
-  };
-
-  const loadDraft = async (draft: DraftMeta) => {
-    if (validCount > 0 && draftId !== draft.id) {
-      if (!window.confirm("Load this draft? Unsaved changes to the current grid will be lost.")) return;
-    }
-    const { data } = await supabase.from("bulk_search_drafts")
-      .select("grid_data").eq("id", draft.id).single();
-    if (data?.grid_data) {
+  // ── Imperative handle (used by ExcelUpload/SheetsManager) ───────────────────
+  useImperativeHandle(ref, () => ({
+    hasUnsavedData:    () => rowsRef.current.filter(r => r.orgName.trim()).length > 0 && draftStatusRef.current !== "saved",
+    getCurrentDraftId: () => draftIdRef.current,
+    loadRows: (newRows, newDraftId, newDraftName) => {
       skipDirtyRef.current = true;
-      setRows(data.grid_data as GridRow[]);
-      setDraftId(draft.id);
-      setDraftName(draft.name);
-      setDraftStatus("saved");
-      setActive(null);
-      setEditing(false);
-      setShowDrafts(false);
-    }
-  };
-
-  const deleteDraft = async (id: string) => {
-    if (!window.confirm("Delete this draft? This cannot be undone.")) return;
-    await supabase.from("bulk_search_drafts").delete().eq("id", id);
-    setDrafts(prev => prev.filter(d => d.id !== id));
-    if (draftId === id) { setDraftId(null); setDraftName("Untitled Draft"); setDraftStatus("idle"); }
-  };
+      const padded = [...newRows];
+      while (padded.length < ROWS_DEFAULT) padded.push(emptyRow());
+      setRows(padded);
+      setDraftId(newDraftId ?? null);
+      setDraftName(newDraftName ?? "Untitled Draft");
+      setDraftStatus(newDraftId ? "saved" : "idle");
+      setActive(null); setAnchor(null); setEditing(false);
+      setCopyRange(null); setCopyOverlay(null);
+      setMissingDomainRows(new Set());
+    },
+    notifyDraftDeleted: (id) => {
+      if (draftIdRef.current === id) {
+        setDraftId(null);
+        setDraftName("Untitled Draft");
+        setDraftStatus("idle");
+      }
+    },
+  }), []);
 
   const commitRename = () => {
     const name = draftRenameVal.trim() || draftName;
@@ -640,25 +624,31 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
 
     setSubmitting(true);
     try {
-      const toArr = (s: string) => s.trim() ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
+      const toArrOrStr = (s: string) => {
+        const arr = s.trim() ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
+        return arr.length <= 1 ? (arr[0] ?? "") : arr;
+      };
       const mainData = valid.map((r, idx) => ({
         "Sr No":                  idx + 1,
         "Organization Name":      r.orgName.trim(),
         "Organization Locations": r.orgLocations.trim(),
         "Organization Domains":   r.orgDomains.trim(),
-        "Person Functions":       toArr(r.personFunctions),
-        "Person Seniorities":     toArr(r.personSeniorities),
+        "Person Functions":       toArrOrStr(r.personFunctions),
+        "Person Seniorities":     toArrOrStr(r.personSeniorities),
         "Person Job Title":       r.personJobTitle.trim(),
         "Results per Function":   parseInt(r.resultsPerTitle) || 3,
         "Toggle job search":      r.toggleJobSearch || "No",
-        "Job Title":              toArr(r.jobTitle),
-        "Job Seniority":          toArr(r.jobSeniority),
+        "Job Title":              toArrOrStr(r.jobTitle),
+        "Job Seniority":          toArrOrStr(r.jobSeniority),
         "Date Posted":            parseInt(r.datePosted) || 0,
       }));
 
+      const sentName = draftNameRef.current !== "Untitled Draft"
+        ? draftNameRef.current
+        : `Bulk Search · ${valid.length} ${valid.length === 1 ? "company" : "companies"}`;
       const { data: search, error: se } = await supabase
         .from("searches")
-        .insert({ user_id: userId, search_type: "bulk", excel_file_name: `grid_${valid.length}_companies`, status: "processing" })
+        .insert({ user_id: userId, search_type: "bulk", excel_file_name: sentName, status: "processing", grid_data: valid } as any)
         .select().single();
       if (se) throw se;
 
@@ -818,55 +808,16 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
               <span>New Sheet</span>
             </button>
 
-            {/* Drafts dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => { setShowDrafts(p => !p); setShowSheetsMenu(false); if (!showDrafts) fetchDrafts(); }}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
-                style={{ color: "#5a8888", border: "1px solid #daeaea", background: showDrafts ? "#e8f7f7" : "#fff" }}
-              >
-                <FolderOpen className="h-3 w-3" />
-                <span>Drafts</span>
-                <ChevronDown className="h-2.5 w-2.5" />
-              </button>
-
-              {showDrafts && (
-                <div
-                  className="absolute top-full mt-1.5 right-0 z-50 rounded-xl overflow-hidden"
-                  style={{ background: "#fff", border: "1px solid #c8e2e2", boxShadow: "0 8px 32px rgba(0,157,165,0.12)", width: 280 }}
-                >
-                  <div className="px-3 py-2 border-b" style={{ borderColor: "#daeaea", background: "#f4fcfc" }}>
-                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#007980" }}>Saved Drafts</span>
-                  </div>
-                  {drafts.length === 0 ? (
-                    <div className="px-3 py-5 text-center text-[12px]" style={{ color: "#9abcbc" }}>No drafts saved yet</div>
-                  ) : (
-                    <div className="overflow-y-auto" style={{ maxHeight: 260 }}>
-                      {drafts.map(d => (
-                        <div key={d.id} className="flex items-center gap-2 px-3 py-2.5 border-b hover:bg-[#f4fcfc] transition-colors group" style={{ borderColor: "#f0f5f5" }}>
-                          <div className="flex-1 min-w-0" onClick={() => loadDraft(d)} style={{ cursor: "pointer" }}>
-                            <div className="text-[12px] font-semibold truncate" style={{ color: "#1a2e2e" }}>{d.name}</div>
-                            <div className="text-[10px] mt-0.5" style={{ color: "#9abcbc" }}>
-                              {d.row_count} {d.row_count === 1 ? "row" : "rows"} · {formatRelativeTime(d.updated_at)}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => loadDraft(d)}
-                            className="shrink-0 px-2 py-1 rounded text-[10px] font-semibold transition-colors opacity-0 group-hover:opacity-100"
-                            style={{ color: "#007980", background: "#e8f7f7" }}
-                          >Load</button>
-                          <button
-                            onClick={() => deleteDraft(d.id)}
-                            className="shrink-0 p-1 rounded transition-colors opacity-0 group-hover:opacity-100 hover:text-red-500"
-                            style={{ color: "#b0cccc" }}
-                          ><Trash2 className="h-3 w-3" /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* My Sheets button */}
+            <button
+              onClick={() => onOpenManager?.()}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+              style={{ color: "#5a8888", border: "1px solid #daeaea", background: "#fff" }}
+              title="Open My Sheets — manage drafts and sent searches"
+            >
+              <FolderOpen className="h-3 w-3" />
+              <span>My Sheets</span>
+            </button>
 
             {/* Save Draft */}
             <button
@@ -1289,4 +1240,6 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
       )}
     </>
   );
-};
+});
+
+SpreadsheetGrid.displayName = "SpreadsheetGrid";

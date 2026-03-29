@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -8,7 +8,9 @@ import {
   BookOpen, Check, AlertTriangle, Table2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { SpreadsheetGrid } from "./SpreadsheetGrid";
+import { SpreadsheetGrid, SpreadsheetGridHandle } from "./SpreadsheetGrid";
+import type { GridRow } from "./SpreadsheetGrid";
+import { SheetsManager } from "./SheetsManager";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const EXPECTED_HEADERS = [
@@ -36,12 +38,47 @@ const PROCESSING_STEPS: { key: ProcessingStep; label: string; progress: number }
 export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
   const { toast }    = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const gridRef      = useRef<SpreadsheetGridHandle>(null);
 
   const [activeMode, setActiveMode] = useState<ActiveMode>("excel");
+  // "grid" = show spreadsheet, "manager" = show My Sheets page
+  const [sheetView, setSheetView] = useState<"grid" | "manager">("grid");
+  // Rows queued to load into the grid (applied once view switches back to "grid")
+  const [pendingLoad, setPendingLoad] = useState<{ rows: GridRow[]; draftId?: string; name: string } | null>(null);
   const [loading,      setLoading]      = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging,   setIsDragging]   = useState(false);
   const [currentStep,  setCurrentStep]  = useState<ProcessingStep>("idle");
+
+  // ── My Sheets: apply pending load once grid is in view ───────────────────────
+  useEffect(() => {
+    if (sheetView === "grid" && pendingLoad) {
+      gridRef.current?.loadRows(pendingLoad.rows, pendingLoad.draftId ?? null, pendingLoad.name);
+      setPendingLoad(null);
+    }
+  }, [sheetView, pendingLoad]);
+
+  const handleOpenManager = () => setSheetView("manager");
+
+  const handleLoadFromManager = (rows: GridRow[], meta: { draftId?: string; name: string }) => {
+    const hasDirty = gridRef.current?.hasUnsavedData();
+    if (hasDirty) {
+      if (!window.confirm("You have unsaved data in the worksheet. Load this sheet anyway and discard current changes?")) return;
+    }
+    setPendingLoad({ rows, draftId: meta.draftId, name: meta.name });
+    setSheetView("grid");
+  };
+
+  const handleDraftDeleted = (id: string) => {
+    gridRef.current?.notifyDraftDeleted(id);
+  };
+
+  const handleNewSheetFromManager = () => {
+    const hasDirty = gridRef.current?.hasUnsavedData();
+    if (hasDirty && !window.confirm("You have unsaved data in the worksheet. Start a new sheet and discard current changes?")) return;
+    setPendingLoad({ rows: [], name: "Untitled Draft" });
+    setSheetView("grid");
+  };
 
   // ── File helpers ──────────────────────────────────────────────────────────────
   const handleDownloadTemplate = async () => {
@@ -253,15 +290,33 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
         )}
       </div>
 
-      {/* ── SECTION 02: Spreadsheet Grid ─────────────────────────────────────── */}
+      {/* ── SECTION 02: Spreadsheet Grid / My Sheets Manager ─────────────────── */}
       {activeMode === "spreadsheet" && (
         <div className="bg-[#080f0f] px-7 pt-8 pb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
-            <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Enter Companies</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
-          </div>
-          <SpreadsheetGrid userId={userId} userEmail={userEmail} />
+          {sheetView === "manager" ? (
+            <SheetsManager
+              userId={userId}
+              currentDraftId={gridRef.current?.getCurrentDraftId() ?? null}
+              onBack={() => setSheetView("grid")}
+              onLoad={handleLoadFromManager}
+              onDraftDeleted={handleDraftDeleted}
+              onNewSheet={handleNewSheetFromManager}
+            />
+          ) : (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
+                <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Enter Companies</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+              </div>
+              <SpreadsheetGrid
+                ref={gridRef}
+                userId={userId}
+                userEmail={userEmail}
+                onOpenManager={handleOpenManager}
+              />
+            </>
+          )}
         </div>
       )}
 
