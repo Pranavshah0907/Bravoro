@@ -75,14 +75,14 @@ async function getAccessToken(keyJson: {
 
 const SHEET_HEADERS = [
   "Sr No", "Organization Name", "Organization Locations", "Organization Domains",
-  "Person Functions", "Person Seniorities / Titles", "Results per title",
+  "Person Functions", "Person Seniorities / Titles", "Person Job Title", "Results per title",
   "Toggle job search", "Job Title (comma separated)", "Job Seniority",
   "Date Posted (max age days)",
 ];
 
 interface GridRow {
   orgName: string; orgLocations: string; orgDomains: string;
-  personFunctions: string; personSeniorities: string; resultsPerTitle: string;
+  personFunctions: string; personSeniorities: string; personJobTitle: string; resultsPerTitle: string;
   toggleJobSearch: string; jobTitle: string; jobSeniority: string; datePosted: string;
 }
 
@@ -97,6 +97,7 @@ function buildValues(rows: GridRow[]): (string | number)[][] {
       r.orgDomains?.trim()        ?? "",
       r.personFunctions?.trim()   ?? "",
       r.personSeniorities?.trim() ?? "",
+      r.personJobTitle?.trim()    ?? "",
       parseInt(r.resultsPerTitle) || 3,
       r.toggleJobSearch           || "No",
       r.jobTitle?.trim()          ?? "",

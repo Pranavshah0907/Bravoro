@@ -29,6 +29,7 @@ function rowToGridRow(
     orgDomains:        get("organization domains"),
     personFunctions:   get("person functions"),
     personSeniorities: get("person seniorities / titles"),
+    personJobTitle:    get("person job title"),
     resultsPerTitle:   get("results per title") || "3",
     toggleJobSearch:   get("toggle job search") || "No",
     jobTitle:          get("job title (comma separated)"),

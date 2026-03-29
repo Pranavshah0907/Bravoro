@@ -33,7 +33,7 @@ const ROWS_MAX     = 100;
 // ── Types ──────────────────────────────────────────────────────────────────────
 type ColKey =
   | "orgName" | "orgLocations" | "orgDomains"
-  | "personFunctions" | "personSeniorities" | "resultsPerTitle"
+  | "personFunctions" | "personSeniorities" | "personJobTitle" | "resultsPerTitle"
   | "toggleJobSearch" | "jobTitle" | "jobSeniority" | "datePosted";
 
 interface ColDef {
@@ -56,7 +56,7 @@ interface DraftMeta {
 
 const INITIAL_WIDTHS: Record<ColKey, number> = {
   orgName: 180, orgLocations: 140, orgDomains: 140,
-  personFunctions: 155, personSeniorities: 155, resultsPerTitle: 90,
+  personFunctions: 155, personSeniorities: 155, personJobTitle: 150, resultsPerTitle: 90,
   toggleJobSearch: 80, jobTitle: 150, jobSeniority: 125, datePosted: 90,
 };
 
@@ -66,6 +66,7 @@ const COLS: ColDef[] = [
   { key: "orgDomains",        label: "Organization Domains",   width: 140, type: "text",         placeholder: "acme.com" },
   { key: "personFunctions",   label: "Person Functions",       width: 155, type: "picker-multi", options: LINKEDIN_FUNCTIONS },
   { key: "personSeniorities", label: "Person Seniorities",     width: 155, type: "picker-multi", options: SENIORITY_LEVELS },
+  { key: "personJobTitle",    label: "Person Job Title",       width: 150, type: "text",         placeholder: "e.g. Account Executive" },
   { key: "resultsPerTitle",   label: "Results / Title",        width: 90,  type: "number",       placeholder: "3" },
   { key: "toggleJobSearch",   label: "Job Search",             width: 80,  type: "yesno" },
   { key: "jobTitle",          label: "Job Title",              width: 150, type: "text",         placeholder: "Sales Manager" },
@@ -75,7 +76,7 @@ const COLS: ColDef[] = [
 
 const emptyRow = (): GridRow => ({
   orgName: "", orgLocations: "", orgDomains: "",
-  personFunctions: "", personSeniorities: "",
+  personFunctions: "", personSeniorities: "", personJobTitle: "",
   resultsPerTitle: "3", toggleJobSearch: "No",
   jobTitle: "", jobSeniority: "", datePosted: "0",
 });
@@ -469,6 +470,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         "Organization Domains":        r.orgDomains.trim(),
         "Person Functions":            r.personFunctions.trim(),
         "Person Seniorities / Titles": r.personSeniorities.trim(),
+        "Person Job Title":            r.personJobTitle.trim(),
         "Results per title":           parseInt(r.resultsPerTitle) || 3,
         "Toggle job search":           r.toggleJobSearch || "No",
         "Job Title (comma separated)": r.jobTitle.trim(),
@@ -749,7 +751,17 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                         return (
                           <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)" : undefined, ...(isActive ? { outline: "2px solid #009da5", outlineOffset: "-2px", position: "relative", zIndex: 20 } : {}) }}
                             onClick={() => { setActive({ r: ri, c: ci }); setEditing(false); if (col.type === "yesno") { setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes"); } else { setTimeout(() => inputRefs.current.get(`${ri}-${ci}`)?.focus(), 0); } }}
-                            onDoubleClick={() => { if (col.type === "yesno") return; setActive({ r: ri, c: ci }); setEditing(true); setTimeout(() => { const el = inputRefs.current.get(`${ri}-${ci}`); if (el) { el.focus(); const l = el.value.length; el.setSelectionRange(l, l); } }, 0); }}
+                            onDoubleClick={() => {
+                              if (col.type === "yesno") return;
+                              if (col.key === "personJobTitle") {
+                                const fns = row.personFunctions ? row.personFunctions.split(",").map(s => s.trim()).filter(Boolean) : [];
+                                if (fns.length > 1) {
+                                  toast({ title: "Too many Person Functions", description: "Person Job Title requires 0 or 1 Person Function. Remove extra functions first.", variant: "destructive" });
+                                  return;
+                                }
+                              }
+                              setActive({ r: ri, c: ci }); setEditing(true); setTimeout(() => { const el = inputRefs.current.get(`${ri}-${ci}`); if (el) { el.focus(); const l = el.value.length; el.setSelectionRange(l, l); } }, 0);
+                            }}
                           >
                             {col.type === "yesno" ? (
                               <div className="w-full h-full flex items-center justify-center cursor-pointer select-none">
