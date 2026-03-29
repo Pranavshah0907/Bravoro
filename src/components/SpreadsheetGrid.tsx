@@ -153,7 +153,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
 
   const focusCell = useCallback((r: number, c: number) => {
     const el = inputRefs.current.get(`${r}-${c}`);
-    if (el) { el.focus(); const l = el.value.length; el.setSelectionRange(l, l); }
+    if (el) el.focus({ preventScroll: false });
   }, []);
 
   // ── Effects ──────────────────────────────────────────────────────────────────
@@ -382,7 +382,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     const nr = r + dr; const nc = c + dc;
     if (nr < 0 || nr >= rows.length || nc < 0 || nc >= COLS.length) return;
     setActive({ r: nr, c: nc }); setEditing(false);
-    setTimeout(() => focusCell(nr, nc), 0);
+    requestAnimationFrame(() => focusCell(nr, nc));
   };
 
   const handleCellKeyDown = (e: React.KeyboardEvent, r: number, c: number) => {
@@ -764,8 +764,21 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                             }}
                           >
                             {col.type === "yesno" ? (
-                              <div className="w-full h-full flex items-center justify-center cursor-pointer select-none">
-                                <span className="text-[11px] font-bold tracking-wider" style={{ color: row[col.key] === "Yes" ? "#007980" : "#b0c8c8" }}>{row[col.key] === "Yes" ? "YES" : "NO"}</span>
+                              <div className="w-full h-full flex items-center justify-center cursor-pointer select-none relative">
+                                <input
+                                  ref={setInputRef(ri, ci)}
+                                  type="text"
+                                  readOnly
+                                  value={row[col.key]}
+                                  onFocus={() => setActive({ r: ri, c: ci })}
+                                  onKeyDown={e => {
+                                    handleCellKeyDown(e, ri, ci);
+                                    if (e.key === " " || e.key === "Enter") { e.preventDefault(); setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes"); }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                  style={{ caretColor: "transparent" }}
+                                />
+                                <span className="text-[11px] font-bold tracking-wider pointer-events-none" style={{ color: row[col.key] === "Yes" ? "#007980" : "#b0c8c8" }}>{row[col.key] === "Yes" ? "YES" : "NO"}</span>
                               </div>
                             ) : isPicker ? (
                               <div className="relative flex items-center w-full h-full">
