@@ -418,6 +418,9 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     const col = COLS[c];
     if (e.key === "F2")     { e.preventDefault(); setEditing(prev => !prev); return; }
     if (e.key === "Escape") { e.preventDefault(); setEditing(false); return; }
+    if (!editing && (e.key === "Delete" || e.key === "Backspace") && col.type !== "yesno") {
+      e.preventDefault(); setCell(r, col.key, col.type === "number" ? "0" : ""); return;
+    }
     if (e.key === "Tab")    { e.preventDefault(); navigate(r, c, 0, e.shiftKey ? -1 : 1); return; }
     if (e.key === "Enter")  { e.preventDefault(); navigate(r, c, 1, 0); return; }
     if (e.key === "ArrowUp")   { e.preventDefault(); navigate(r, c, -1, 0); return; }
