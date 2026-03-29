@@ -103,7 +103,8 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const [editing,    setEditing]    = useState(false);
   const [pickerQ,    setPickerQ]    = useState("");
   const [colWidths,  setColWidths]  = useState<Record<ColKey, number>>(() => ({ ...INITIAL_WIDTHS }));
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting,       setSubmitting]       = useState(false);
+  const [sessionRestored,  setSessionRestored]  = useState(false);
 
   // ── Draft state ──────────────────────────────────────────────────────────────
   const [draftId,        setDraftId]        = useState<string | null>(null);
@@ -190,6 +191,34 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   }, []);
 
   useEffect(() => { setPickerQ(""); }, [active?.c]);
+
+  // ── Session persistence (survives tab switches; cleared on submit / new sheet) ─
+  useEffect(() => {
+    const key = `sg_session_${userId}`;
+    const saved = sessionStorage.getItem(key);
+    if (saved) {
+      try {
+        const { rows: r, draftId: did, draftName: dn } = JSON.parse(saved) as {
+          rows: GridRow[]; draftId: string | null; draftName: string;
+        };
+        if (Array.isArray(r) && r.some(row => row.orgName?.trim())) {
+          skipDirtyRef.current = true;
+          setRows(r);
+          if (did) { setDraftId(did); setDraftName(dn ?? "Untitled Draft"); setDraftStatus("saved"); }
+        }
+      } catch {}
+    }
+    setSessionRestored(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);  // mount only
+
+  useEffect(() => {
+    if (!sessionRestored) return;
+    const key = `sg_session_${userId}`;
+    const hasData = rows.some(r => r.orgName.trim()) || !!draftId;
+    if (!hasData) { sessionStorage.removeItem(key); return; }
+    sessionStorage.setItem(key, JSON.stringify({ rows, draftId, draftName }));
+  }, [rows, draftId, draftName, sessionRestored, userId]);
 
   // ── Auto-save (reads from refs to avoid stale closure) ───────────────────────
   const doAutoSave = async () => {
@@ -377,12 +406,12 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
     document.addEventListener("mouseup", onUp);
   };
 
-  // Keyboard navigation
+  // Keyboard navigation — focusCell is synchronous because all inputs are already in the DOM
   const navigate = (r: number, c: number, dr: number, dc: number) => {
     const nr = r + dr; const nc = c + dc;
     if (nr < 0 || nr >= rows.length || nc < 0 || nc >= COLS.length) return;
     setActive({ r: nr, c: nc }); setEditing(false);
-    requestAnimationFrame(() => focusCell(nr, nc));
+    focusCell(nr, nc);
   };
 
   const handleCellKeyDown = (e: React.KeyboardEvent, r: number, c: number) => {
@@ -501,12 +530,32 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
       }
 
       toast({ title: "Processing Started", description: `${valid.length} ${valid.length === 1 ? "company" : "companies"} queued. You'll get an email when results are ready.` });
+      sessionStorage.removeItem(`sg_session_${userId}`);
       skipDirtyRef.current = true;
       setRows(Array.from({ length: ROWS_DEFAULT }, emptyRow));
       setActive(null);
     } catch (err) {
       toast({ title: "Processing Failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally { setSubmitting(false); }
+  };
+
+  // ── New sheet ─────────────────────────────────────────────────────────────────
+  const doReset = () => {
+    sessionStorage.removeItem(`sg_session_${userId}`);
+    skipDirtyRef.current = true;
+    setRows(Array.from({ length: ROWS_DEFAULT }, emptyRow));
+    setDraftId(null);
+    setDraftName("Untitled Draft");
+    setDraftStatus("idle");
+    setActive(null);
+    setEditing(false);
+  };
+
+  const handleNewSheet = () => {
+    const validCount = rows.filter(r => r.orgName.trim()).length;
+    const hasUnsaved = validCount > 0 && draftStatus !== "saved";
+    if (hasUnsaved && !window.confirm("You have unsaved changes. Discard them and open a new sheet?")) return;
+    doReset();
   };
 
   const validCount = rows.filter(r => r.orgName.trim()).length;
@@ -575,6 +624,17 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
 
           {/* Actions */}
           <div className="flex items-center gap-1.5 shrink-0">
+
+            {/* New Sheet */}
+            <button
+              onClick={handleNewSheet}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+              style={{ color: "#5a8888", border: "1px solid #daeaea", background: "#fff" }}
+              title="Start a new blank sheet"
+            >
+              <Plus className="h-3 w-3" />
+              <span>New Sheet</span>
+            </button>
 
             {/* Drafts dropdown */}
             <div className="relative">
