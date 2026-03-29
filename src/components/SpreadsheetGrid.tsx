@@ -749,7 +749,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                         const hasValue = !!row[col.key].trim();
                         const isEditing = isActive && editing;
                         return (
-                          <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)" : undefined, ...(isActive ? { outline: "2px solid #009da5", outlineOffset: "-2px", position: "relative", zIndex: 20 } : {}) }}
+                          <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)" : undefined, ...(isActive ? { outline: isEditing ? "1px solid #009da5" : "3px solid #009da5", outlineOffset: isEditing ? "-1px" : "-3px", position: "relative", zIndex: 20 } : {}) }}
                             onClick={() => { setActive({ r: ri, c: ci }); setEditing(false); if (col.type === "yesno") { setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes"); } else { setTimeout(() => inputRefs.current.get(`${ri}-${ci}`)?.focus(), 0); } }}
                             onDoubleClick={() => {
                               if (col.type === "yesno") return;
