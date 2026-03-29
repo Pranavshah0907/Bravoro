@@ -183,7 +183,7 @@ const Dashboard = () => {
       case "manual":
         return <ManualForm userId={user?.id || ""} />;
       case "bulk":
-        return <ExcelUpload userId={user?.id || ""} />;
+        return <ExcelUpload userId={user?.id || ""} userEmail={user?.email || ""} />;
       case "people_enrichment":
         return <BulkPeopleEnrichment userId={user?.id || ""} />;
       default:
@@ -206,6 +206,7 @@ const Dashboard = () => {
         onRenameAiConv={handleRenameAiConv}
         onDeleteAiConv={handleDeleteAiConv}
         onPinChange={handlePinChange}
+        onSelectEnrichment={(type) => setSelectedType(type as EnrichmentType)}
       />
 
       {/* Main Content */}
@@ -290,77 +291,12 @@ const Dashboard = () => {
               </div>
             </div>
           ) : (
-            /* ── Selected View: Left panel + Form ── */
-            <div className="flex flex-col lg:flex-row min-h-screen">
+            /* ── Selected View: Form ── */
+            <div className="min-h-screen">
 
-              {/* Left Sticky Nav ─ compact horizontal list items */}
-              <div className="
-                lg:sticky lg:top-0 lg:h-screen
-                w-full lg:w-52
-                shrink-0 flex flex-col justify-center
-                py-4 lg:py-[10vh]
-                px-4 lg:px-0 lg:pl-5
-              ">
-                <div className="flex flex-row lg:flex-col gap-1.5 lg:gap-1.5 h-auto lg:h-full overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
-                  {enrichmentOptions.map((option, index) => {
-                    const isSelected = selectedType === option.type;
-                    const Icon = option.icon;
-                    return (
-                      <button
-                        key={option.type}
-                        onClick={() => setSelectedType(option.type)}
-                        className={cn(
-                          "animate-sweep-left flex-shrink-0 lg:flex-shrink lg:flex-grow-0",
-                          "relative flex items-center gap-3 text-left",
-                          "min-w-[148px] lg:min-w-0 lg:w-full",
-                          "px-3 py-2.5 rounded-xl cursor-pointer",
-                          "transition-all duration-200 ease-out",
-                          "focus:outline-none active:scale-[0.98]",
-                          isSelected
-                            ? "bg-[#0f2424] border border-[#009da5]/28 shadow-[0_2px_12px_rgba(0,0,0,0.35)]"
-                            : "bg-transparent border border-transparent hover:bg-[#0a1c1c] hover:border-[#1a3535]/50"
-                        )}
-                        style={{ animationDelay: `${index * 80}ms` }}
-                      >
-                        {/* Selected accent bar */}
-                        {isSelected && (
-                          <div className="absolute left-0 top-[20%] bottom-[20%] w-[2px] bg-[#009da5] rounded-r-full" />
-                        )}
-
-                        {/* Icon */}
-                        <div className={cn(
-                          "p-1.5 rounded-lg shrink-0 transition-colors duration-200",
-                          isSelected
-                            ? "bg-[#009da5]/14 text-[#58dddd]"
-                            : "bg-white/[0.04] text-[#3d7070]"
-                        )}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-
-                        {/* Title */}
-                        <span className={cn(
-                          "text-[14px] font-semibold leading-tight truncate transition-colors duration-200",
-                          isSelected ? "text-white" : "text-[#5a9090]"
-                        )}>
-                          {option.title}
-                        </span>
-
-                        {/* Active dot */}
-                        {isSelected && (
-                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#009da5] shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Gap */}
-              <div className="hidden lg:block w-5 xl:w-7 shrink-0" />
-
-              {/* Right Form Area */}
-              <div className="flex-1 p-5 lg:p-8 xl:p-10 2xl:p-12 pt-3 lg:pt-8">
-                <div className="max-w-4xl mx-auto">
+              {/* Form Area — full width now that nav is in sidebar */}
+              <div className="p-5 lg:p-8 xl:p-10 2xl:p-12 pt-3 lg:pt-8">
+                <div className={selectedType === "bulk" ? "max-w-full" : "max-w-4xl mx-auto"}>
                   {/* Page header */}
                   <div className="mb-6 lg:mb-8 animate-fade-in">
                     <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#009da5]/70 mb-2">

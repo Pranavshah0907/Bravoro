@@ -16,6 +16,27 @@ const EXPECTED_HEADERS = [
   "results per title",
 ];
 
+// Maps a parsed row (keyed by raw header string) back to SpreadsheetGrid's GridRow shape
+function rowToGridRow(
+  row: Record<string, string>,
+  headers: string[],
+): Record<string, string> {
+  const hLow = headers.map((h) => h.toLowerCase());
+  const get  = (key: string) => row[headers[hLow.indexOf(key)]] ?? "";
+  return {
+    orgName:           get("organization name"),
+    orgLocations:      get("organization locations"),
+    orgDomains:        get("organization domains"),
+    personFunctions:   get("person functions"),
+    personSeniorities: get("person seniorities / titles"),
+    resultsPerTitle:   get("results per title") || "3",
+    toggleJobSearch:   get("toggle job search") || "No",
+    jobTitle:          get("job title (comma separated)"),
+    jobSeniority:      get("job seniority"),
+    datePosted:        get("date posted (max age days)") || "0",
+  };
+}
+
 // Extract sheet ID from any Google Sheets URL format
 function extractSheetId(url: string): string | null {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
@@ -209,6 +230,30 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ success: true, searchId: search.id, rowCount: data.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── ACTION: preview ────────────────────────────────────────────────────
+    // Returns parsed GridRow[] without triggering n8n — used for Sheets sync-back
+    if (action === "preview") {
+      // Try "Bulk Search" sheet name first (Bravoro export), then Sheet1
+      let result = await fetchSheetCsv(sheetId, "Bulk Search");
+      if (!result.ok) result = await fetchSheetCsv(sheetId, "Sheet1");
+
+      if (!result.ok) {
+        return new Response(JSON.stringify({
+          error: result.error === "not_public"
+            ? "Sheet is not publicly accessible. In Google Sheets, set sharing to 'Anyone with the link can view'."
+            : result.error,
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const { headers, data } = rowsToJson(result.rows!);
+      const gridRows = data.map((row) => rowToGridRow(row, headers));
+
+      return new Response(
+        JSON.stringify({ rows: gridRows, rowCount: gridRows.filter((r) => r.orgName?.trim()).length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     return new Response(JSON.stringify({ error: "Unknown action" }),

@@ -15,6 +15,10 @@ import {
   Trash2,
   Pin,
   PinOff,
+  Search,
+  Upload,
+  Users,
+  Bot,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -42,6 +46,7 @@ interface AppSidebarProps {
   onRenameAiConv?: (id: string, newTitle: string) => void;
   onDeleteAiConv?: (id: string) => void;
   onPinChange?: (pinned: boolean) => void;
+  onSelectEnrichment?: (type: string) => void;
 }
 
 interface NavItem {
@@ -64,6 +69,7 @@ export const AppSidebar = ({
   onRenameAiConv,
   onDeleteAiConv,
   onPinChange,
+  onSelectEnrichment,
 }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -237,6 +243,68 @@ export const AppSidebar = ({
             isExpanded ? "mx-2" : "mx-1"
           )}
         />
+
+        {/* Enrichment Tools section — shown when dashboard is active */}
+        {onSelectEnrichment && (
+          <div className="flex flex-col gap-0.5">
+            {isExpanded && (
+              <span className="px-3 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
+                Tools
+              </span>
+            )}
+            {[
+              { type: "manual", label: "Single Search", icon: Search },
+              { type: "bulk", label: "Bulk Search", icon: Upload },
+              { type: "people_enrichment", label: "Bulk People Enr.", icon: Users },
+              { type: "ai_staffing", label: "AI Staffing", icon: Bot },
+            ].map(({ type, label, icon: Icon }) => {
+              const isActive = selectedType === type;
+              return (
+                <button
+                  key={type}
+                  onClick={() => onSelectEnrichment(type)}
+                  title={!isExpanded ? label : undefined}
+                  className={cn(
+                    "group relative flex items-center w-full rounded-xl duration-200",
+                    isExpanded ? "px-4 py-2.5 gap-3" : "p-3 justify-center",
+                    isActive
+                      ? "bg-primary/15 text-primary"
+                      : "hover:bg-sidebar-accent/80"
+                  )}
+                >
+                  <div className="relative flex items-center justify-center shrink-0">
+                    <Icon
+                      className={cn(
+                        "h-4 w-4 duration-200",
+                        isActive ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground/90"
+                      )}
+                    />
+                    {isActive && (
+                      <span className="absolute -inset-2 bg-primary/20 rounded-lg blur-sm" />
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-[13px] font-medium whitespace-nowrap duration-300 truncate",
+                      isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 absolute",
+                      isActive ? "text-primary" : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground/90"
+                    )}
+                  >
+                    {label}
+                  </span>
+                  {isActive && !isExpanded && (
+                    <span className="absolute left-0 w-0.5 h-5 bg-primary rounded-r-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Divider before chats — only when tools are shown */}
+        {onSelectEnrichment && showYourChats && (
+          <div className={cn("my-1 border-t border-sidebar-border/40", isExpanded ? "mx-2" : "mx-1")} />
+        )}
 
         {/* Your Chats section */}
         {showYourChats && (
