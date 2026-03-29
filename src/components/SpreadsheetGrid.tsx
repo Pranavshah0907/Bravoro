@@ -833,13 +833,13 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
             {/* Sheets dropdown */}
             <div className="relative">
               <button
-                onClick={() => { setShowSheetsMenu(p => !p); setShowDrafts(false); }}
+                onClick={() => setShowSheetsMenu(p => !p)}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
                 style={{ color: "#fff", background: "#009da5", border: "1px solid #007980" }}
               >
                 <FileSpreadsheet className="h-3 w-3" />
                 <span>Sheets</span>
-                <ChevronDown className="h-2.5 w-2.5" />
+                <ChevronRight className="h-2.5 w-2.5 rotate-90" />
               </button>
 
               {showSheetsMenu && (
