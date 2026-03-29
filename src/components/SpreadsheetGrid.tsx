@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -56,7 +56,7 @@ interface DraftMeta {
 
 const INITIAL_WIDTHS: Record<ColKey, number> = {
   orgName: 180, orgLocations: 140, orgDomains: 140,
-  personFunctions: 155, personSeniorities: 155, personJobTitle: 150, resultsPerTitle: 90,
+  personFunctions: 155, personSeniorities: 155, personJobTitle: 150, resultsPerTitle: 130,
   toggleJobSearch: 80, jobTitle: 150, jobSeniority: 125, datePosted: 90,
 };
 
@@ -67,7 +67,7 @@ const COLS: ColDef[] = [
   { key: "personFunctions",   label: "Person Functions",       width: 155, type: "picker-multi", options: LINKEDIN_FUNCTIONS },
   { key: "personSeniorities", label: "Person Seniorities",     width: 155, type: "picker-multi", options: SENIORITY_LEVELS },
   { key: "personJobTitle",    label: "Person Job Title",       width: 150, type: "text",         placeholder: "e.g. Account Executive" },
-  { key: "resultsPerTitle",   label: "Results / Title",        width: 90,  type: "number",       placeholder: "3" },
+  { key: "resultsPerTitle",   label: "Results per Function",   width: 130, type: "number",       placeholder: "3" },
   { key: "toggleJobSearch",   label: "Job Search",             width: 80,  type: "yesno" },
   { key: "jobTitle",          label: "Job Title",              width: 150, type: "text",         placeholder: "Sales Manager" },
   { key: "jobSeniority",      label: "Job Seniority",          width: 125, type: "picker-multi", options: JOB_SENIORITY_PRESETS },
@@ -108,6 +108,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   const [sessionRestored,   setSessionRestored]   = useState(false);
   const [missingDomainRows, setMissingDomainRows] = useState<Set<number>>(new Set());
   const [copyRange,         setCopyRange]         = useState<{ r1: number; r2: number; c1: number; c2: number } | null>(null);
+  const [copyOverlay,       setCopyOverlay]       = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
   // ── Draft state ──────────────────────────────────────────────────────────────
   const [draftId,        setDraftId]        = useState<string | null>(null);
@@ -212,6 +213,25 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
   }, []);
 
   useEffect(() => { setPickerQ(""); }, [active?.c]);
+
+  // Measure actual DOM positions for the copy-range overlay (correct at any zoom/dpi)
+  useLayoutEffect(() => {
+    if (!copyRange || !tableRef.current) { setCopyOverlay(null); return; }
+    const wrapper = tableRef.current.parentElement;
+    if (!wrapper) return;
+    const firstCell = inputRefs.current.get(`${copyRange.r1}-${copyRange.c1}`)?.closest("td") as HTMLElement | null;
+    const lastCell  = inputRefs.current.get(`${copyRange.r2}-${copyRange.c2}`)?.closest("td") as HTMLElement | null;
+    if (!firstCell || !lastCell) { setCopyOverlay(null); return; }
+    const wRect = wrapper.getBoundingClientRect();
+    const fRect = firstCell.getBoundingClientRect();
+    const lRect = lastCell.getBoundingClientRect();
+    setCopyOverlay({
+      top:    fRect.top    - wRect.top,
+      left:   fRect.left   - wRect.left,
+      width:  lRect.right  - fRect.left,
+      height: lRect.bottom - fRect.top,
+    });
+  }, [copyRange]);
 
   // ── Session persistence (survives tab switches; cleared on submit / new sheet) ─
   useEffect(() => {
@@ -721,7 +741,6 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
         .sg-input:focus::placeholder { color: #c5d8d8; }
         .sg-picker-input::placeholder { color: #9ab8b8; }
         .sg-input:focus { outline: none; }
-        @keyframes marchingAnts { to { stroke-dashoffset: -24; } }
       `}</style>
 
       <div ref={containerRef} onPaste={handlePaste} className="space-y-3 w-full overflow-x-hidden">
@@ -748,7 +767,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
             ) : (
               <button
                 onClick={() => { setDraftRenameVal(draftName); setRenamingDraft(true); setTimeout(() => draftRenameRef.current?.focus(), 0); }}
-                className="flex items-center gap-1 text-[12px] font-semibold transition-colors truncate max-w-[200px]"
+                className="flex items-center gap-1 text-[14px] font-semibold transition-colors truncate max-w-[200px]"
                 style={{ color: "#007980" }}
                 title="Click to rename"
               >
@@ -947,7 +966,7 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                     return (
                       <th key={col.key} className="sticky top-0 z-20 text-left border-b border-r" style={{ height: 36, background: "#edf6f6", borderColor: "#c8e2e2", position: "relative", padding: 0, overflow: "visible" }}>
                         <div className="flex items-center gap-1.5 pl-2.5 pr-4 h-full overflow-hidden">
-                          <span className="text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: isPicker ? "#007980" : "#5a8888" }}>
+                          <span className="text-[12px] font-bold uppercase tracking-wider truncate" style={{ color: isPicker ? "#005f65" : "#1a3535" }}>
                             {col.label}{col.key === "orgDomains" && <span style={{ color: "#e05555", marginLeft: 2 }}>*</span>}
                           </span>
                           {isPicker && <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: "#009da5", opacity: 0.8 }} />}
@@ -1055,22 +1074,14 @@ export const SpreadsheetGrid = ({ userId, userEmail = "" }: SpreadsheetGridProps
                 });})()}
               </tbody>
             </table>
-            {/* Copy-range marching-ants overlay */}
-            {copyRange && (() => {
-              const left   = 44 + COLS.slice(0, copyRange.c1).reduce((s, c) => s + colWidths[c.key], 0);
-              const width  = COLS.slice(copyRange.c1, copyRange.c2 + 1).reduce((s, c) => s + colWidths[c.key], 0);
-              const top    = 36 + copyRange.r1 * 32;
-              const height = (copyRange.r2 - copyRange.r1 + 1) * 32;
-              return (
-                <svg style={{ position: "absolute", top, left, width, height, pointerEvents: "none", zIndex: 25, overflow: "visible" }}>
-                  <rect x={1} y={1} width={width - 2} height={height - 2}
-                    fill="none" stroke="#1a73e8" strokeWidth={2}
-                    strokeDasharray="8 4"
-                    style={{ animation: "marchingAnts 0.45s linear infinite" }}
-                  />
-                </svg>
-              );
-            })()}
+            {/* Copy-range dashed overlay — positioned via DOM measurement */}
+            {copyOverlay && (
+              <svg style={{ position: "absolute", top: copyOverlay.top, left: copyOverlay.left, width: copyOverlay.width, height: copyOverlay.height, pointerEvents: "none", zIndex: 25, overflow: "visible" }}>
+                <rect x={1} y={1} width={copyOverlay.width - 2} height={copyOverlay.height - 2}
+                  fill="none" stroke="#1a73e8" strokeWidth={2} strokeDasharray="8 4"
+                />
+              </svg>
+            )}
             </div>
             {rows.length < ROWS_MAX && (
               <div style={{ borderTop: "1px solid #daeaea" }}>
