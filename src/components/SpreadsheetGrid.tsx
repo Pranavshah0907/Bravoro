@@ -583,6 +583,8 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     if (!active || !tableWrapRef.current) return;
     if (!tableWrapRef.current.contains(e.target as Node)) return;
     if (COLS[active.c]?.type === "yesno") return;
+    // In edit mode, let the browser handle native paste (insert at cursor)
+    if (editing) return;
     e.preventDefault();
     const text = e.clipboardData.getData("text/plain");
     if (!text) return;
