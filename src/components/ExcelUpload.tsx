@@ -180,10 +180,43 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
         .select().single();
       if (searchError) throw searchError;
       setCurrentStep("triggering");
+
+      // Transform Excel data to match SpreadsheetGrid's payload format
+      const toArrOrStr = (s: string) => {
+        const arr = s.trim() ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
+        return arr.length <= 1 ? (arr[0] ?? "") : arr;
+      };
+      const sheetName = Object.keys(excelData).includes("Main_Data") ? "Main_Data" : Object.keys(excelData)[0];
+      const rawRows: Record<string, string>[] = excelData[sheetName] ?? [];
+      // Flexible header lookup — handles V2 template header variants
+      const getVal = (row: Record<string, string>, ...keys: string[]) => {
+        for (const k of keys) {
+          const found = Object.keys(row).find(h => h.toLowerCase().startsWith(k.toLowerCase()));
+          if (found && row[found] != null) return String(row[found]).trim();
+        }
+        return "";
+      };
+      const mainData = rawRows
+        .filter(row => getVal(row, "Organization Domain", "Organization Name", "Person Function", "Person Seniori"))
+        .map((row, idx) => ({
+          "Sr No":                  idx + 1,
+          "Organization Name":      getVal(row, "Organization Name"),
+          "Organization Locations":  getVal(row, "Organization Location"),
+          "Organization Domains":    getVal(row, "Organization Domain"),
+          "Person Functions":        toArrOrStr(getVal(row, "Person Function")),
+          "Person Seniorities":      toArrOrStr(getVal(row, "Person Seniori")),
+          "Person Job Title":        getVal(row, "Person Job Title"),
+          "Results per Function":    parseInt(getVal(row, "Results per")) || 3,
+          "Toggle job search":       getVal(row, "Toggle job search", "Job Search") || "No",
+          "Job Title":               toArrOrStr(getVal(row, "Job Title")),
+          "Job Seniority":           toArrOrStr(getVal(row, "Job Seniority")),
+          "Date Posted":             parseInt(getVal(row, "Date Posted", "Date (days)")) || 0,
+        }));
+
       const { data: { session } } = await supabase.auth.getSession();
       const { error: webhookError } = await supabase.functions.invoke("trigger-n8n-webhook", {
         headers: { Authorization: `Bearer ${session?.access_token}` },
-        body: { searchId: search.id, entryType: "bulk_upload", searchData: { search_id: search.id, data: excelData } },
+        body: { searchId: search.id, entryType: "bulk_upload", searchData: { search_id: search.id, data: { Main_Data: mainData } } },
       });
       if (webhookError) {
         toast({ title: "Processing Failed", description: "We couldn't reach the processing server. Please try again shortly.", variant: "destructive" });

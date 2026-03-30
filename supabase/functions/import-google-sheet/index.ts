@@ -464,10 +464,44 @@ serve(async (req) => {
 
       if (searchError) throw searchError;
 
-      // Build data payload — People Enrichment uses first sheet name, Bulk Search uses Main_Data key
-      const sheetData = templateType === "people_enrichment"
-        ? { Sheet1: data }
-        : { Main_Data: data };
+      // Transform rows to match SpreadsheetGrid's exact payload format
+      // so n8n receives identical structure regardless of submission method
+      const toArrOrStr = (s: string) => {
+        const arr = s.trim() ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
+        return arr.length <= 1 ? (arr[0] ?? "") : arr;
+      };
+
+      let webhookData: Record<string, unknown>;
+
+      if (templateType === "people_enrichment") {
+        // People Enrichment: map to title-cased keys
+        const peRows = data
+          .filter(row => Object.values(row).some(v => v.trim()))
+          .map(row => rowToPeopleEnrichmentRow(row, headers));
+        webhookData = { Sheet1: peRows };
+      } else {
+        // Bulk Search: map to SpreadsheetGrid's Main_Data format
+        const gridRows = data
+          .filter(row => Object.values(row).some(v => v.trim()))
+          .map(row => rowToGridRow(row, headers));
+        const mainData = gridRows
+          .filter(r => r.orgName?.trim() || r.orgDomains?.trim() || r.personFunctions?.trim())
+          .map((r, idx) => ({
+            "Sr No":                  idx + 1,
+            "Organization Name":      r.orgName?.trim() ?? "",
+            "Organization Locations":  r.orgLocations?.trim() ?? "",
+            "Organization Domains":    r.orgDomains?.trim() ?? "",
+            "Person Functions":        toArrOrStr(r.personFunctions ?? ""),
+            "Person Seniorities":      toArrOrStr(r.personSeniorities ?? ""),
+            "Person Job Title":        r.personJobTitle?.trim() ?? "",
+            "Results per Function":    parseInt(r.resultsPerTitle) || 3,
+            "Toggle job search":       r.toggleJobSearch || "No",
+            "Job Title":               toArrOrStr(r.jobTitle ?? ""),
+            "Job Seniority":           toArrOrStr(r.jobSeniority ?? ""),
+            "Date Posted":             parseInt(r.datePosted) || 0,
+          }));
+        webhookData = { Main_Data: mainData };
+      }
 
       // Invoke trigger-n8n-webhook — pass the user's JWT so it can authenticate
       const { error: webhookError } = await supabase.functions.invoke("trigger-n8n-webhook", {
@@ -477,9 +511,7 @@ serve(async (req) => {
           entryType,
           searchData: {
             search_id: search.id,
-            data: sheetData,
-            source: "google_sheets",
-            sheet_id: sheetId,
+            data: webhookData,
           },
         },
       });
