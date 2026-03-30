@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { LogIn, Loader2, Mail, Lock, X, PhoneCall } from "lucide-react";
+import { LogIn, Loader2, Mail, Lock, X, PhoneCall, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
@@ -45,6 +45,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [wordIndex, setWordIndex] = useState(0);
   const [animPhase, setAnimPhase] = useState<AnimPhase>("idle");
@@ -402,22 +403,42 @@ const Auth = () => {
                   </label>
                   <ForgotPasswordDialog />
                 </div>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="auth-input"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(88,221,221,0.18)",
-                    borderRadius: "10px", padding: "11px 13px",
-                    color: "#e4efef",
-                    fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.88rem",
-                    outline: "none", width: "100%", boxSizing: "border-box",
-                  }}
-                />
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="auth-input"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(88,221,221,0.18)",
+                      borderRadius: "10px", padding: "11px 38px 11px 13px",
+                      color: "#e4efef",
+                      fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.88rem",
+                      outline: "none", width: "100%", boxSizing: "border-box",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={() => setShowPassword(true)}
+                    onMouseUp={() => setShowPassword(false)}
+                    onMouseLeave={() => setShowPassword(false)}
+                    onTouchStart={() => setShowPassword(true)}
+                    onTouchEnd={() => setShowPassword(false)}
+                    tabIndex={-1}
+                    style={{
+                      position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)",
+                      background: "none", border: "none", cursor: "pointer", padding: "2px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    {showPassword
+                      ? <EyeOff size={16} style={{ color: "#58dddd" }} />
+                      : <Eye size={16} style={{ color: "rgba(88,221,221,0.45)" }} />}
+                  </button>
+                </div>
               </div>
 
               <button

@@ -6,7 +6,7 @@ import { z } from "zod";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
 import { ForgotPasswordDialog } from "@/components/ForgotPasswordDialog";
-import { LogIn, ChevronRight, Loader2, Mail, Lock, X, PhoneCall } from "lucide-react";
+import { LogIn, ChevronRight, Loader2, Mail, Lock, X, PhoneCall, Eye, EyeOff } from "lucide-react";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
@@ -32,6 +32,7 @@ const LandingV2 = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // If already logged in, go straight to dashboard
@@ -214,7 +215,12 @@ const LandingV2 = () => {
                   </label>
                   <ForgotPasswordDialog />
                 </div>
-                <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="lv2-input" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(88,221,221,0.18)", borderRadius: "10px", padding: "11px 13px", color: "#e4efef", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.88rem", outline: "none", width: "100%", boxSizing: "border-box" }} />
+                <div style={{ position: "relative" }}>
+                  <input type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="lv2-input" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(88,221,221,0.18)", borderRadius: "10px", padding: "11px 38px 11px 13px", color: "#e4efef", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.88rem", outline: "none", width: "100%", boxSizing: "border-box" }} />
+                  <button type="button" onMouseDown={() => setShowPassword(true)} onMouseUp={() => setShowPassword(false)} onMouseLeave={() => setShowPassword(false)} onTouchStart={() => setShowPassword(true)} onTouchEnd={() => setShowPassword(false)} tabIndex={-1} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {showPassword ? <EyeOff size={16} style={{ color: "#58dddd" }} /> : <Eye size={16} style={{ color: "rgba(88,221,221,0.45)" }} />}
+                  </button>
+                </div>
               </div>
 
               <button
