@@ -295,17 +295,14 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
           console.error("[AIChatInterface] n8n service error:", data.error ?? data.code);
           throw new Error("Service error");
         }
+        const item = Array.isArray(data) ? data[0] : data;
         const reply =
-          data.response ??
-          data.action?.message ??
-          data.message ??
-          data.output ??
-          data.text ??
-          (Array.isArray(data) &&
-            (data[0]?.response ??
-              data[0]?.action?.message ??
-              data[0]?.message)) ??
-          (typeof data === "string" ? data : null);
+          item?.text ??
+          item?.response ??
+          item?.action?.message ??
+          item?.message ??
+          item?.output ??
+          (typeof item === "string" ? item : null);
         if (reply) replyContent = String(reply);
       } catch (err) {
         console.error("[AIChatInterface] n8n fetch failed:", err);
