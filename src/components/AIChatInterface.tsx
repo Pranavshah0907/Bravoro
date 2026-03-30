@@ -284,12 +284,15 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
           throw new Error("Service unavailable");
         }
         const raw = await res.text();
+        console.log("[AIChatInterface] n8n raw response:", raw);
         if (!raw?.trim()) throw new Error("Empty response");
         const data = JSON.parse(raw);
+        console.log("[AIChatInterface] n8n parsed data:", data);
         if (
-          (data.code !== undefined && typeof data.code === "number") ||
-          data.error !== undefined
+          (data.code !== undefined && typeof data.code === "number" && data.code >= 400) ||
+          (data.error !== undefined && data.error !== null && data.error !== false && data.error !== "")
         ) {
+          console.error("[AIChatInterface] n8n service error:", data.error ?? data.code);
           throw new Error("Service error");
         }
         const reply =
