@@ -873,44 +873,44 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
             {/* Clear Sheet */}
             <button
               onClick={handleClearSheet}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
               style={{ color: "#994444", border: "1px solid #f0d8d8", background: "#fff" }}
               title="Clear all cell data (draft is kept)"
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-3.5 w-3.5" />
               <span>Clear</span>
             </button>
 
-            {/* New Sheet */}
+            {/* New Draft */}
             <button
               onClick={handleNewSheet}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
               style={{ color: "#5a8888", border: "1px solid #daeaea", background: "#fff" }}
               title="Start a new blank sheet"
             >
-              <Plus className="h-3 w-3" />
-              <span>New Sheet</span>
+              <Plus className="h-3.5 w-3.5" />
+              <span>New Draft</span>
             </button>
 
-            {/* My Sheets button */}
+            {/* My Drafts button */}
             <button
               onClick={() => onOpenManager?.()}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
               style={{ color: "#5a8888", border: "1px solid #daeaea", background: "#fff" }}
-              title="Open My Sheets — manage drafts and sent searches"
+              title="Open My Drafts — manage drafts and sent searches"
             >
-              <FolderOpen className="h-3 w-3" />
-              <span>My Sheets</span>
+              <FolderOpen className="h-3.5 w-3.5" />
+              <span>My Drafts</span>
             </button>
 
             {/* Save Draft */}
             <button
               onClick={saveDraft}
               disabled={draftSaving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
               style={{ color: "#007980", border: "1px solid #daeaea", background: "#fff" }}
             >
-              {draftSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+              {draftSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
               <span>Save Draft</span>
             </button>
 
@@ -918,10 +918,10 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
             <div className="relative">
               <button
                 onClick={() => setShowSheetsMenu(p => !p)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
                 style={{ color: "#fff", background: "#009da5", border: "1px solid #007980" }}
               >
-                <FileSpreadsheet className="h-3 w-3" />
+                <FileSpreadsheet className="h-3.5 w-3.5" />
                 <span>Sheets</span>
                 <ChevronRight className="h-2.5 w-2.5 rotate-90" />
               </button>
@@ -959,21 +959,16 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
           </div>
         </div>
 
-        {/* ── Hint bar ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
-          <div className="flex items-center gap-1.5">
+        {/* ── Hint + row count + separator ────────────────────────────────── */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 shrink-0">
             <Clipboard className="h-3 w-3 text-[#009da5]" />
             <span className="text-[11px] text-[#4a7878]">Click a cell · Ctrl+C to copy selection · paste from Excel or Google Sheets</span>
           </div>
-          <span className="text-[#2a5050]">·</span>
-          <div className="flex items-center gap-1">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#009da5]" />
-            <span className="text-[11px] text-[#4a7878]">teal columns open picker · arrow keys navigate · double-click to edit</span>
-          </div>
           {validCount > 0 && (
-            <><span className="text-[#2a5050]">·</span>
-            <span className="text-[11px] font-semibold text-[#58dddd]">{validCount} {validCount === 1 ? "row" : "rows"} filled</span></>
+            <span className="text-[13px] font-bold shrink-0" style={{ color: "#58dddd" }}>{validCount} {validCount === 1 ? "row" : "rows"} filled</span>
           )}
+          <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, #009da5, transparent)" }} />
         </div>
 
         {/* ── Grid + Picker ─────────────────────────────────────────────────── */}
@@ -1194,9 +1189,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         {/* ── Submit row ────────────────────────────────────────────────────────── */}
         <div className="flex items-center gap-4 pt-1">
           <div className="flex-1 min-w-0">
-            {validCount > 0 ? (
-              <p className="text-[12px] text-[#3d7070]"><span className="text-[#58dddd] font-semibold">{validCount}</span>{" "}{validCount === 1 ? "company" : "companies"} ready to process</p>
-            ) : (
+            {validCount === 0 && (
               <p className="text-[12px] text-[#2a4545]">Fill at least one company name to run</p>
             )}
           </div>
