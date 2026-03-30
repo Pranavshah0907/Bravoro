@@ -1,12 +1,9 @@
 import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Download, Upload, Loader2, FileSpreadsheet, ExternalLink, Users, Check, Info, AlertTriangle,
+  Download, Upload, Loader2, FileSpreadsheet, ExternalLink, Check, Info, AlertTriangle,
   Link2, CircleCheck, XCircle, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -415,75 +412,75 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
   };
 
   return (
-    <Card className="shadow-strong hover-lift border border-border backdrop-blur-sm">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl flex items-center gap-2">
-          <Users className="h-5 w-5 text-accent" />
-          Bulk People Enrichment
-        </CardTitle>
-        <CardDescription className="text-base">
-          Enrich existing contact lists with updated information
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Template Options */}
+    <div className="rounded-2xl overflow-hidden border border-[#1e4040]/60 shadow-[0_12px_56px_rgba(0,0,0,0.6),0_0_0_1px_rgba(0,157,165,0.06)]">
+
+      {/* ── SECTION 01: Template Options ──────────────────────────────────────── */}
+      <div className="bg-[#0c1d1d] px-7 pt-8 pb-8 border-b border-[#1e4040]/55">
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">01</span>
+          <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Template</span>
+          <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+        </div>
+
+        <p className="text-[14px] text-[#3d7070] font-medium mb-6">Download a template, fill it with your contacts, then upload below</p>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Microsoft Excel Template */}
-          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-accent/5 to-accent/10 hover:border-accent/30 transition-all duration-300 group">
+          {/* Microsoft Excel */}
+          <div className="p-4 rounded-xl border border-[#1e4040]/60 bg-[#0a1818] hover:border-[#009da5]/30 transition-all duration-200 group">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
-                <FileSpreadsheet className="h-5 w-5 text-accent" />
+              <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
+                <FileSpreadsheet className="h-5 w-5 text-[#009da5]" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Microsoft Excel</h3>
-                <p className="text-xs text-muted-foreground">Download .xlsx template</p>
+                <h3 className="text-[14px] font-semibold text-white">Microsoft Excel</h3>
+                <p className="text-[11px] text-[#3d7070]">Download .xlsx template</p>
               </div>
             </div>
-            <Button
+            <button
               onClick={handleDownloadTemplate}
-              variant="outline"
-              className="w-full h-10 border-accent/30 hover:bg-accent/10 hover:border-accent/50 hover:text-accent transition-all"
+              className="w-full h-9 rounded-lg border border-[#254848] bg-transparent text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Download className="mr-2 h-4 w-4 text-accent" />
+              <Download className="h-3.5 w-3.5" />
               Download Template
-            </Button>
+            </button>
           </div>
 
-          {/* Google Sheets Template */}
-          <div className="p-4 rounded-xl border border-border/50 bg-gradient-to-br from-secondary/5 to-secondary/10 hover:border-secondary/30 transition-all duration-300 group">
+          {/* Google Sheets */}
+          <div className="p-4 rounded-xl border border-[#1e4040]/60 bg-[#0a1818] hover:border-[#009da5]/30 transition-all duration-200 group">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
-                <svg className="h-5 w-5 text-secondary" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 11V9H11V5H9V9H5V11H9V19H11V11H19Z" />
-                  <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM5 19V5H19V19H5Z" />
+              <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
+                <svg className="h-5 w-5 text-[#009da5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-foreground">Google Sheets</h3>
-                <p className="text-xs text-muted-foreground">Copy, fill & paste URL below</p>
+                <h3 className="text-[14px] font-semibold text-white">Google Sheets</h3>
+                <p className="text-[11px] text-[#3d7070]">Copy, fill & paste URL below</p>
               </div>
             </div>
-            <Button
+            <button
               onClick={handleGoogleSheetCopy}
-              variant="outline"
-              className="w-full h-10 border-secondary/30 hover:bg-secondary/10 hover:border-secondary/50 hover:text-secondary transition-all"
+              className="w-full h-9 rounded-lg border border-[#254848] bg-transparent text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <ExternalLink className="mr-2 h-4 w-4 text-secondary" />
+              <ExternalLink className="h-3.5 w-3.5" />
               Make a Copy
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Required fields note */}
-        <div className="p-3 rounded-lg bg-muted/50 border border-border/30 space-y-2">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Required fields:</span> First Name, Last Name, Organization Domain
+        <div className="mt-5 p-3 rounded-lg bg-[#0a1818] border border-[#1e4040]/40 space-y-2">
+          <p className="text-[13px] text-[#5e9898]">
+            <span className="font-semibold text-white">Required fields:</span> First Name, Last Name, Organization Domain
             <br />
-            <span className="font-medium text-foreground">Optional:</span> Record ID
+            <span className="font-semibold text-white">Optional:</span> Record ID
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="inline-block h-3.5 w-3.5 ml-1 text-muted-foreground cursor-help" />
+                  <Info className="inline-block h-3.5 w-3.5 ml-1 text-[#3d7070] cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p>Option to include a unique identifier to track original data with enriched contacts</p>
@@ -492,61 +489,59 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
             </TooltipProvider>
             , LinkedIn URL
           </p>
-          <p className="text-sm flex items-center gap-1.5">
-            <span className="text-amber-500">⚠️</span>
-            <span className="text-muted-foreground">Important: Keep headers unchanged for a successful upload.</span>
-          </p>
-        </div>
-
-        {/* ── Google Sheet URL Import ──────────────────────────────────── */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-card px-3 py-1 text-muted-foreground rounded-full">Import your data</span>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <p className="text-[12px] text-[#5e9898]">Important: Keep headers unchanged for a successful upload.</p>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-4">
-          <Label className="text-foreground font-medium">Paste your filled Google Sheet URL</Label>
+      {/* ── SECTION 02: Import Data ──────────────────────────────────────────── */}
+      <div className="bg-[#080f0f] px-7 pt-8 pb-8">
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
+          <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Import Data</span>
+          <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+        </div>
+
+        <div className="space-y-5">
+          <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">Paste your filled Google Sheet URL</span>
 
           {/* URL input + Import button */}
           <div className="flex gap-3">
             <div className="flex-1 relative">
-              <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#3d7070] pointer-events-none" />
               <input
                 type="text"
                 value={sheetsUrl}
                 onChange={e => { setSheetsUrl(e.target.value); if (sheetsResult) setSheetsResult(null); }}
                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSheetsImport(); } }}
                 placeholder="https://docs.google.com/spreadsheets/d/..."
-                className="w-full h-11 pl-10 pr-4 rounded-xl bg-muted/30 border border-border text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors"
+                className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#0a1818] border border-[#254848] text-[14px] text-white placeholder:text-[#2e5252] focus:outline-none focus:border-[#009da5]/60 focus:ring-1 focus:ring-[#009da5]/30 transition-colors"
               />
             </div>
-            <Button
+            <button
               onClick={handleSheetsImport}
               disabled={!sheetsUrl.trim() || sheetsValidating}
-              variant="outline"
-              className="h-11 px-5 border-border hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all"
+              className="h-11 px-6 rounded-xl border border-[#254848] bg-[#0a1818] text-[13px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 shrink-0"
             >
-              {sheetsValidating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {sheetsValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               {sheetsValidating ? "Checking..." : "Import"}
-            </Button>
+            </button>
           </div>
 
           {/* Sharing hint */}
-          <p className="text-xs text-muted-foreground">
-            Your sheet must be shared publicly. In Google Sheets: <span className="text-primary font-medium">Share</span> &rarr; <span className="text-primary font-medium">General access</span> &rarr; <span className="text-primary font-medium">Anyone with the link</span> &rarr; <span className="text-primary font-medium">Viewer</span>
+          <p className="text-[12px] text-white/70">
+            Your sheet must be shared publicly. In Google Sheets: <span className="text-[#58dddd]">Share</span> &rarr; <span className="text-[#58dddd]">General access</span> &rarr; <span className="text-[#58dddd]">Anyone with the link</span> &rarr; <span className="text-[#58dddd]">Viewer</span>
           </p>
 
           {/* ── Validation error result ────────────────────────────────── */}
           {sheetsResult && sheetsResult.status === "error" && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/[0.06] overflow-hidden">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/[0.06] overflow-hidden">
               <div className="flex items-center gap-3 px-4 py-3">
-                <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                <XCircle className="h-5 w-5 text-red-400 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-destructive">
+                  <p className="text-[13px] font-semibold text-red-300">
                     {sheetsResult.reason === "not_public"
                       ? "Sheet is not publicly accessible"
                       : sheetsResult.reason === "headers_mismatch"
@@ -556,17 +551,17 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
                       : "Import failed"}
                   </p>
                   {sheetsResult.reason === "not_public" && (
-                    <p className="text-xs text-destructive/70 mt-1">
-                      Open your Google Sheet &rarr; Click <span className="font-medium">Share</span> (top right) &rarr; Under "General access", change to <span className="font-medium">Anyone with the link</span> &rarr; Set role to <span className="font-medium">Viewer</span> &rarr; Click <span className="font-medium">Done</span>
+                    <p className="text-[12px] text-red-300/70 mt-1">
+                      Open your Google Sheet &rarr; Click <span className="font-medium text-red-200">Share</span> (top right) &rarr; Under "General access", change to <span className="font-medium text-red-200">Anyone with the link</span> &rarr; Set role to <span className="font-medium text-red-200">Viewer</span> &rarr; Click <span className="font-medium text-red-200">Done</span>
                     </p>
                   )}
                   {sheetsResult.reason === "headers_mismatch" && sheetsResult.missingHeaders && (
-                    <p className="text-xs text-destructive/70 mt-1">
+                    <p className="text-[12px] text-red-300/70 mt-1">
                       Missing: {sheetsResult.missingHeaders.join(", ")}. Make sure you're using the Bravoro People Enrichment template.
                     </p>
                   )}
                   {sheetsResult.reason === "network" && (
-                    <p className="text-xs text-destructive/70 mt-1">{sheetsResult.message}</p>
+                    <p className="text-[12px] text-red-300/70 mt-1">{sheetsResult.message}</p>
                   )}
                 </div>
               </div>
@@ -576,12 +571,12 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
                 <>
                   <button
                     onClick={() => setSheetsErrorsExpanded(!sheetsErrorsExpanded)}
-                    className="w-full flex items-center justify-between px-4 py-2 border-t border-destructive/20 hover:bg-destructive/[0.04] transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-4 py-2 border-t border-red-500/20 hover:bg-red-500/[0.04] transition-colors cursor-pointer"
                   >
-                    <span className="text-xs text-destructive/70">
+                    <span className="text-[12px] text-red-300/70">
                       {sheetsResult.summary && `${sheetsResult.summary.totalRows} rows found`}
                     </span>
-                    <span className="text-xs text-destructive/50 flex items-center gap-1">
+                    <span className="text-[12px] text-red-300/50 flex items-center gap-1">
                       {sheetsErrorsExpanded ? "Hide" : "Show"} details
                       {sheetsErrorsExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </span>
@@ -589,8 +584,8 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
                   {sheetsErrorsExpanded && (
                     <div className="px-4 pb-3 space-y-1 max-h-48 overflow-y-auto">
                       {sheetsResult.errors.map((err, i) => (
-                        <div key={i} className="flex items-start gap-2 text-xs text-destructive/80">
-                          <span className="text-destructive mt-px shrink-0">&bull;</span>
+                        <div key={i} className="flex items-start gap-2 text-[12px] text-red-300/80">
+                          <span className="text-red-500 mt-px shrink-0">&bull;</span>
                           <span>{err.message}</span>
                         </div>
                       ))}
@@ -605,63 +600,54 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
           {sheetsResult && sheetsResult.status === "ok" && (
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] overflow-hidden">
               <div className="flex items-center gap-3 px-4 py-3">
-                <CircleCheck className="h-5 w-5 text-emerald-500 shrink-0" />
+                <CircleCheck className="h-5 w-5 text-emerald-400 shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">File OK</p>
-                  <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">
+                  <p className="text-[13px] font-semibold text-emerald-300">File OK</p>
+                  <p className="text-[12px] text-emerald-300/70 mt-0.5">
                     {sheetsResult.summary?.totalRows} row{(sheetsResult.summary?.totalRows ?? 0) !== 1 ? "s" : ""} ready to enrich
                   </p>
                 </div>
                 <div className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25">
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">VALIDATED</span>
+                  <span className="text-[11px] font-semibold text-emerald-300 tracking-wide">VALIDATED</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* Submit button for URL import */}
-          <Button
+          <button
             onClick={handleSheetsSubmit}
             disabled={sheetsResult?.status !== "ok" || sheetsSubmitting}
-            className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow text-base font-medium transition-all text-primary-foreground"
-            size="lg"
+            className={`w-full h-12 rounded-xl font-semibold text-[15px] tracking-wide transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
+              sheetsResult?.status === "ok" && !sheetsSubmitting
+                ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
+                : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+            }`}
           >
-            {sheetsSubmitting ? (
-              <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Processing...</>
-            ) : (
-              <><Upload className="mr-2 h-5 w-5" />Upload & Enrich</>
-            )}
-          </Button>
-        </div>
+            {sheetsSubmitting ? <><Loader2 className="h-5 w-5 animate-spin" />Processing...</> : <><Upload className="h-5 w-5" />Upload & Enrich</>}
+          </button>
 
-        {/* ── OR divider ──────────────────────────────────────────────── */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border"></div>
+          {/* ── OR divider ──────────────────────────────────────────────── */}
+          <div className="flex items-center gap-4 py-1">
+            <div className="flex-1 h-px bg-[#1e4040]/60" />
+            <span className="text-[12px] font-semibold text-[#3d7070] tracking-[0.1em] uppercase">or</span>
+            <div className="flex-1 h-px bg-[#1e4040]/60" />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-card px-3 py-1 text-muted-foreground rounded-full uppercase tracking-wider text-xs font-semibold">or</span>
-          </div>
-        </div>
 
-        {/* ── File Upload ──────────────────────────────────────────────── */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label className="text-foreground font-medium">Upload Filled Template</Label>
+          {/* ── File Upload ──────────────────────────────────────────────── */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">Upload Filled Template</span>
+
             <div
               onClick={handleZoneClick}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`
-                relative cursor-pointer rounded-xl border-2 border-dashed p-8 transition-all duration-300
-                ${isDragging
-                  ? 'border-primary bg-primary/10 scale-[1.02]'
-                  : selectedFile
-                    ? 'border-primary/50 bg-primary/5'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                }
-              `}
+              className={`relative cursor-pointer rounded-xl border-2 border-dashed p-8 transition-all duration-300 ${
+                isDragging ? "border-[#009da5] bg-[#009da5]/8"
+                  : selectedFile ? "border-[#009da5]/50 bg-[#009da5]/5"
+                  : "border-[#254848] hover:border-[#009da5]/40 hover:bg-[#009da5]/5"
+              }`}
             >
               <input
                 ref={fileInputRef}
@@ -674,87 +660,68 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
               <div className="flex flex-col items-center justify-center gap-3 text-center">
                 {selectedFile ? (
                   <>
-                    <div className="p-3 rounded-full bg-primary/10">
-                      <FileSpreadsheet className="h-8 w-8 text-primary" />
-                    </div>
+                    <div className="p-3 rounded-full bg-[#009da5]/12"><FileSpreadsheet className="h-8 w-8 text-[#009da5]" /></div>
                     <div>
-                      <p className="font-semibold text-foreground">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground mt-1">Click or drag to replace</p>
+                      <p className="text-[15px] font-semibold text-white">{selectedFile.name}</p>
+                      <p className="text-[12px] text-[#5e9898] mt-1">Click or drag to replace</p>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className={`p-3 rounded-full transition-colors ${isDragging ? 'bg-primary/20' : 'bg-muted'}`}>
-                      <Upload className={`h-8 w-8 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className={`p-3 rounded-full transition-colors ${isDragging ? "bg-[#009da5]/20" : "bg-[#1a3535]"}`}>
+                      <Upload className={`h-8 w-8 ${isDragging ? "text-[#009da5]" : "text-[#3d7070]"}`} />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">
-                        {isDragging ? 'Drop your file here' : 'Drag & drop your file here'}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        or <span className="text-primary font-medium">browse</span> to choose a file
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">Supports .xlsx, .xlsm, .csv</p>
+                      <p className="text-[15px] font-semibold text-white">{isDragging ? "Drop your file here" : "Drag & drop your file here"}</p>
+                      <p className="text-[13px] text-[#5e9898] mt-1">or <span className="text-[#58dddd] font-medium">browse</span> to choose a file</p>
+                      <p className="text-[12px] text-[#3d6060] mt-2">Supports .xlsx, .xlsm, .csv</p>
                     </div>
                   </>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Progress Bar */}
-          {loading && currentStep !== 'idle' && (
-            <div className="space-y-3 p-4 rounded-xl bg-muted/30 border border-border/50">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">
-                  {PROCESSING_STEPS.find(s => s.key === currentStep)?.label}
-                </span>
-                <span className="text-muted-foreground">{getCurrentProgress()}%</span>
-              </div>
-              <Progress value={getCurrentProgress()} className="h-2" />
-              <div className="flex justify-between gap-1">
-                {PROCESSING_STEPS.map((step, index) => (
-                  <div key={step.key} className="flex items-center gap-1">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs transition-colors ${
-                      getCurrentProgress() >= step.progress
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {getCurrentProgress() >= step.progress ? <Check className="h-3 w-3" /> : index + 1}
+            {/* Progress Bar */}
+            {loading && currentStep !== 'idle' && (
+              <div className="space-y-3 p-4 rounded-xl bg-[#0a1818] border border-[#1e4040]/55">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-medium text-white">{PROCESSING_STEPS.find(s => s.key === currentStep)?.label}</span>
+                  <span className="text-[13px] text-[#3d7070]">{getCurrentProgress()}%</span>
+                </div>
+                <Progress value={getCurrentProgress()} className="h-2" />
+                <div className="flex justify-between gap-2">
+                  {PROCESSING_STEPS.map((step, index) => (
+                    <div key={step.key} className="flex items-center gap-1.5">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] transition-colors ${
+                        getCurrentProgress() >= step.progress ? "bg-[#009da5] text-black" : "bg-[#1a3535] text-[#3d7070]"
+                      }`}>
+                        {getCurrentProgress() >= step.progress ? <Check className="h-3 w-3" /> : index + 1}
+                      </div>
+                      <span className={`text-[12px] hidden md:inline ${
+                        getCurrentProgress() >= step.progress ? "text-white" : "text-[#3d7070]"
+                      }`}>
+                        {step.key === 'parsing' ? 'Parse' : step.key === 'validating' ? 'Validate' : step.key === 'creating' ? 'Create' : step.key === 'triggering' ? 'Process' : 'Done'}
+                      </span>
                     </div>
-                    <span className={`text-xs hidden md:inline ${
-                      getCurrentProgress() >= step.progress ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
-                      {step.key === 'parsing' ? 'Parse' : step.key === 'validating' ? 'Validate' : step.key === 'creating' ? 'Create' : step.key === 'triggering' ? 'Process' : 'Done'}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="flex justify-center">
-            <Button
+            <button
               type="submit"
               disabled={!selectedFile || loading}
-              className="w-full max-w-md h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow text-base font-medium transition-all text-primary-foreground"
-              size="lg"
+              className={`w-full h-12 rounded-xl font-semibold text-[15px] tracking-wide transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
+                selectedFile && !loading
+                  ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
+                  : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+              }`}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Validating & Processing...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-5 w-5" />
-                  Upload & Enrich
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+              {loading ? <><Loader2 className="h-5 w-5 animate-spin" />Validating & Processing...</> : <><Upload className="h-5 w-5" />Upload & Enrich</>}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 };
