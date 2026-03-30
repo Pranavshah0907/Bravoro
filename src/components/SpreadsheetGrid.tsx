@@ -1052,8 +1052,8 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
       // Auto-delete draft on successful submit
       if (draftId) {
         await supabase.from("bulk_search_drafts").delete().eq("id", draftId);
-        setDraftId(null); setDraftName("Untitled Draft"); setDraftStatus("idle");
       }
+      setDraftId(null); setDraftName("Untitled Draft"); setDraftStatus("idle");
 
       toast({ title: "Processing Started", description: `${valid.length} ${valid.length === 1 ? "company" : "companies"} queued. You'll get an email when results are ready.` });
       sessionStorage.removeItem(`sg_session_${userId}`);

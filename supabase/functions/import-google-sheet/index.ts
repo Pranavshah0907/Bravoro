@@ -78,11 +78,11 @@ function rowToPeopleEnrichmentRow(
     return idx >= 0 ? (row[headers[idx]] ?? "") : "";
   };
   return {
-    "Record Id":           get("record id"),
-    "First Name":          get("first name"),
-    "Last Name":           get("last name"),
-    "Organization Domain": get("organization domain"),
-    "LinkedIn URL":        get("linkedin url"),
+    "Record Id":           String(get("record id")),
+    "First Name":          String(get("first name")),
+    "Last Name":           String(get("last name")),
+    "Organization Domain": String(get("organization domain")),
+    "LinkedIn URL":        String(get("linkedin url")),
   };
 }
 
@@ -117,9 +117,19 @@ function validatePeopleEnrichmentRows(
     const lastName = lastNameIdx >= 0 ? (row[headers[lastNameIdx]] ?? "").trim() : "";
     const domain = domainIdx >= 0 ? (row[headers[domainIdx]] ?? "").trim() : "";
 
-    if (!firstName) errors.push({ row: rowNum, message: `Row ${rowNum}: First Name is required` });
-    if (!lastName) errors.push({ row: rowNum, message: `Row ${rowNum}: Last Name is required` });
-    if (!domain) errors.push({ row: rowNum, message: `Row ${rowNum}: Organization Domain is required` });
+    if (!firstName) {
+      errors.push({ row: rowNum, message: `Row ${rowNum}: First Name is required` });
+    } else if (/\d/.test(firstName)) {
+      errors.push({ row: rowNum, message: `Row ${rowNum}: First Name must not contain numbers` });
+    }
+    if (!lastName) {
+      errors.push({ row: rowNum, message: `Row ${rowNum}: Last Name is required` });
+    } else if (/\d/.test(lastName)) {
+      errors.push({ row: rowNum, message: `Row ${rowNum}: Last Name must not contain numbers` });
+    }
+    if (!domain) {
+      errors.push({ row: rowNum, message: `Row ${rowNum}: Organization Domain is required` });
+    }
   });
 
   return { errors };
