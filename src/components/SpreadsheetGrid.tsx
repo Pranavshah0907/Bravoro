@@ -144,6 +144,9 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const draftNameRef   = useRef(draftName);
   const draftStatusRef = useRef(draftStatus);
   const skipDirtyRef   = useRef(true); // skip first render + explicit loads
+  // Undo history — stores snapshots of rows before each change
+  const undoStackRef   = useRef<GridRow[][]>([]);
+  const UNDO_LIMIT     = 50;
   rowsRef.current      = rows;
   draftIdRef.current   = draftId;
   draftNameRef.current = draftName;
@@ -322,6 +325,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     getCurrentDraftId: () => draftIdRef.current,
     loadRows: (newRows, newDraftId, newDraftName) => {
       skipDirtyRef.current = true;
+      undoStackRef.current = [];
       const padded = [...newRows];
       while (padded.length < ROWS_DEFAULT) padded.push(emptyRow());
       setRows(padded);
@@ -428,8 +432,23 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   // ── Grid helpers ─────────────────────────────────────────────────────────────
   const JOB_COLS: ColKey[] = ["jobTitle", "jobSeniority", "datePosted"];
 
+  // Wrap setRows to push undo snapshot before every mutation
+  const setRowsWithUndo = (updater: React.SetStateAction<GridRow[]>) => {
+    setRows(prev => {
+      undoStackRef.current = [...undoStackRef.current.slice(-(UNDO_LIMIT - 1)), prev.map(r => ({ ...r }))];
+      return typeof updater === "function" ? updater(prev) : updater;
+    });
+  };
+
+  const handleUndo = () => {
+    const stack = undoStackRef.current;
+    if (stack.length === 0) return;
+    const snapshot = stack.pop()!;
+    setRows(snapshot); // direct setRows — no undo entry for the undo itself
+  };
+
   const setCell = (r: number, k: ColKey, v: string) =>
-    setRows(p => p.map((row, i) => {
+    setRowsWithUndo(p => p.map((row, i) => {
       if (i !== r) return row;
       const updated = { ...row, [k]: v };
       // When toggle switches to "No", clear the 3 job columns
@@ -488,6 +507,11 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     }
     if (e.key === "Escape") { e.preventDefault(); setEditing(false); setAnchor({ r, c }); setCopyRange(null); return; }
 
+    // Undo (Ctrl+Z) — only when not editing a cell
+    if (!editing && (e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z") && !e.shiftKey) {
+      e.preventDefault(); handleUndo(); return;
+    }
+
     if (!editing && (e.key === "Delete" || e.key === "Backspace")) {
       e.preventDefault();
       const selAnchor = anchor ?? { r, c };
@@ -496,7 +520,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
       const r2 = Math.max(selAnchor.r, selActive.r);
       const c1 = Math.min(selAnchor.c, selActive.c);
       const c2 = Math.max(selAnchor.c, selActive.c);
-      setRows(prev => prev.map((row, ri) => {
+      setRowsWithUndo(prev => prev.map((row, ri) => {
         if (ri < r1 || ri > r2) return row;
         const updated = { ...row };
         for (let ci = c1; ci <= c2; ci++) {
@@ -591,7 +615,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     const pastedRows = text.trim().split(/\r?\n/).map(r => r.split("\t"));
     const isSingleCell = pastedRows.length === 1 && pastedRows[0].length === 1;
     const hasMultiSel = anchor && (anchor.r !== active.r || anchor.c !== active.c);
-    setRows(prev => {
+    setRowsWithUndo(prev => {
       const next = [...prev];
       if (isSingleCell && hasMultiSel) {
         // Single copied cell fills entire selection (Excel behaviour)
@@ -740,6 +764,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const doReset = (name = "Untitled Draft") => {
     sessionStorage.removeItem(`sg_session_${userId}`);
     skipDirtyRef.current = true;
+    undoStackRef.current = [];
     setRows(Array.from({ length: ROWS_DEFAULT }, emptyRow));
     setDraftId(null);
     setDraftName(name);
@@ -771,6 +796,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     if (!rows.some(r => r.orgName.trim())) return;
     if (!window.confirm("Clear all cell data? Your saved draft will not be deleted.")) return;
     skipDirtyRef.current = true;
+    undoStackRef.current = [];
     setRows(Array.from({ length: ROWS_DEFAULT }, emptyRow));
     setActive(null);
     setAnchor(null);
@@ -959,7 +985,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
             className="w-full rounded-xl overflow-auto"
             style={{ maxHeight: 540, background: "#ffffff", border: "1px solid #c8e2e2", boxShadow: "0 4px 24px rgba(0,157,165,0.10), 0 1px 4px rgba(0,0,0,0.06)" }}
           >
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative", paddingRight: showPicker ? 228 : 0 }}>
             <table ref={tableRef} style={{ borderCollapse: "collapse", width: "100%", minWidth: 44 + Object.values(colWidths).reduce((s, w) => s + w, 0), tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: 44 }} />
