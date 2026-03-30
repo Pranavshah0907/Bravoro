@@ -426,8 +426,20 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   };
 
   // ── Grid helpers ─────────────────────────────────────────────────────────────
+  const JOB_COLS: ColKey[] = ["jobTitle", "jobSeniority", "datePosted"];
+
   const setCell = (r: number, k: ColKey, v: string) =>
-    setRows(p => p.map((row, i) => i === r ? { ...row, [k]: v } : row));
+    setRows(p => p.map((row, i) => {
+      if (i !== r) return row;
+      const updated = { ...row, [k]: v };
+      // When toggle switches to "No", clear the 3 job columns
+      if (k === "toggleJobSearch" && v === "No") {
+        updated.jobTitle = "";
+        updated.jobSeniority = "";
+        updated.datePosted = "0";
+      }
+      return updated;
+    }));
 
   // Column resize — DOM-direct during drag, commit to state only on mouseup
   const startResize = (e: React.MouseEvent, key: ColKey) => {
@@ -469,11 +481,32 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const handleCellKeyDown = (e: React.KeyboardEvent, r: number, c: number) => {
     const col = COLS[c];
 
-    if (e.key === "F2")     { e.preventDefault(); setEditing(prev => !prev); return; }
+    if (e.key === "F2")     {
+      e.preventDefault();
+      if (JOB_COLS.includes(col.key) && rows[r]?.toggleJobSearch !== "Yes") return;
+      setEditing(prev => !prev); return;
+    }
     if (e.key === "Escape") { e.preventDefault(); setEditing(false); setAnchor({ r, c }); setCopyRange(null); return; }
 
-    if (!editing && (e.key === "Delete" || e.key === "Backspace") && col.type !== "yesno") {
-      e.preventDefault(); setCell(r, col.key, col.type === "number" ? "0" : ""); return;
+    if (!editing && (e.key === "Delete" || e.key === "Backspace")) {
+      e.preventDefault();
+      const selAnchor = anchor ?? { r, c };
+      const selActive = active ?? { r, c };
+      const r1 = Math.min(selAnchor.r, selActive.r);
+      const r2 = Math.max(selAnchor.r, selActive.r);
+      const c1 = Math.min(selAnchor.c, selActive.c);
+      const c2 = Math.max(selAnchor.c, selActive.c);
+      setRows(prev => prev.map((row, ri) => {
+        if (ri < r1 || ri > r2) return row;
+        const updated = { ...row };
+        for (let ci = c1; ci <= c2; ci++) {
+          const cc = COLS[ci];
+          if (!cc || cc.type === "yesno") continue;
+          updated[cc.key] = cc.type === "number" ? "0" : "";
+        }
+        return updated;
+      }));
+      return;
     }
 
     // Copy selected range as TSV (Ctrl+C / Cmd+C) — not in edit mode
@@ -538,6 +571,8 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
     // Typing while in selection mode: enter edit mode immediately
     if (!editing && (col.type === "text" || col.type === "number") && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // Block typing in job columns when toggle is No
+      if (JOB_COLS.includes(col.key) && rows[r]?.toggleJobSearch !== "Yes") return;
       setEditing(true);
       setCell(r, col.key, e.key);
     }
@@ -588,7 +623,8 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
   // Picker
   const activePicker = active ? COLS[active.c] : null;
-  const showPicker   = activePicker?.type === "picker-multi";
+  const isJobLocked  = active ? JOB_COLS.includes(COLS[active.c]?.key) && rows[active.r]?.toggleJobSearch !== "Yes" : false;
+  const showPicker   = activePicker?.type === "picker-multi" && !isJobLocked;
 
   const getSelected = (): string[] => {
     if (!active || !activePicker) return [];
@@ -971,8 +1007,11 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                         const isPicker = col.type === "picker-multi";
                         const hasValue = !!row[col.key].trim();
                         const isEditing = isActive && editing;
+                        const isJobCol = JOB_COLS.includes(col.key);
+                        const jobLocked = isJobCol && row.toggleJobSearch !== "Yes";
                         const isMissingDomain = missingDomainRows.has(ri) && col.key === "orgDomains";
-                        const cellBg = isMissingDomain && !isActive ? "rgba(239,68,68,0.08)"
+                        const cellBg = jobLocked ? "rgba(0,0,0,0.03)"
+                          : isMissingDomain && !isActive ? "rgba(239,68,68,0.08)"
                           : inSel && !isActive ? "rgba(0,157,165,0.14)"
                           : isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)"
                           : undefined;
@@ -982,18 +1021,22 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                           <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: cellBg, ...activeStyle, ...missingStyle }}
                             onMouseDown={(e) => {
                               if (e.button !== 0) return;
-                              e.preventDefault();
-                              if (missingDomainRows.size > 0) setMissingDomainRows(new Set());
-                              setAnchor({ r: ri, c: ci });
-                              setActive({ r: ri, c: ci });
-                              setEditing(false);
-                              isDraggingRef.current = false;
-                              dragStartPosRef.current = { x: e.clientX, y: e.clientY };
-                              if (col.type === "yesno") {
-                                setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes");
-                                focusCell(ri, ci);
-                              } else {
-                                focusCell(ri, ci);
+                              // If already editing this cell, let the browser handle text selection
+                              const alreadyEditing = editing && active?.r === ri && active?.c === ci;
+                              if (!alreadyEditing) {
+                                e.preventDefault();
+                                if (missingDomainRows.size > 0) setMissingDomainRows(new Set());
+                                setAnchor({ r: ri, c: ci });
+                                setActive({ r: ri, c: ci });
+                                setEditing(false);
+                                isDraggingRef.current = false;
+                                dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+                                if (col.type === "yesno") {
+                                  setCell(ri, col.key, row[col.key] === "Yes" ? "No" : "Yes");
+                                  focusCell(ri, ci);
+                                } else {
+                                  focusCell(ri, ci);
+                                }
                               }
                             }}
                             onMouseEnter={() => {
@@ -1002,6 +1045,8 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                             }}
                             onDoubleClick={() => {
                               if (col.type === "yesno") return;
+                              // Block editing job columns when toggle is No
+                              if (JOB_COLS.includes(col.key) && row.toggleJobSearch !== "Yes") return;
                               if (col.key === "personJobTitle") {
                                 const fns = row.personFunctions ? row.personFunctions.split(",").map(s => s.trim()).filter(Boolean) : [];
                                 if (fns.length > 1) {
