@@ -194,7 +194,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
       reader.onload = (e) => {
         try {
           const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: 'binary' });
+          const workbook = XLSX.read(data, { type: 'array' });
           
           const result: any = {};
           let headers: string[] = [];
@@ -217,7 +217,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
       };
       
       reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     });
   };
 

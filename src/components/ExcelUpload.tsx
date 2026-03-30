@@ -136,7 +136,7 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const workbook = XLSX.read(e.target?.result, { type: "binary" });
+          const workbook = XLSX.read(e.target?.result, { type: "array" });
           const result: any = {};
           let headers: string[] = [];
           workbook.SheetNames.forEach((sheetName) => {
@@ -150,7 +150,7 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
         } catch (err) { reject(err); }
       };
       reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     });
 
   const validateHeaders = (headers: string[]): boolean => {
