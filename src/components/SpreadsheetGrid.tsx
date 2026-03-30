@@ -226,25 +226,45 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     });
   }, [copyRange]);
 
-  // ── Session persistence (survives tab switches; cleared on submit / new sheet) ─
+  // ── Session persistence (survives SPA tab switches; blank after full page refresh) ─
   useEffect(() => {
     const key = `sg_session_${userId}`;
-    const saved = sessionStorage.getItem(key);
-    if (saved) {
-      try {
-        const { rows: r, draftId: did, draftName: dn } = JSON.parse(saved) as {
-          rows: GridRow[]; draftId: string | null; draftName: string;
-        };
-        if (Array.isArray(r) && r.some(row => row.orgName?.trim())) {
-          skipDirtyRef.current = true;
-          setRows(r);
-          if (did) { setDraftId(did); setDraftName(dn ?? "Untitled Draft"); setDraftStatus("saved"); }
-        }
-      } catch {}
+    const refreshKey = "sg_was_refresh";
+    // If the page was fully refreshed, clear saved session so sheet starts blank
+    if (sessionStorage.getItem(refreshKey)) {
+      sessionStorage.removeItem(refreshKey);
+      sessionStorage.removeItem(key);
+    } else {
+      const saved = sessionStorage.getItem(key);
+      if (saved) {
+        try {
+          const { rows: r, draftId: did, draftName: dn } = JSON.parse(saved) as {
+            rows: GridRow[]; draftId: string | null; draftName: string;
+          };
+          if (Array.isArray(r) && r.some(row => row.orgName?.trim())) {
+            skipDirtyRef.current = true;
+            setRows(r);
+            if (did) { setDraftId(did); setDraftName(dn ?? "Untitled Draft"); setDraftStatus("saved"); }
+          }
+        } catch {}
+      }
     }
     setSessionRestored(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);  // mount only
+
+  // Warn on page refresh/close if there's unsaved data; mark refresh so mount clears session
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const hasData = rowsRef.current.some(r => r.orgName.trim());
+      if (hasData && draftStatusRef.current !== "saved") {
+        sessionStorage.setItem("sg_was_refresh", "1");
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   useEffect(() => {
     if (!sessionRestored) return;
@@ -893,7 +913,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         </div>
 
         {/* ── Grid + Picker ─────────────────────────────────────────────────── */}
-        <div className="flex gap-3 items-start w-full min-w-0">
+        <div className="flex gap-3 items-start w-full min-w-0 overflow-hidden">
 
           {/* Table */}
           <div
