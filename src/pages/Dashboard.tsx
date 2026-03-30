@@ -196,6 +196,7 @@ const Dashboard = () => {
       {/* Sidebar */}
       <AppSidebar
         isAdmin={isAdmin}
+        isDeveloper={user?.email === "pranavshah0907@gmail.com"}
         onSignOut={handleSignOut}
         onHomeClick={handleHomeClick}
         selectedType={selectedType}
@@ -211,7 +212,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className={cn(
-        "flex-1 min-h-screen duration-300 ease-out",
+        "flex-1 min-w-0 min-h-screen duration-300 ease-out",
         isSidebarPinned ? "ml-56" : "ml-16"
       )}>
         {/* Background Effects — atmospheric black + teal */}

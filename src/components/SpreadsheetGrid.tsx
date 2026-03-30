@@ -817,7 +817,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         .sg-input:focus { outline: none; }
       `}</style>
 
-      <div ref={containerRef} onPaste={handlePaste} className="space-y-3 w-full overflow-x-hidden">
+      <div ref={containerRef} onPaste={handlePaste} className="space-y-3 w-full overflow-hidden">
 
         {/* ── Draft & Sheets Toolbar ───────────────────────────────────────── */}
         <div
@@ -977,15 +977,15 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         </div>
 
         {/* ── Grid + Picker ─────────────────────────────────────────────────── */}
-        <div className="relative w-full min-w-0">
+        <div className="flex gap-3 items-start w-full min-w-0">
 
           {/* Table */}
           <div
             ref={tableWrapRef}
-            className="w-full rounded-xl overflow-auto"
+            className="flex-1 min-w-0 rounded-xl overflow-auto"
             style={{ maxHeight: 540, background: "#ffffff", border: "1px solid #c8e2e2", boxShadow: "0 4px 24px rgba(0,157,165,0.10), 0 1px 4px rgba(0,0,0,0.06)" }}
           >
-            <div style={{ position: "relative", paddingRight: showPicker ? 228 : 0 }}>
+            <div style={{ position: "relative" }}>
             <table ref={tableRef} style={{ borderCollapse: "collapse", width: "100%", minWidth: 44 + Object.values(colWidths).reduce((s, w) => s + w, 0), tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: 44 }} />
@@ -1137,9 +1137,9 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
             )}
           </div>
 
-          {/* Picker panel — absolutely positioned so it overlays instead of pushing layout */}
+          {/* Picker panel — flex sibling, shrinks the table to fit */}
           {showPicker && activePicker && active && (
-            <div className="absolute top-0 right-0 z-20 w-[220px] flex flex-col rounded-xl overflow-hidden" style={{ maxHeight: 540, background: "#ffffff", border: "1px solid #c8e2e2", boxShadow: "0 4px 24px rgba(0,157,165,0.10), 0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div className="w-[220px] shrink-0 flex flex-col rounded-xl overflow-hidden" style={{ maxHeight: 540, background: "#ffffff", border: "1px solid #c8e2e2", boxShadow: "0 4px 24px rgba(0,157,165,0.10), 0 1px 4px rgba(0,0,0,0.06)" }}>
               <div className="px-3 pt-3 pb-2.5 shrink-0" style={{ borderBottom: "1px solid #daeaea", background: "#edf6f6" }}>
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: "#009da5" }} />
