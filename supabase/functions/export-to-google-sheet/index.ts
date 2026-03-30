@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import * as jose from "https://deno.land/x/jose@v4.15.4/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +35,7 @@ async function getAccessToken(keyJson: {
   const header  = b64url(new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
   const payload = b64url(new TextEncoder().encode(JSON.stringify({
     iss:   keyJson.client_email,
-    scope: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file",
+    scope: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive",
     aud:   "https://oauth2.googleapis.com/token",
     exp:   now + 3600,
     iat:   now,
@@ -64,10 +65,14 @@ async function getAccessToken(keyJson: {
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
-  const tokenData = await tokenRes.json();
+  const tokenText = await tokenRes.text();
+  let tokenData: any;
+  try { tokenData = JSON.parse(tokenText); } catch { throw new Error(`Token parse failed: ${tokenText}`); }
   if (!tokenData.access_token) {
-    throw new Error(`Token exchange failed: ${JSON.stringify(tokenData)}`);
+    throw new Error(`Token exchange failed (status ${tokenRes.status}): ${tokenText}`);
   }
+  // Log token metadata for debugging (NOT the token itself)
+  console.error("TOKEN_META:", JSON.stringify({ scope: tokenData.scope, token_type: tokenData.token_type, expires_in: tokenData.expires_in }));
   return tokenData.access_token;
 }
 
@@ -113,21 +118,28 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth check
+    // Cryptographically verify the JWT against Supabase's JWKS endpoint.
+    // --no-verify-jwt at gateway because Supabase runtime only supports HS256, not ES256.
+    // jose.createRemoteJWKSet caches JWKS after first fetch — negligible overhead.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const supabaseUrl     = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const callerToken     = authHeader.replace("Bearer ", "");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const callerJwt = authHeader.replace("Bearer ", "");
 
-    const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${callerToken}`, apikey: supabaseAnonKey },
-    });
-    if (authCheck.status !== 200) {
+    try {
+      const JWKS = jose.createRemoteJWKSet(
+        new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`)
+      );
+      const { payload } = await jose.jwtVerify(callerJwt, JWKS, {
+        issuer: `${supabaseUrl}/auth/v1`,
+        audience: "authenticated",
+      });
+      if (!payload.sub) throw new Error("no sub");
+    } catch {
       return new Response(JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -147,6 +159,10 @@ serve(async (req) => {
     const saJson = JSON.parse(Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON")!);
     const token  = await getAccessToken(saJson);
 
+    // ── DEBUG: test token with a simple tokeninfo call ─────────────────────────
+    const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+    const tokenInfo = await tokenInfoRes.text();
+
     // ── Create spreadsheet ────────────────────────────────────────────────────
     const createRes = await fetch("https://sheets.googleapis.com/v4/spreadsheets", {
       method: "POST",
@@ -157,9 +173,21 @@ serve(async (req) => {
       }),
     });
 
-    const spreadsheet = await createRes.json();
+    const createBody = await createRes.text();
+    let spreadsheet: any;
+    try { spreadsheet = JSON.parse(createBody); } catch { spreadsheet = {}; }
     if (!spreadsheet.spreadsheetId) {
-      throw new Error(`Sheet creation failed: ${JSON.stringify(spreadsheet)}`);
+      // Return debug info as JSON response so we can see it
+      return new Response(JSON.stringify({
+        error: "Sheet creation failed",
+        debug: {
+          status: createRes.status,
+          sa: saJson.client_email,
+          project: saJson.project_id,
+          tokenInfo: JSON.parse(tokenInfo),
+          sheetsResponse: createBody,
+        }
+      }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const spreadsheetId = spreadsheet.spreadsheetId;
     const sheetId       = spreadsheet.sheets?.[0]?.properties?.sheetId ?? 0;

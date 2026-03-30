@@ -356,8 +356,9 @@ const UserDatabase = () => {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl pointer-events-none" />
       
-      <AppSidebar 
-        isAdmin={isAdmin} 
+      <AppSidebar
+        isAdmin={isAdmin}
+        isDeveloper={user?.email === "pranavshah0907@gmail.com"}
         onSignOut={handleSignOut}
         onHomeClick={handleHomeClick}
       />

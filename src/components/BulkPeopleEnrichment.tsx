@@ -1,12 +1,14 @@
 import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Upload, Loader2, FileSpreadsheet, ExternalLink, BookOpen, Users, Check, Info, AlertTriangle } from "lucide-react";
+import {
+  Download, Upload, Loader2, FileSpreadsheet, ExternalLink, Users, Check, Info, AlertTriangle,
+  Link2, CircleCheck, XCircle, ChevronDown, ChevronUp,
+} from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as XLSX from 'xlsx';
 
@@ -43,6 +45,20 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
   const [currentStep, setCurrentStep] = useState<ProcessingStep>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Google Sheets URL import state ──────────────────────────────────────────
+  const [sheetsUrl,            setSheetsUrl]            = useState("");
+  const [sheetsValidating,     setSheetsValidating]     = useState(false);
+  const [sheetsSubmitting,     setSheetsSubmitting]     = useState(false);
+  const [sheetsResult,         setSheetsResult]         = useState<{
+    status: "ok" | "error";
+    reason?: string;
+    message?: string;
+    errors?: { row: number; message: string }[];
+    missingHeaders?: string[];
+    summary?: { totalRows: number; jobSearchRows: number };
+  } | null>(null);
+  const [sheetsErrorsExpanded, setSheetsErrorsExpanded] = useState(false);
+
   const handleDownloadTemplate = async () => {
     try {
       const response = await fetch("/Bulk_PeopleEnrichment.xlsx");
@@ -75,8 +91,54 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     window.open(GOOGLE_SHEET_COPY_URL, "_blank", "noopener,noreferrer");
     toast({
       title: "Google Sheets Opened",
-      description: "Make a copy, fill it with your data, then download and upload here",
+      description: "Make a copy, fill it with your data, then share publicly and paste the URL below",
     });
+  };
+
+  // ── Google Sheets: validate URL ──────────────────────────────────────────────
+  const handleSheetsImport = async () => {
+    if (!sheetsUrl.trim()) return;
+    setSheetsValidating(true);
+    setSheetsResult(null);
+    setSheetsErrorsExpanded(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("import-google-sheet", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { action: "validate", sheetUrl: sheetsUrl.trim(), userId, templateType: "people_enrichment" },
+      });
+      if (error) throw error;
+      setSheetsResult(data);
+    } catch {
+      setSheetsResult({ status: "error", reason: "network", message: "Could not reach the server. Please try again." });
+    } finally {
+      setSheetsValidating(false);
+    }
+  };
+
+  // ── Google Sheets: submit for processing ──────────────────────────────────────
+  const handleSheetsSubmit = async () => {
+    if (sheetsResult?.status !== "ok") return;
+    setSheetsSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("import-google-sheet", {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+        body: { action: "import", sheetUrl: sheetsUrl.trim(), userId, templateType: "people_enrichment" },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ title: "Import Failed", description: data.error, variant: "destructive" });
+      } else {
+        toast({ title: "Processing Started", description: `${data.rowCount} rows submitted. You'll receive an email when results are ready.` });
+        setSheetsUrl("");
+        setSheetsResult(null);
+      }
+    } catch {
+      toast({ title: "Processing Failed", description: "We couldn't reach the processing server. Please try again shortly.", variant: "destructive" });
+    } finally {
+      setSheetsSubmitting(false);
+    }
   };
 
   const validateFile = (file: File): boolean => {
@@ -398,7 +460,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground">Google Sheets</h3>
-                <p className="text-xs text-muted-foreground">Copy to your Drive</p>
+                <p className="text-xs text-muted-foreground">Copy, fill & paste URL below</p>
               </div>
             </div>
             <Button
@@ -436,15 +498,153 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
           </p>
         </div>
 
+        {/* ── Google Sheet URL Import ──────────────────────────────────── */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-card px-3 py-1 text-muted-foreground rounded-full">Then upload your file</span>
+            <span className="bg-card px-3 py-1 text-muted-foreground rounded-full">Import your data</span>
           </div>
         </div>
 
+        <div className="space-y-4">
+          <Label className="text-foreground font-medium">Paste your filled Google Sheet URL</Label>
+
+          {/* URL input + Import button */}
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={sheetsUrl}
+                onChange={e => { setSheetsUrl(e.target.value); if (sheetsResult) setSheetsResult(null); }}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSheetsImport(); } }}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                className="w-full h-11 pl-10 pr-4 rounded-xl bg-muted/30 border border-border text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors"
+              />
+            </div>
+            <Button
+              onClick={handleSheetsImport}
+              disabled={!sheetsUrl.trim() || sheetsValidating}
+              variant="outline"
+              className="h-11 px-5 border-border hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all"
+            >
+              {sheetsValidating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {sheetsValidating ? "Checking..." : "Import"}
+            </Button>
+          </div>
+
+          {/* Sharing hint */}
+          <p className="text-xs text-muted-foreground">
+            Your sheet must be shared publicly. In Google Sheets: <span className="text-primary font-medium">Share</span> &rarr; <span className="text-primary font-medium">General access</span> &rarr; <span className="text-primary font-medium">Anyone with the link</span> &rarr; <span className="text-primary font-medium">Viewer</span>
+          </p>
+
+          {/* ── Validation error result ────────────────────────────────── */}
+          {sheetsResult && sheetsResult.status === "error" && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/[0.06] overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-destructive">
+                    {sheetsResult.reason === "not_public"
+                      ? "Sheet is not publicly accessible"
+                      : sheetsResult.reason === "headers_mismatch"
+                      ? "Header columns don't match the template"
+                      : sheetsResult.reason === "validation_failed"
+                      ? `${sheetsResult.errors?.length} validation error${(sheetsResult.errors?.length ?? 0) > 1 ? "s" : ""} found`
+                      : "Import failed"}
+                  </p>
+                  {sheetsResult.reason === "not_public" && (
+                    <p className="text-xs text-destructive/70 mt-1">
+                      Open your Google Sheet &rarr; Click <span className="font-medium">Share</span> (top right) &rarr; Under "General access", change to <span className="font-medium">Anyone with the link</span> &rarr; Set role to <span className="font-medium">Viewer</span> &rarr; Click <span className="font-medium">Done</span>
+                    </p>
+                  )}
+                  {sheetsResult.reason === "headers_mismatch" && sheetsResult.missingHeaders && (
+                    <p className="text-xs text-destructive/70 mt-1">
+                      Missing: {sheetsResult.missingHeaders.join(", ")}. Make sure you're using the Bravoro People Enrichment template.
+                    </p>
+                  )}
+                  {sheetsResult.reason === "network" && (
+                    <p className="text-xs text-destructive/70 mt-1">{sheetsResult.message}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Expandable row-level errors */}
+              {sheetsResult.reason === "validation_failed" && sheetsResult.errors && sheetsResult.errors.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setSheetsErrorsExpanded(!sheetsErrorsExpanded)}
+                    className="w-full flex items-center justify-between px-4 py-2 border-t border-destructive/20 hover:bg-destructive/[0.04] transition-colors cursor-pointer"
+                  >
+                    <span className="text-xs text-destructive/70">
+                      {sheetsResult.summary && `${sheetsResult.summary.totalRows} rows found`}
+                    </span>
+                    <span className="text-xs text-destructive/50 flex items-center gap-1">
+                      {sheetsErrorsExpanded ? "Hide" : "Show"} details
+                      {sheetsErrorsExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </span>
+                  </button>
+                  {sheetsErrorsExpanded && (
+                    <div className="px-4 pb-3 space-y-1 max-h-48 overflow-y-auto">
+                      {sheetsResult.errors.map((err, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-destructive/80">
+                          <span className="text-destructive mt-px shrink-0">&bull;</span>
+                          <span>{err.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── Success result ────────────────────────────────────────── */}
+          {sheetsResult && sheetsResult.status === "ok" && (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <CircleCheck className="h-5 w-5 text-emerald-500 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">File OK</p>
+                  <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">
+                    {sheetsResult.summary?.totalRows} row{(sheetsResult.summary?.totalRows ?? 0) !== 1 ? "s" : ""} ready to enrich
+                  </p>
+                </div>
+                <div className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25">
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide">VALIDATED</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Submit button for URL import */}
+          <Button
+            onClick={handleSheetsSubmit}
+            disabled={sheetsResult?.status !== "ok" || sheetsSubmitting}
+            className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 hover-glow text-base font-medium transition-all text-primary-foreground"
+            size="lg"
+          >
+            {sheetsSubmitting ? (
+              <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Processing...</>
+            ) : (
+              <><Upload className="mr-2 h-5 w-5" />Upload & Enrich</>
+            )}
+          </Button>
+        </div>
+
+        {/* ── OR divider ──────────────────────────────────────────────── */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-card px-3 py-1 text-muted-foreground rounded-full uppercase tracking-wider text-xs font-semibold">or</span>
+          </div>
+        </div>
+
+        {/* ── File Upload ──────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label className="text-foreground font-medium">Upload Filled Template</Label>
@@ -455,10 +655,10 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
               onDrop={handleDrop}
               className={`
                 relative cursor-pointer rounded-xl border-2 border-dashed p-8 transition-all duration-300
-                ${isDragging 
-                  ? 'border-primary bg-primary/10 scale-[1.02]' 
-                  : selectedFile 
-                    ? 'border-primary/50 bg-primary/5' 
+                ${isDragging
+                  ? 'border-primary bg-primary/10 scale-[1.02]'
+                  : selectedFile
+                    ? 'border-primary/50 bg-primary/5'
                     : 'border-border hover:border-primary/50 hover:bg-muted/50'
                 }
               `}
@@ -516,8 +716,8 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
                 {PROCESSING_STEPS.map((step, index) => (
                   <div key={step.key} className="flex items-center gap-1">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs transition-colors ${
-                      getCurrentProgress() >= step.progress 
-                        ? 'bg-primary text-primary-foreground' 
+                      getCurrentProgress() >= step.progress
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground'
                     }`}>
                       {getCurrentProgress() >= step.progress ? <Check className="h-3 w-3" /> : index + 1}

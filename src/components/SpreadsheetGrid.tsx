@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, Play, X, Check, Search, Plus, ChevronRight, Clipboard,
   Pencil, FolderOpen, FileSpreadsheet, ExternalLink,
-  Save, Upload, Download, Trash2,
+  Save, Upload, Download, Trash2, Scissors, ClipboardPaste, Copy,
 } from "lucide-react";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -105,6 +105,8 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const [missingDomainRows, setMissingDomainRows] = useState<Set<number>>(new Set());
   const [copyRange,         setCopyRange]         = useState<{ r1: number; r2: number; c1: number; c2: number } | null>(null);
   const [copyOverlay,       setCopyOverlay]       = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [isCut,             setIsCut]             = useState(false); // true when last copy was a cut
+  const [ctxMenu,           setCtxMenu]           = useState<{ x: number; y: number; r: number; c: number } | null>(null);
 
   // ── Draft state ──────────────────────────────────────────────────────────────
   const [draftId,        setDraftId]        = useState<string | null>(null);
@@ -119,8 +121,6 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const [sheetsModal,    setSheetsModal]    = useState<"closed"|"export"|"import">("closed");
   const [sheetsStep,     setSheetsStep]     = useState<"form"|"done">("form");
   const [sheetsName,     setSheetsName]     = useState("");
-  const [sheetsUseOwn,   setSheetsUseOwn]   = useState(true);
-  const [sheetsEmail,    setSheetsEmail]    = useState("");
   const [sheetsLoading,  setSheetsLoading]  = useState(false);
   const [sheetsUrl,      setSheetsUrl]      = useState("");
   const [importUrl,      setImportUrl]      = useState("");
@@ -209,6 +209,15 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   }, []);
 
   useEffect(() => { setPickerQ(""); }, [active?.c]);
+
+  // Close context menu on any click or scroll
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = () => setCtxMenu(null);
+    document.addEventListener("mousedown", close);
+    document.addEventListener("scroll", close, true);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("scroll", close, true); };
+  }, [ctxMenu]);
 
   // Measure actual DOM positions for the copy-range overlay (correct at any zoom/dpi)
   useLayoutEffect(() => {
@@ -356,8 +365,6 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const openExportModal = () => {
     const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     setSheetsName(draftName !== "Untitled Draft" ? draftName : `Bravoro Bulk Search · ${today}`);
-    setSheetsUseOwn(true);
-    setSheetsEmail("");
     setSheetsStep("form");
     setSheetsUrl("");
     setSheetsModal("export");
@@ -370,12 +377,35 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     setShowSheetsMenu(false);
   };
 
+  // ── Google OAuth + Sheets API (client-side) ──────────────────────────────────
+  const GOOGLE_CLIENT_ID = "886002554960-au99p28pehmio6bhurnoqp6vlhcjve3j.apps.googleusercontent.com";
+  const SHEETS_SCOPE = "https://www.googleapis.com/auth/drive.file";
+
+  const SHEET_HEADERS = [
+    "Sr No", "Organization Name", "Organization Locations", "Organization Domains",
+    "Person Functions", "Person Seniorities", "Person Job Title", "Results per Function",
+    "Job Search", "Job Title", "Job Seniority", "Date (days)",
+  ];
+
+  const getGoogleAccessToken = (): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const google = (window as any).google;
+      if (!google?.accounts?.oauth2) {
+        reject(new Error("Google Identity Services not loaded. Please refresh and try again."));
+        return;
+      }
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: SHEETS_SCOPE,
+        callback: (resp: any) => {
+          if (resp.error) reject(new Error(resp.error_description || resp.error));
+          else resolve(resp.access_token);
+        },
+      });
+      client.requestAccessToken();
+    });
+
   const handleExportToSheets = async () => {
-    const email = sheetsUseOwn ? userEmail : sheetsEmail.trim();
-    if (!email) {
-      toast({ title: "Email required", description: "Enter a Google email to share the sheet with.", variant: "destructive" });
-      return;
-    }
     const filledRows = rows.filter(r => r.orgName.trim());
     if (!filledRows.length) {
       toast({ title: "No data", description: "Add at least one company first.", variant: "destructive" });
@@ -383,22 +413,196 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     }
     setSheetsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke("export-to-google-sheet", {
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-        body: { sheetName: sheetsName || "Bravoro Bulk Search", userEmail: email, rows: filledRows },
+      const gToken = await getGoogleAccessToken();
+      const title = sheetsName || "Bravoro Bulk Search";
+      const numCols = SHEET_HEADERS.length; // 12 (A-L)
+      const numDataRows = filledRows.length;
+      const totalRows = 1 + numDataRows; // header + data
+
+      // Teal colors matching V4 template
+      const tealBg    = { red: 0, green: 0.616, blue: 0.647 };   // #009da5
+      const whiteTxt  = { red: 1, green: 1, blue: 1 };
+      const lightGrey = { red: 0.953, green: 0.953, blue: 0.953 }; // #f3f3f3
+
+      // Create spreadsheet with Main_Data sheet
+      const createRes = await fetch("https://sheets.googleapis.com/v4/spreadsheets", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${gToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          properties: { title },
+          sheets: [{
+            properties: { title: "Main_Data", sheetId: 0, gridProperties: { frozenRowCount: 1, rowCount: Math.max(totalRows + 10, 102), columnCount: numCols } },
+          }],
+        }),
       });
-      if (error) throw new Error(error.message);
-      if (!data?.url) throw new Error("No URL returned");
-      setSheetsUrl(data.url);
-      setSheetsStep("done");
-      if (data.shareError) {
-        toast({
-          title: "Sheet created (sharing may have failed)",
-          description: "Open the link and request access if needed.",
-          variant: "destructive",
+      if (!createRes.ok) {
+        const err = await createRes.json();
+        throw new Error(err?.error?.message || "Failed to create sheet");
+      }
+      const spreadsheet = await createRes.json();
+      const spreadsheetId = spreadsheet.spreadsheetId;
+
+      // Populate: header row + data rows (A=Sr No, B-L=data)
+      const values = [
+        SHEET_HEADERS,
+        ...filledRows.map((r, i) => [
+          i + 1, // Sr No
+          r.orgName?.trim()           ?? "",
+          r.orgLocations?.trim()      ?? "",
+          r.orgDomains?.trim()        ?? "",
+          r.personFunctions?.trim()   ?? "",
+          r.personSeniorities?.trim() ?? "",
+          r.personJobTitle?.trim()    ?? "",
+          parseInt(r.resultsPerTitle) || 3,
+          r.toggleJobSearch           || "No",
+          r.jobTitle?.trim()          ?? "",
+          r.jobSeniority?.trim()      ?? "",
+          parseInt(r.datePosted)      || 0,
+        ]),
+      ];
+      await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Main_Data!A1:L${totalRows}?valueInputOption=RAW`,
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${gToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ values }),
+        },
+      );
+
+      // Column widths
+      const exportColWidths = [
+        50,  // A - Sr No
+        180, // B - Org Name
+        150, // C - Org Locations
+        180, // D - Org Domains
+        180, // E - Person Functions
+        160, // F - Person Seniorities
+        150, // G - Person Job Title
+        120, // H - Results per Function
+        90,  // I - Job Search
+        150, // J - Job Title
+        130, // K - Job Seniority
+        90,  // L - Date (days)
+      ];
+
+      const requests: any[] = [];
+
+      // Column widths
+      exportColWidths.forEach((px, i) => {
+        requests.push({
+          updateDimensionProperties: {
+            range: { sheetId: 0, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 },
+            properties: { pixelSize: px },
+            fields: "pixelSize",
+          },
+        });
+      });
+
+      // Header row: teal bg, white bold text, center aligned
+      requests.push({
+        repeatCell: {
+          range: { sheetId: 0, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: numCols },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: tealBg,
+              textFormat: { bold: true, foregroundColor: whiteTxt, fontSize: 10 },
+              horizontalAlignment: "CENTER",
+              verticalAlignment: "MIDDLE",
+              wrapStrategy: "WRAP",
+            },
+          },
+          fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)",
+        },
+      });
+
+      // Header row height
+      requests.push({
+        updateDimensionProperties: {
+          range: { sheetId: 0, dimension: "ROWS", startIndex: 0, endIndex: 1 },
+          properties: { pixelSize: 36 },
+          fields: "pixelSize",
+        },
+      });
+
+      // Data rows: alternating row colors (white / light grey)
+      for (let i = 0; i < numDataRows; i++) {
+        if (i % 2 === 1) {
+          requests.push({
+            repeatCell: {
+              range: { sheetId: 0, startRowIndex: i + 1, endRowIndex: i + 2, startColumnIndex: 0, endColumnIndex: numCols },
+              cell: { userEnteredFormat: { backgroundColor: lightGrey } },
+              fields: "userEnteredFormat.backgroundColor",
+            },
+          });
+        }
+      }
+
+      // Col A (Sr No): center aligned
+      requests.push({
+        repeatCell: {
+          range: { sheetId: 0, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 0, endColumnIndex: 1 },
+          cell: { userEnteredFormat: { horizontalAlignment: "CENTER" } },
+          fields: "userEnteredFormat.horizontalAlignment",
+        },
+      });
+
+      // Col H (Results per Function): center aligned
+      requests.push({
+        repeatCell: {
+          range: { sheetId: 0, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 7, endColumnIndex: 8 },
+          cell: { userEnteredFormat: { horizontalAlignment: "CENTER" } },
+          fields: "userEnteredFormat.horizontalAlignment",
+        },
+      });
+
+      // Col I (Job Search): Yes/No dropdown + center aligned
+      if (numDataRows > 0) {
+        requests.push({
+          repeatCell: {
+            range: { sheetId: 0, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 8, endColumnIndex: 9 },
+            cell: {
+              dataValidation: {
+                condition: { type: "ONE_OF_LIST", values: [{ userEnteredValue: "Yes" }, { userEnteredValue: "No" }] },
+                strict: true,
+                showCustomUi: true,
+              },
+              userEnteredFormat: { horizontalAlignment: "CENTER" },
+            },
+            fields: "dataValidation,userEnteredFormat.horizontalAlignment",
+          },
         });
       }
+
+      // Col L (Date days): center aligned
+      requests.push({
+        repeatCell: {
+          range: { sheetId: 0, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 11, endColumnIndex: 12 },
+          cell: { userEnteredFormat: { horizontalAlignment: "CENTER" } },
+          fields: "userEnteredFormat.horizontalAlignment",
+        },
+      });
+
+      // Borders: thin border on all cells
+      requests.push({
+        updateBorders: {
+          range: { sheetId: 0, startRowIndex: 0, endRowIndex: totalRows, startColumnIndex: 0, endColumnIndex: numCols },
+          top:    { style: "SOLID", color: { red: 0.8, green: 0.8, blue: 0.8 } },
+          bottom: { style: "SOLID", color: { red: 0.8, green: 0.8, blue: 0.8 } },
+          left:   { style: "SOLID", color: { red: 0.8, green: 0.8, blue: 0.8 } },
+          right:  { style: "SOLID", color: { red: 0.8, green: 0.8, blue: 0.8 } },
+          innerHorizontal: { style: "SOLID", color: { red: 0.8, green: 0.8, blue: 0.8 } },
+          innerVertical:   { style: "SOLID", color: { red: 0.8, green: 0.8, blue: 0.8 } },
+        },
+      });
+
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${gToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ requests }),
+      });
+
+      setSheetsUrl(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`);
+      setSheetsStep("done");
     } catch (err) {
       toast({ title: "Export failed", description: err instanceof Error ? err.message : "Please try again", variant: "destructive" });
     } finally { setSheetsLoading(false); }
@@ -533,22 +737,13 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
       return;
     }
 
-    // Copy selected range as TSV (Ctrl+C / Cmd+C) — not in edit mode
+    // Copy (Ctrl+C) — not in edit mode
     if (!editing && (e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")) {
-      e.preventDefault();
-      const selAnchor = anchor ?? { r, c };
-      const selActive = active ?? { r, c };
-      const selR1 = Math.min(selAnchor.r, selActive.r);
-      const selR2 = Math.max(selAnchor.r, selActive.r);
-      const selC1 = Math.min(selAnchor.c, selActive.c);
-      const selC2 = Math.max(selAnchor.c, selActive.c);
-      const tsv = rows
-        .slice(selR1, selR2 + 1)
-        .map(row => COLS.slice(selC1, selC2 + 1).map(col => row[col.key] ?? "").join("\t"))
-        .join("\n");
-      navigator.clipboard.writeText(tsv).catch(() => {});
-      setCopyRange({ r1: selR1, r2: selR2, c1: selC1, c2: selC2 });
-      return;
+      e.preventDefault(); doCopy(); return;
+    }
+    // Cut (Ctrl+X) — not in edit mode
+    if (!editing && (e.ctrlKey || e.metaKey) && (e.key === "x" || e.key === "X")) {
+      e.preventDefault(); doCut(); return;
     }
 
     if (e.key === "Tab")   { e.preventDefault(); navigate(r, c, 0, e.shiftKey ? -1 : 1); return; }
@@ -597,17 +792,113 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     if (!editing && (col.type === "text" || col.type === "number") && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       // Block typing in job columns when toggle is No
       if (JOB_COLS.includes(col.key) && rows[r]?.toggleJobSearch !== "Yes") return;
+      e.preventDefault();
       setEditing(true);
       setCell(r, col.key, e.key);
     }
   };
 
-  // Paste (TSV from Excel / Ctrl+V)
+  // ── Copy / Cut helpers (reused by keyboard + context menu) ────────────────
+  const doCopy = useCallback(() => {
+    if (!active) return;
+    const selAnchor = anchor ?? active;
+    const selActive = active;
+    const r1 = Math.min(selAnchor.r, selActive.r);
+    const r2 = Math.max(selAnchor.r, selActive.r);
+    const c1 = Math.min(selAnchor.c, selActive.c);
+    const c2 = Math.max(selAnchor.c, selActive.c);
+    const tsv = rows
+      .slice(r1, r2 + 1)
+      .map(row => COLS.slice(c1, c2 + 1).map(col => row[col.key] ?? "").join("\t"))
+      .join("\n");
+    navigator.clipboard.writeText(tsv).catch(() => {});
+    setCopyRange({ r1, r2, c1, c2 });
+    setIsCut(false);
+  }, [active, anchor, rows]);
+
+  const doCut = useCallback(() => {
+    if (!active) return;
+    const selAnchor = anchor ?? active;
+    const selActive = active;
+    const r1 = Math.min(selAnchor.r, selActive.r);
+    const r2 = Math.max(selAnchor.r, selActive.r);
+    const c1 = Math.min(selAnchor.c, selActive.c);
+    const c2 = Math.max(selAnchor.c, selActive.c);
+    const tsv = rows
+      .slice(r1, r2 + 1)
+      .map(row => COLS.slice(c1, c2 + 1).map(col => row[col.key] ?? "").join("\t"))
+      .join("\n");
+    navigator.clipboard.writeText(tsv).catch(() => {});
+    setCopyRange({ r1, r2, c1, c2 });
+    setIsCut(true);
+  }, [active, anchor, rows]);
+
+  const doPaste = useCallback(async () => {
+    if (!active) return;
+    if (COLS[active.c]?.type === "yesno") return;
+    if (editing) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+      const pastedRows = text.trim().split(/\r?\n/).map(r => r.split("\t"));
+      const isSingleCell = pastedRows.length === 1 && pastedRows[0].length === 1;
+      const hasMultiSel = anchor && (anchor.r !== active.r || anchor.c !== active.c);
+
+      // If this is a cut-paste, clear the source cells
+      const cutSource = isCut && copyRange ? { ...copyRange } : null;
+
+      setRowsWithUndo(prev => {
+        const next = [...prev];
+        if (isSingleCell && hasMultiSel) {
+          const selR1 = Math.min(anchor!.r, active.r);
+          const selR2 = Math.max(anchor!.r, active.r);
+          const selC1 = Math.min(anchor!.c, active.c);
+          const selC2 = Math.max(anchor!.c, active.c);
+          const val = pastedRows[0][0].trim();
+          for (let ri = selR1; ri <= selR2; ri++) {
+            if (ri >= ROWS_MAX) break;
+            while (next.length <= ri) next.push(emptyRow());
+            const row = { ...next[ri] };
+            for (let ci = selC1; ci <= selC2; ci++) {
+              if (COLS[ci]?.type !== "yesno") row[COLS[ci].key] = val;
+            }
+            next[ri] = row;
+          }
+        } else {
+          pastedRows.forEach((pr, dr) => {
+            const ri = active.r + dr;
+            if (ri >= ROWS_MAX) return;
+            while (next.length <= ri) next.push(emptyRow());
+            const row = { ...next[ri] };
+            pr.forEach((val, dc) => { const ci = active.c + dc; if (ci < COLS.length) row[COLS[ci].key] = val.trim(); });
+            next[ri] = row;
+          });
+        }
+        // Clear cut source cells
+        if (cutSource) {
+          for (let ri = cutSource.r1; ri <= cutSource.r2; ri++) {
+            if (ri >= next.length) break;
+            const row = { ...next[ri] };
+            for (let ci = cutSource.c1; ci <= cutSource.c2; ci++) {
+              const cc = COLS[ci];
+              if (!cc || cc.type === "yesno") continue;
+              row[cc.key] = cc.type === "number" ? "0" : "";
+            }
+            next[ri] = row;
+          }
+        }
+        return next.slice(0, ROWS_MAX);
+      });
+      setCopyRange(null);
+      setIsCut(false);
+    } catch { /* clipboard read denied */ }
+  }, [active, anchor, editing, isCut, copyRange]);
+
+  // Paste (TSV from Excel / Ctrl+V) — event-based (has access to clipboardData)
   const handlePaste = (e: React.ClipboardEvent) => {
     if (!active || !tableWrapRef.current) return;
     if (!tableWrapRef.current.contains(e.target as Node)) return;
     if (COLS[active.c]?.type === "yesno") return;
-    // In edit mode, let the browser handle native paste (insert at cursor)
     if (editing) return;
     e.preventDefault();
     const text = e.clipboardData.getData("text/plain");
@@ -615,10 +906,10 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     const pastedRows = text.trim().split(/\r?\n/).map(r => r.split("\t"));
     const isSingleCell = pastedRows.length === 1 && pastedRows[0].length === 1;
     const hasMultiSel = anchor && (anchor.r !== active.r || anchor.c !== active.c);
+    const cutSource = isCut && copyRange ? { ...copyRange } : null;
     setRowsWithUndo(prev => {
       const next = [...prev];
       if (isSingleCell && hasMultiSel) {
-        // Single copied cell fills entire selection (Excel behaviour)
         const selR1 = Math.min(anchor!.r, active.r);
         const selR2 = Math.max(anchor!.r, active.r);
         const selC1 = Math.min(anchor!.c, active.c);
@@ -643,8 +934,22 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
           next[ri] = row;
         });
       }
+      if (cutSource) {
+        for (let ri = cutSource.r1; ri <= cutSource.r2; ri++) {
+          if (ri >= next.length) break;
+          const row = { ...next[ri] };
+          for (let ci = cutSource.c1; ci <= cutSource.c2; ci++) {
+            const cc = COLS[ci];
+            if (!cc || cc.type === "yesno") continue;
+            row[cc.key] = cc.type === "number" ? "0" : "";
+          }
+          next[ri] = row;
+        }
+      }
       return next.slice(0, ROWS_MAX);
     });
+    setCopyRange(null);
+    setIsCut(false);
   };
 
   // Picker
@@ -815,6 +1120,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         .sg-input:focus::placeholder { color: #c5d8d8; }
         .sg-picker-input::placeholder { color: #9ab8b8; }
         .sg-input:focus { outline: none; }
+        @keyframes sg-dash-march { to { stroke-dashoffset: -12; } }
       `}</style>
 
       <div ref={containerRef} onPaste={handlePaste} className="space-y-3 w-full overflow-hidden">
@@ -1042,6 +1348,17 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                         const missingStyle = isMissingDomain && !isActive ? { outline: "1px solid rgba(220,50,50,0.45)", outlineOffset: "-1px" } : {};
                         return (
                           <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: cellBg, ...activeStyle, ...missingStyle }}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              // Select the cell if not already in selection
+                              const inCurrentSel = selR1 >= 0 && ri >= selR1 && ri <= selR2 && ci >= selC1 && ci <= selC2;
+                              if (!inCurrentSel) {
+                                setAnchor({ r: ri, c: ci });
+                                setActive({ r: ri, c: ci });
+                                setEditing(false);
+                              }
+                              setCtxMenu({ x: e.clientX, y: e.clientY, r: ri, c: ci });
+                            }}
                             onMouseDown={(e) => {
                               if (e.button !== 0) return;
                               // If already editing this cell, let the browser handle text selection
@@ -1117,7 +1434,11 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
             {copyOverlay && (
               <svg style={{ position: "absolute", top: copyOverlay.top, left: copyOverlay.left, width: copyOverlay.width, height: copyOverlay.height, pointerEvents: "none", zIndex: 25, overflow: "visible" }}>
                 <rect x={1} y={1} width={copyOverlay.width - 2} height={copyOverlay.height - 2}
-                  fill="none" stroke="#1a73e8" strokeWidth={2} strokeDasharray="8 4"
+                  fill={isCut ? "rgba(220,80,80,0.04)" : "none"}
+                  stroke={isCut ? "#c05050" : "#1a73e8"}
+                  strokeWidth={2}
+                  strokeDasharray="8 4"
+                  style={isCut ? { animation: "sg-dash-march 0.4s linear infinite" } : undefined}
                 />
               </svg>
             )}
@@ -1199,6 +1520,77 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         </div>
       </div>
 
+      {/* ── Context menu ──────────────────────────────────────────────────────── */}
+      {ctxMenu && (
+        <div
+          onMouseDown={e => e.stopPropagation()}
+          className="fixed z-[200] rounded-lg overflow-hidden"
+          style={{
+            top: ctxMenu.y,
+            left: ctxMenu.x,
+            background: "#fff",
+            border: "1px solid #c8e2e2",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.15), 0 1px 4px rgba(0,0,0,0.08)",
+            minWidth: 160,
+          }}
+        >
+          <button
+            onClick={() => { doCopy(); setCtxMenu(null); }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[12px] transition-colors hover:bg-[#f0fafa]"
+            style={{ color: "#1a2e2e", borderBottom: "1px solid #f0f5f5" }}
+          >
+            <Copy className="h-3.5 w-3.5" style={{ color: "#009da5" }} />
+            <span className="flex-1">Copy</span>
+            <span className="text-[10px]" style={{ color: "#9abcbc" }}>Ctrl+C</span>
+          </button>
+          <button
+            onClick={() => { doCut(); setCtxMenu(null); }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[12px] transition-colors hover:bg-[#f0fafa]"
+            style={{ color: "#1a2e2e", borderBottom: "1px solid #f0f5f5" }}
+          >
+            <Scissors className="h-3.5 w-3.5" style={{ color: "#009da5" }} />
+            <span className="flex-1">Cut</span>
+            <span className="text-[10px]" style={{ color: "#9abcbc" }}>Ctrl+X</span>
+          </button>
+          <button
+            onClick={() => { doPaste(); setCtxMenu(null); }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[12px] transition-colors hover:bg-[#f0fafa]"
+            style={{ color: "#1a2e2e", borderBottom: "1px solid #f0f5f5" }}
+          >
+            <ClipboardPaste className="h-3.5 w-3.5" style={{ color: "#009da5" }} />
+            <span className="flex-1">Paste</span>
+            <span className="text-[10px]" style={{ color: "#9abcbc" }}>Ctrl+V</span>
+          </button>
+          <button
+            onClick={() => {
+              if (!active) { setCtxMenu(null); return; }
+              const selAnchor = anchor ?? active;
+              const r1 = Math.min(selAnchor.r, active.r);
+              const r2 = Math.max(selAnchor.r, active.r);
+              const c1 = Math.min(selAnchor.c, active.c);
+              const c2 = Math.max(selAnchor.c, active.c);
+              setRowsWithUndo(prev => prev.map((row, ri) => {
+                if (ri < r1 || ri > r2) return row;
+                const updated = { ...row };
+                for (let ci = c1; ci <= c2; ci++) {
+                  const cc = COLS[ci];
+                  if (!cc || cc.type === "yesno") continue;
+                  updated[cc.key] = cc.type === "number" ? "0" : "";
+                }
+                return updated;
+              }));
+              setCtxMenu(null);
+            }}
+            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[12px] transition-colors hover:bg-[#f0fafa]"
+            style={{ color: "#1a2e2e" }}
+          >
+            <Trash2 className="h-3.5 w-3.5" style={{ color: "#c05050" }} />
+            <span className="flex-1">Clear</span>
+            <span className="text-[10px]" style={{ color: "#9abcbc" }}>Del</span>
+          </button>
+        </div>
+      )}
+
       {/* ── Google Sheets Modal ───────────────────────────────────────────────── */}
       {sheetsModal !== "closed" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "rgba(6,25,26,0.7)", backdropFilter: "blur(4px)" }}>
@@ -1225,34 +1617,8 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                   <input value={sheetsName} onChange={e => setSheetsName(e.target.value)} placeholder="Bravoro Bulk Search · March 29" className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none" style={{ border: "1px solid #c8e2e2", color: "#1a2e2e", background: "#fafefe" }} onFocus={e => { e.currentTarget.style.borderColor = "#009da5"; }} onBlur={e => { e.currentTarget.style.borderColor = "#c8e2e2"; }} />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#5a8888" }}>Share with Google Email</label>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2.5 cursor-pointer">
-                      <div onClick={() => setSheetsUseOwn(true)} className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors" style={{ borderColor: sheetsUseOwn ? "#009da5" : "#b0cccc" }}>
-                        {sheetsUseOwn && <div className="w-2 h-2 rounded-full" style={{ background: "#009da5" }} />}
-                      </div>
-                      <span className="text-[12px]" style={{ color: "#1a2e2e" }}>
-                        Use my Bravoro email
-                        {userEmail && <span className="ml-1.5 font-semibold" style={{ color: "#007980" }}>{userEmail}</span>}
-                      </span>
-                    </label>
-                    <label className="flex items-start gap-2.5 cursor-pointer">
-                      <div onClick={() => setSheetsUseOwn(false)} className="w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 transition-colors shrink-0" style={{ borderColor: !sheetsUseOwn ? "#009da5" : "#b0cccc" }}>
-                        {!sheetsUseOwn && <div className="w-2 h-2 rounded-full" style={{ background: "#009da5" }} />}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-[12px]" style={{ color: "#1a2e2e" }}>Use a different Google email</span>
-                        {!sheetsUseOwn && (
-                          <input value={sheetsEmail} onChange={e => setSheetsEmail(e.target.value)} placeholder="you@gmail.com" className="mt-1.5 w-full px-3 py-2 rounded-lg text-[12px] outline-none" style={{ border: "1px solid #c8e2e2", color: "#1a2e2e", background: "#fafefe" }} onFocus={e => { e.currentTarget.style.borderColor = "#009da5"; }} onBlur={e => { e.currentTarget.style.borderColor = "#c8e2e2"; }} />
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
                 <div className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-[11px]" style={{ background: "#f4fcfc", border: "1px solid #daeaea", color: "#5a8888" }}>
-                  <span>Sheet is created in Bravoro's Google account and shared with you as an editor. It will be publicly viewable so you can sync changes back.</span>
+                  <span>You'll sign in with your Google account. The sheet will be created in your own Google Drive.</span>
                 </div>
 
                 <div className="flex gap-3 pt-1">
@@ -1270,8 +1636,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "#f0fcf0", border: "1px solid #a0d8a0" }}>
                   <Check className="h-5 w-5 shrink-0" style={{ color: "#22c55e" }} />
                   <div>
-                    <div className="text-[13px] font-semibold" style={{ color: "#166534" }}>Sheet created!</div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "#4ade80" }}>Shared with {sheetsUseOwn ? userEmail : sheetsEmail}</div>
+                    <div className="text-[13px] font-semibold" style={{ color: "#166534" }}>Sheet created in your Google Drive!</div>
                   </div>
                 </div>
 

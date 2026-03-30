@@ -93,6 +93,7 @@ const UsageAnalytics = () => {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDeveloper, setIsDeveloper] = useState(false);
   const [activePieIndex, setActivePieIndex] = useState<number | undefined>(undefined);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 7),
@@ -136,7 +137,7 @@ const UsageAnalytics = () => {
         .eq("user_id", user.id)
         .single();
       setIsAdmin(roleData?.role === "admin");
-
+      setIsDeveloper(user.email === "pranavshah0907@gmail.com");
 
       const { data, error } = await supabase
         .from("credit_usage")
@@ -395,8 +396,8 @@ const UsageAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <AppSidebar isAdmin={isAdmin} onSignOut={handleSignOut} />
-      
+      <AppSidebar isAdmin={isAdmin} isDeveloper={isDeveloper} onSignOut={handleSignOut} />
+
       <main className="flex-1 ml-16 min-h-screen">
         {/* Background Effects — same as Dashboard */}
         <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">

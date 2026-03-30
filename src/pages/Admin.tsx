@@ -713,7 +713,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background flex overflow-hidden">
-      <AppSidebar isAdmin={isAdmin} onSignOut={handleSignOut} />
+      <AppSidebar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} onSignOut={handleSignOut} />
 
       {/* ── Two-pane layout ── */}
       <div className="flex-1 ml-16 flex h-screen overflow-hidden">

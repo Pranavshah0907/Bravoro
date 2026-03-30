@@ -1728,8 +1728,8 @@ const Results = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <AppSidebar isAdmin={isAdmin} onSignOut={handleSignOut} />
-      
+      <AppSidebar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} onSignOut={handleSignOut} />
+
       <main className="flex-1 ml-16 min-h-screen">
         {/* Background Effects */}
         <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">

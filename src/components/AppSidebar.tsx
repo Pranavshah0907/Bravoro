@@ -19,6 +19,7 @@ import {
   Upload,
   Users,
   Bot,
+  Terminal,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,8 +35,11 @@ interface AiConv {
   title: string;
 }
 
+const DEVELOPER_EMAIL = "pranavshah0907@gmail.com";
+
 interface AppSidebarProps {
   isAdmin?: boolean;
+  isDeveloper?: boolean;
   onSignOut: () => void;
   onHomeClick?: () => void;
   selectedType?: string | null;
@@ -55,10 +59,12 @@ interface NavItem {
   path?: string;
   onClick?: () => void;
   adminOnly?: boolean;
+  developerOnly?: boolean;
 }
 
 export const AppSidebar = ({
   isAdmin,
+  isDeveloper,
   onSignOut,
   onHomeClick,
   selectedType,
@@ -95,6 +101,7 @@ export const AppSidebar = ({
     { icon: FileText, label: "Results", path: "/results" },
     { icon: Database, label: "Database", path: "/database" },
     { icon: Shield, label: "Admin", path: "/admin", adminOnly: true },
+    { icon: Terminal, label: "Dev Tools", path: "/dev-tools", developerOnly: true },
   ];
 
   const togglePin = () => {
@@ -125,6 +132,7 @@ export const AppSidebar = ({
 
   const renderNavItem = (item: NavItem, index: number) => {
     if (item.adminOnly && !isAdmin) return null;
+    if (item.developerOnly && !isDeveloper) return null;
 
     const isActive = item.path ? location.pathname === item.path : false;
     const Icon = item.icon;
