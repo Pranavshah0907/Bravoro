@@ -9,6 +9,7 @@ import {
   XCircle, ChevronDown, ChevronUp, Info,
 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { fixMojibakeDeep } from "@/lib/utils";
 import { SpreadsheetGrid, SpreadsheetGridHandle } from "./SpreadsheetGrid";
 import type { GridRow } from "./SpreadsheetGrid";
 import { SheetsManager } from "./SheetsManager";
@@ -146,7 +147,7 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
               headers = (XLSX.utils.sheet_to_json(ws, { header: 1 })[0] as string[]) || [];
             }
           });
-          resolve({ data: result, headers });
+          resolve({ data: fixMojibakeDeep(result), headers: headers.map(h => typeof h === "string" ? fixMojibakeDeep(h) : h) });
         } catch (err) { reject(err); }
       };
       reader.onerror = () => reject(new Error("Failed to read file"));

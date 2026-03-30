@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as XLSX from 'xlsx';
+import { fixMojibakeDeep } from "@/lib/utils";
 
 // Expected headers for People Enrichment template
 const EXPECTED_HEADERS = ['Sr No', 'Record Id', 'First Name', 'Last Name', 'Organization Domain', 'LinkedIn URL'];
@@ -210,12 +211,12 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
             }
           });
           
-          resolve({ data: result, headers });
+          resolve({ data: fixMojibakeDeep(result), headers: headers.map(h => typeof h === "string" ? fixMojibakeDeep(h) : h) });
         } catch (error) {
           reject(error);
         }
       };
-      
+
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsArrayBuffer(file);
     });
@@ -233,9 +234,26 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     return true;
   };
 
+  // Coerce every cell value to string so n8n always receives strings (Excel can parse Sr No as number)
+  const coerceAllValuesToString = (excelData: any): any => {
+    const result: any = {};
+    for (const sheetName of Object.keys(excelData)) {
+      const rows = excelData[sheetName];
+      if (!Array.isArray(rows)) { result[sheetName] = rows; continue; }
+      result[sheetName] = rows.map((row: any) => {
+        const coerced: any = {};
+        for (const key of Object.keys(row)) {
+          coerced[key] = row[key] != null ? String(row[key]) : "";
+        }
+        return coerced;
+      });
+    }
+    return result;
+  };
+
   const validateData = (excelData: any): ValidationError[] => {
     const errors: ValidationError[] = [];
-    
+
     // Find the data - could be in the first sheet
     const sheetNames = Object.keys(excelData);
     if (sheetNames.length === 0) {
@@ -253,27 +271,38 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     data.forEach((row: any, index: number) => {
       const rowNum = index + 2; // +2 because Excel rows start at 1 and we have a header row
 
-      // Extract all key fields
+      // Extract all key fields (flexible naming)
       const firstName = row['First Name'] || row['First_Name'] || row['first name'] || row['first_name'];
       const lastName = row['Last Name'] || row['Last_Name'] || row['last name'] || row['last_name'];
       const domain = row['Organization Domain'] || row['Organization_Domain'] || row['organization domain'] || row['Domain'] || row['domain'];
       const linkedinUrl = row['LinkedIn URL'] || row['LinkedIn_URL'] || row['linkedin url'] || row['linkedin_url'];
       const recordId = row['Record Id'] || row['Record_Id'] || row['record id'] || row['record_id'];
+      const srNo = row['Sr No'] || row['Sr_No'] || row['sr no'] || row['sr_no'];
 
-      // Skip effectively empty rows (all key fields are empty/missing)
-      const allEmpty = [firstName, lastName, domain, linkedinUrl, recordId].every(
+      // Skip rows where ALL fields except Sr No are empty
+      const allEmptyExceptSrNo = [firstName, lastName, domain, linkedinUrl, recordId].every(
         (val) => !val || String(val).trim() === ''
       );
-      if (allEmpty) return;
+      if (allEmptyExceptSrNo) return;
 
       // Validate mandatory fields on non-empty rows
-      if (!firstName || String(firstName).trim() === '') {
+      const firstNameStr = firstName ? String(firstName).trim() : '';
+      const lastNameStr = lastName ? String(lastName).trim() : '';
+      const domainStr = domain ? String(domain).trim() : '';
+
+      if (!firstNameStr) {
         errors.push({ row: rowNum, field: 'First Name', message: `Row ${rowNum}: First Name is required` });
+      } else if (/\d/.test(firstNameStr)) {
+        errors.push({ row: rowNum, field: 'First Name', message: `Row ${rowNum}: First Name must not contain numbers` });
       }
-      if (!lastName || String(lastName).trim() === '') {
+
+      if (!lastNameStr) {
         errors.push({ row: rowNum, field: 'Last Name', message: `Row ${rowNum}: Last Name is required` });
+      } else if (/\d/.test(lastNameStr)) {
+        errors.push({ row: rowNum, field: 'Last Name', message: `Row ${rowNum}: Last Name must not contain numbers` });
       }
-      if (!domain || String(domain).trim() === '') {
+
+      if (!domainStr) {
         errors.push({ row: rowNum, field: 'Organization Domain', message: `Row ${rowNum}: Organization Domain is required` });
       }
     });
@@ -372,7 +401,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
             entryType: 'bulk_people_enrichment',
             searchData: {
               search_id: search.id,
-              data: excelData,
+              data: coerceAllValuesToString(excelData),
             },
           },
         }
