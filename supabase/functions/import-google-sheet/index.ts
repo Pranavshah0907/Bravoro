@@ -469,8 +469,9 @@ serve(async (req) => {
         ? { Sheet1: data }
         : { Main_Data: data };
 
-      // Invoke trigger-n8n-webhook
+      // Invoke trigger-n8n-webhook — pass the user's JWT so it can authenticate
       const { error: webhookError } = await supabase.functions.invoke("trigger-n8n-webhook", {
+        headers: { Authorization: authHeader! },
         body: {
           searchId: search.id,
           entryType,
