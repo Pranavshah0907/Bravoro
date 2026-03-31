@@ -13,11 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Terminal, RefreshCw, Trash2, Clock, Loader2, Inbox,
   Square, Copy, Check, Filter, CheckCircle2, AlertTriangle,
-  XCircle, ArrowUpDown, ChevronUp, ChevronDown, Lock,
+  XCircle, ArrowUpDown, ChevronUp, ChevronDown, Lock, Download, FileText,
 } from "lucide-react";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import { differenceInHours, format } from "date-fns";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -256,6 +259,174 @@ const DevTools = () => {
     }
   };
 
+  // ── Export: Excel ──────────────────────────────────────────────────────────
+  const exportExcel = () => {
+    const rows = filteredSearches.map((s, i) => ({
+      "#": i + 1,
+      "Search ID": s.search_id,
+      "User Email": s.user_email,
+      "User Name": s.full_name,
+      "Type": s.type_label,
+      "Method": s.entry_method,
+      "File Name": s.excel_file_name ?? "",
+      "Results": s.result_count,
+      "Status": getDisplayStatus(s).replace("_", " "),
+      "Error Message": s.error_message ?? "",
+      "Date / Time": formatDateTime(s.updated_at ?? s.created_at),
+    }));
+
+    if (filteredQueued.length > 0) {
+      filteredQueued.forEach((q, i) => {
+        rows.push({
+          "#": i + 1,
+          "Search ID": q.search_id,
+          "User Email": q.user_email,
+          "User Name": q.full_name,
+          "Type": q.type_label,
+          "Method": q.entry_method,
+          "File Name": "",
+          "Results": 0,
+          "Status": "queued",
+          "Error Message": "",
+          "Date / Time": formatDateTime(q.created_at),
+        });
+      });
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Column widths
+    ws["!cols"] = [
+      { wch: 5 }, { wch: 38 }, { wch: 28 }, { wch: 20 }, { wch: 18 },
+      { wch: 18 }, { wch: 25 }, { wch: 8 }, { wch: 12 }, { wch: 50 }, { wch: 22 },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "All Searches");
+    const date = new Date().toISOString().split("T")[0];
+    XLSX.writeFile(wb, `bravoro_searches_${date}.xlsx`);
+    toast({ title: "Excel exported", description: `${rows.length} rows` });
+  };
+
+  // ── Export: PDF (Platform Usage Analytics) ────────────────────────────────
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const now = format(new Date(), "dd MMM yyyy, hh:mm a");
+
+    // Header band
+    doc.setFillColor(6, 25, 26);
+    doc.rect(0, 0, pageW, 28, "F");
+    doc.setFontSize(16);
+    doc.setTextColor(200, 230, 226);
+    doc.text("Platform Usage Analytics", 15, 14);
+    doc.setFontSize(9);
+    doc.setTextColor(140, 170, 166);
+    doc.text(`Bravoro  |  Generated: ${now}`, 15, 22);
+
+    // Summary cards
+    let y = 36;
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    const summaryItems = [
+      `Total Searches: ${counts.total}`,
+      `Completed: ${counts.completed}`,
+      `Processing: ${counts.processing}`,
+      `Stuck: ${counts.stuck}`,
+      `Errored: ${counts.error}`,
+      `Queued: ${counts.queued}`,
+    ];
+    doc.text(summaryItems.join("    |    "), 15, y);
+    y += 4;
+
+    // Filter info
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    const filterDesc = [
+      statusFilter !== "all" ? `Status: ${statusFilter}` : null,
+      timeFilter !== "all" ? `Time: ${timeFilter}` : null,
+      textFilter ? `Search: "${textFilter}"` : null,
+    ].filter(Boolean).join("  |  ");
+    if (filterDesc) {
+      doc.text(`Filters applied: ${filterDesc}`, 15, y + 4);
+      y += 6;
+    }
+
+    // Main table
+    const tableRows = filteredSearches.map((s, i) => [
+      String(i + 1),
+      s.search_id.slice(0, 8) + "...",
+      s.user_email,
+      s.full_name,
+      s.type_label,
+      s.entry_method,
+      String(s.result_count),
+      getDisplayStatus(s).replace("_", " "),
+      s.error_message ? (s.error_message.length > 60 ? s.error_message.slice(0, 57) + "..." : s.error_message) : "",
+      formatDateTime(s.updated_at ?? s.created_at),
+    ]);
+
+    autoTable(doc, {
+      startY: y + 4,
+      head: [["#", "Search ID", "Email", "Name", "Type", "Method", "Results", "Status", "Error", "Date / Time"]],
+      body: tableRows,
+      margin: { left: 10, right: 10 },
+      styles: { fontSize: 7, cellPadding: 2, overflow: "linebreak" },
+      headStyles: { fillColor: [10, 31, 31], textColor: [200, 230, 226], fontStyle: "bold", fontSize: 7 },
+      alternateRowStyles: { fillColor: [245, 248, 248] },
+      columnStyles: {
+        0: { cellWidth: 8 },
+        1: { cellWidth: 22, font: "courier" },
+        6: { cellWidth: 14, halign: "center" },
+        7: { cellWidth: 18 },
+        8: { cellWidth: 45 },
+        9: { cellWidth: 32 },
+      },
+    });
+
+    // Queued table (if any)
+    if (filteredQueued.length > 0) {
+      const lastY = (doc as any).lastAutoTable?.finalY ?? y + 20;
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Queued Items (${filteredQueued.length})`, 15, lastY + 10);
+
+      const queueRows = filteredQueued.map((q, i) => [
+        String(i + 1),
+        q.search_id.slice(0, 8) + "...",
+        q.user_email,
+        q.full_name,
+        q.type_label,
+        q.entry_method,
+        formatDateTime(q.created_at),
+      ]);
+
+      autoTable(doc, {
+        startY: lastY + 14,
+        head: [["#", "Search ID", "Email", "Name", "Type", "Method", "Submitted"]],
+        body: queueRows,
+        margin: { left: 10, right: 10 },
+        styles: { fontSize: 7, cellPadding: 2 },
+        headStyles: { fillColor: [10, 31, 31], textColor: [200, 230, 226], fontStyle: "bold", fontSize: 7 },
+        alternateRowStyles: { fillColor: [245, 248, 248] },
+      });
+    }
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(160, 160, 160);
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.text(`Bravoro — Platform Usage Analytics — Page ${i} of ${pageCount}`, 15, pageH - 6);
+    }
+
+    const date = new Date().toISOString().split("T")[0];
+    doc.save(`bravoro_platform_analytics_${date}.pdf`);
+    toast({ title: "PDF exported", description: "Platform Usage Analytics" });
+  };
+
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -296,6 +467,22 @@ const DevTools = () => {
                 {format(lastRefreshed, "hh:mm:ss a")}
               </span>
             )}
+            <div className="h-5 w-px bg-border/30" />
+            <Button
+              size="sm" variant="outline" onClick={exportExcel}
+              className="h-8 text-xs border-border/40 hover:border-emerald-500/40 hover:text-emerald-400 transition-colors"
+            >
+              <Download className="h-3 w-3 mr-1.5" />
+              Export Excel
+            </Button>
+            <Button
+              size="sm" variant="outline" onClick={exportPDF}
+              className="h-8 text-xs border-border/40 hover:border-primary/40 hover:text-primary transition-colors"
+            >
+              <FileText className="h-3 w-3 mr-1.5" />
+              Platform Usage Analytics
+            </Button>
+            <div className="h-5 w-px bg-border/30" />
             <Button
               size="sm" variant="outline" onClick={fetchData} disabled={fetching}
               className="h-8 text-xs border-border/40 hover:border-primary/40 hover:text-primary transition-colors"
