@@ -68,8 +68,9 @@ serve(async (req) => {
     const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user email and enrichment limits
+    // Get user profile and enrichment limits
     let userEmail = '';
+    let userName = '';
     let enrichmentRemaining = 0;
     let enrichmentLimit = 0;
 
@@ -82,11 +83,12 @@ serve(async (req) => {
     if (searchRecord?.user_id) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('email, enrichment_limit, enrichment_used')
+        .select('email, full_name, enrichment_limit, enrichment_used')
         .eq('id', searchRecord.user_id)
         .maybeSingle();
 
       userEmail = profile?.email || '';
+      userName = profile?.full_name || '';
       enrichmentLimit = profile?.enrichment_limit ?? 0;
       enrichmentRemaining = Math.max(0, enrichmentLimit - (profile?.enrichment_used ?? 0));
     }
@@ -96,6 +98,7 @@ serve(async (req) => {
       ...searchData,
       search_id: searchId,
       user_email: userEmail,
+      user_name: userName,
       enrichment_remaining: enrichmentRemaining,
       enrichment_limit: enrichmentLimit,
     };
