@@ -171,20 +171,25 @@ const buildJobsCell = (contacts: Contact[]): string => {
       c.job_search_result?.job_search_status === "jobs_found" &&
       Array.isArray(c.job_search_result.results)
     ) {
-      for (const job of c.job_search_result.results) {
-        const key = job.job_link || job.job_title;
-        if (seen.has(key)) continue;
-        seen.add(key);
+      for (const resultGroup of c.job_search_result.results) {
+        const jobList: JobResult[] = Array.isArray((resultGroup as any).jobs)
+          ? (resultGroup as any).jobs
+          : [resultGroup];
+        for (const job of jobList) {
+          const key = job.job_link || job.job_title;
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
 
-        const lines = [
-          job.job_title || "",
-          job.job_link || "",
-          job.location || "",
-          job.last_posted_date || "",
-        ];
-        if (job.hiring_team_name) lines.push(job.hiring_team_name);
+          const lines = [
+            job.job_title || "",
+            job.job_link || "",
+            job.location || "",
+            job.last_posted_date || "",
+          ];
+          if (job.hiring_team_name) lines.push(job.hiring_team_name);
 
-        jobBlocks.push(lines.filter(Boolean).join("\n"));
+          jobBlocks.push(lines.filter(Boolean).join("\n"));
+        }
       }
     }
   }
@@ -207,11 +212,17 @@ const CompanyJobsPanel = ({ contacts }: { contacts: Contact[] }) => {
         c.job_search_result?.job_search_status === "jobs_found" &&
         Array.isArray(c.job_search_result.results)
       ) {
-        for (const job of c.job_search_result.results) {
-          const key = job.job_link || job.job_title;
-          if (!seen.has(key)) {
-            seen.add(key);
-            jobs.push(job);
+        for (const resultGroup of c.job_search_result.results) {
+          // n8n payload nests jobs inside results[].jobs[]
+          const jobList: JobResult[] = Array.isArray((resultGroup as any).jobs)
+            ? (resultGroup as any).jobs
+            : [resultGroup]; // fallback: treat result itself as a job (legacy format)
+          for (const job of jobList) {
+            const key = job.job_link || job.job_title;
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              jobs.push(job);
+            }
           }
         }
       }
