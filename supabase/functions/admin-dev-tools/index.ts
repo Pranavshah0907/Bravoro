@@ -74,7 +74,7 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    // ── GET QUEUE (dashboard data) ─────────────────────────────────────────────
+    // ── GET ALL SEARCHES ──────────────────────────────────────────────────────
     if (action === 'get_queue') {
       // 1. Processing flag
       const { data: slot } = await supabase
@@ -93,50 +93,57 @@ serve(async (req) => {
         .eq('status', 'queued')
         .order('created_at', { ascending: true });
 
-      // 3. All searches with status = 'processing' — avoid fetching grid_data (large JSONB)
-      const { data: processings } = await supabase
+      // 3. ALL searches (not just processing) — fetch all statuses
+      // Limit to recent 500 to avoid huge payloads; frontend has time filter
+      const { data: allSearches } = await supabase
         .from('searches')
-        .select('id, user_id, search_type, excel_file_name, created_at, updated_at')
-        .eq('status', 'processing')
-        .order('updated_at', { ascending: false });
+        .select('id, user_id, search_type, excel_file_name, status, error_message, created_at, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(500);
 
-      // 3b. Lightweight check: which processing searches have grid_data
-      const procIds = (processings ?? []).map(s => s.id);
+      // 3b. Lightweight check: which searches have grid_data
+      const allIds = (allSearches ?? []).map(s => s.id);
       const gridDataIds = new Set<string>();
-      if (procIds.length > 0) {
-        const { data: withGrid } = await supabase
-          .from('searches')
-          .select('id')
-          .in('id', procIds)
-          .not('grid_data', 'is', null);
-        for (const r of withGrid ?? []) gridDataIds.add(r.id);
+      if (allIds.length > 0) {
+        // Batch in chunks of 100 to avoid query size issues
+        for (let i = 0; i < allIds.length; i += 100) {
+          const chunk = allIds.slice(i, i + 100);
+          const { data: withGrid } = await supabase
+            .from('searches')
+            .select('id')
+            .in('id', chunk)
+            .not('grid_data', 'is', null);
+          for (const r of withGrid ?? []) gridDataIds.add(r.id);
+        }
       }
 
-      // 3c. Cross-reference: how many results does each processing search have?
+      // 3c. Cross-reference: how many results does each search have?
       const resultCountMap: Record<string, number> = {};
-      if (procIds.length > 0) {
-        const { data: resultRows } = await supabase
-          .from('search_results')
-          .select('search_id')
-          .in('search_id', procIds);
-        for (const r of resultRows ?? []) {
-          resultCountMap[r.search_id] = (resultCountMap[r.search_id] ?? 0) + 1;
+      if (allIds.length > 0) {
+        for (let i = 0; i < allIds.length; i += 100) {
+          const chunk = allIds.slice(i, i + 100);
+          const { data: resultRows } = await supabase
+            .from('search_results')
+            .select('search_id')
+            .in('search_id', chunk);
+          for (const r of resultRows ?? []) {
+            resultCountMap[r.search_id] = (resultCountMap[r.search_id] ?? 0) + 1;
+          }
         }
       }
 
       // 4. Collect all user_ids to batch-fetch profiles
       const userIdSet = new Set<string>();
-      for (const s of processings ?? []) if (s.user_id) userIdSet.add(s.user_id);
+      for (const s of allSearches ?? []) if (s.user_id) userIdSet.add(s.user_id);
 
-      // Also get search records for queued items (to get method info)
+      // Also get search records for queued items
       const queueSearchIds = (queueItems ?? []).map(q => q.search_id).filter(Boolean);
-      let queueSearches: Record<string, any> = {};
+      const queueSearches: Record<string, any> = {};
       if (queueSearchIds.length > 0) {
         const { data: qs } = await supabase
           .from('searches')
           .select('id, user_id, search_type, excel_file_name, created_at, updated_at')
           .in('id', queueSearchIds);
-        // Check grid_data for queue searches too
         const { data: qGrid } = await supabase
           .from('searches')
           .select('id')
@@ -152,19 +159,23 @@ serve(async (req) => {
       // 5. Batch fetch profiles
       const profileMap: Record<string, { email: string; full_name: string }> = {};
       if (userIdSet.size > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, email, full_name')
-          .in('id', Array.from(userIdSet));
-        for (const p of profiles ?? []) {
-          profileMap[p.id] = { email: p.email ?? '', full_name: p.full_name ?? '' };
+        const uids = Array.from(userIdSet);
+        for (let i = 0; i < uids.length; i += 100) {
+          const chunk = uids.slice(i, i + 100);
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .in('id', chunk);
+          for (const p of profiles ?? []) {
+            profileMap[p.id] = { email: p.email ?? '', full_name: p.full_name ?? '' };
+          }
         }
       }
 
-      // 6. Build response — flag item
+      // 6. Build flag_item
       let flag_item = null;
       if (flagSearchId) {
-        const search = (processings ?? []).find(s => s.id === flagSearchId);
+        const search = (allSearches ?? []).find(s => s.id === flagSearchId);
         if (search) {
           const profile = profileMap[search.user_id] ?? { email: '', full_name: '' };
           const info = getEntryInfo({ ...search, grid_data: gridDataIds.has(search.id) ? true : null });
@@ -173,6 +184,8 @@ serve(async (req) => {
             user_email: profile.email,
             full_name: profile.full_name,
             search_type: search.search_type,
+            status: search.status,
+            error_message: search.error_message ?? null,
             ...info,
             excel_file_name: search.excel_file_name ?? null,
             result_count: resultCountMap[search.id] ?? 0,
@@ -183,26 +196,27 @@ serve(async (req) => {
         }
       }
 
-      // 7. In-progress searches (NOT the flag-locked one)
-      const in_progress = (processings ?? [])
-        .filter(s => s.id !== flagSearchId)
-        .map(s => {
-          const profile = profileMap[s.user_id] ?? { email: '', full_name: '' };
-          const info = getEntryInfo({ ...s, grid_data: gridDataIds.has(s.id) ? true : null });
-          return {
-            search_id: s.id,
-            user_email: profile.email,
-            full_name: profile.full_name,
-            search_type: s.search_type,
-            ...info,
-            excel_file_name: s.excel_file_name ?? null,
-            result_count: resultCountMap[s.id] ?? 0,
-            created_at: s.created_at,
-            updated_at: s.updated_at,
-          };
-        });
+      // 7. All searches — enriched
+      const searches = (allSearches ?? []).map(s => {
+        const profile = profileMap[s.user_id] ?? { email: '', full_name: '' };
+        const info = getEntryInfo({ ...s, grid_data: gridDataIds.has(s.id) ? true : null });
+        return {
+          search_id: s.id,
+          user_email: profile.email,
+          full_name: profile.full_name,
+          search_type: s.search_type,
+          status: s.status,
+          error_message: s.error_message ?? null,
+          ...info,
+          excel_file_name: s.excel_file_name ?? null,
+          result_count: resultCountMap[s.id] ?? 0,
+          is_flag_locked: s.id === flagSearchId,
+          created_at: s.created_at,
+          updated_at: s.updated_at,
+        };
+      });
 
-      // 8. Queued items — enriched with search info
+      // 8. Queued items
       const queued = (queueItems ?? []).map((q) => {
         const search = queueSearches[q.search_id];
         const profile = search ? profileMap[search.user_id] : null;
@@ -222,7 +236,7 @@ serve(async (req) => {
         };
       });
 
-      return respond({ flag_item, in_progress, queued });
+      return respond({ flag_item, searches, queued });
     }
 
     // ── STOP SEARCH (mark error with note) ─────────────────────────────────────
@@ -232,14 +246,12 @@ serve(async (req) => {
 
       const errorMsg = note?.trim() || 'Stopped by admin';
 
-      // Mark as error
       await supabase.from('searches').update({
         status: 'error',
         error_message: errorMsg,
         updated_at: new Date().toISOString(),
       }).eq('id', searchId);
 
-      // Check if this search holds the processing flag
       const { data: slot } = await supabase
         .from('api_slots')
         .select('locked_by_search_id')
@@ -250,7 +262,6 @@ serve(async (req) => {
       let nextDispatched = false;
 
       if (slot?.locked_by_search_id === searchId) {
-        // Release flag — atomically picks up next queued item
         const { data: nextItems } = await supabase
           .rpc('release_processing_flag', { p_search_id: searchId });
 
