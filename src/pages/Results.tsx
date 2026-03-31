@@ -187,6 +187,7 @@ const buildJobsCell = (contacts: Contact[]): string => {
             job.last_posted_date || "",
           ];
           if (job.hiring_team_name) lines.push(job.hiring_team_name);
+          if (job.recruiter_phone_number) lines.push(job.recruiter_phone_number);
 
           jobBlocks.push(lines.filter(Boolean).join("\n"));
         }
@@ -315,6 +316,9 @@ const CompanyJobsPanel = ({ contacts }: { contacts: Contact[] }) => {
                   )}
                   {job.hiring_team_role && (
                     <span className="text-muted-foreground/40">· {job.hiring_team_role}</span>
+                  )}
+                  {job.recruiter_phone_number && (
+                    <span className="text-emerald-400/60">· {job.recruiter_phone_number}</span>
                   )}
                 </div>
               )}
