@@ -17,8 +17,8 @@ import { SheetsManager } from "./SheetsManager";
 // ── Constants ──────────────────────────────────────────────────────────────────
 const EXPECTED_HEADERS = [
   "Sr No", "Organization Name", "Organization Locations", "Organization Domains",
-  "Person Functions", "Person Seniorities / Titles", "Results per title",
-  "Toggle job search", "Job Title (comma separated)", "Job Seniority", "Date Posted (max age days)",
+  "Person Functions", "Person Seniorities", "Person Job Title", "Results per Function",
+  "Job Search", "Job Title", "Job Seniority", "Date (days)",
 ];
 
 const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1uldSi7FoRVG7JibkbjJ0RY7nEK_kK9gTiRe5tKtbr6Y/copy";
