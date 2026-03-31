@@ -545,7 +545,8 @@ const Results = () => {
       XLSX.utils.book_append_sheet(wb, wsMissing, "Missing_Companies");
     }
 
-    XLSX.writeFile(wb, `search_results_${searchId.slice(0, 8)}.xlsx`);
+    const srcName = searches.find(s => s.id === searchId)?.excel_file_name?.replace(/\.[^.]+$/, "");
+    XLSX.writeFile(wb, `${srcName || "search_results"}_processed.xlsx`);
 
     toast({
       title: "Export Complete",
@@ -626,7 +627,8 @@ const Results = () => {
       return;
     }
 
-    XLSX.writeFile(wb, `search_results_segregated_${searchId.slice(0, 8)}.xlsx`);
+    const srcName2 = searches.find(s => s.id === searchId)?.excel_file_name?.replace(/\.[^.]+$/, "");
+    XLSX.writeFile(wb, `${srcName2 || "search_results"}_processed.xlsx`);
 
     toast({
       title: "Export Complete",
@@ -693,7 +695,8 @@ const Results = () => {
       return;
     }
 
-    XLSX.writeFile(wb, `people_enrichment_${searchId.slice(0, 8)}.xlsx`);
+    const srcName3 = searches.find(s => s.id === searchId)?.excel_file_name?.replace(/\.[^.]+$/, "");
+    XLSX.writeFile(wb, `${srcName3 || "people_enrichment"}_processed.xlsx`);
 
     toast({
       title: "Export Complete",

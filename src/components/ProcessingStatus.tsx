@@ -76,7 +76,7 @@ export const ProcessingStatus = ({ searchId, onReset, searchSummary }: Processin
       // Get search info for company name (for manual type)
       const { data: search } = await supabase
         .from("searches")
-        .select("company_name, search_type")
+        .select("company_name, search_type, excel_file_name")
         .eq("id", searchId)
         .single();
 
@@ -136,9 +136,10 @@ export const ProcessingStatus = ({ searchId, onReset, searchSummary }: Processin
         return;
       }
 
-      const fileName = search?.company_name 
-        ? `${search.company_name.replace(/[\\/*?:\[\]]/g, '').substring(0, 50)}_results.xlsx`
-        : `search_results_${searchId.slice(0, 8)}.xlsx`;
+      const srcName = (search as any)?.excel_file_name?.replace(/\.[^.]+$/, "")
+        || search?.company_name?.replace(/[\\/*?:\[\]]/g, '').substring(0, 50)
+        || "search_results";
+      const fileName = `${srcName}_processed.xlsx`;
 
       XLSX.writeFile(wb, fileName);
 
