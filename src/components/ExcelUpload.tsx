@@ -195,7 +195,7 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
       // Flexible header lookup — handles V2 template header variants
       const getVal = (row: Record<string, string>, ...keys: string[]) => {
         for (const k of keys) {
-          const found = Object.keys(row).find(h => h.toLowerCase().startsWith(k.toLowerCase()));
+          const found = Object.keys(row).find(h => h.replace(/\r\n|\r|\n/g, " ").toLowerCase().startsWith(k.toLowerCase()));
           if (found && row[found] != null) return String(row[found]).trim();
         }
         return "";
