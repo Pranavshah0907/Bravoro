@@ -1898,7 +1898,7 @@ const Results = () => {
                     <TableHead className="w-[40px]"></TableHead>
                     <TableHead className="w-[40px] font-semibold text-foreground">#</TableHead>
                     <TableHead className="font-semibold text-foreground">Type</TableHead>
-                    <TableHead className="font-semibold text-foreground">Details</TableHead>
+                    <TableHead className="font-semibold text-foreground">Name / File</TableHead>
                     <TableHead className="font-semibold text-foreground">Created</TableHead>
                     <TableHead className="font-semibold text-foreground">Status</TableHead>
                     <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
@@ -1967,9 +1967,9 @@ const Results = () => {
                               {search.search_type === "bulk" ? "Bulk" : search.search_type === "bulk_people_enrichment" ? "People Enrich" : "Manual"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
+                          <TableCell className="max-w-[300px]">
                             {(search.search_type === "bulk" || search.search_type === "bulk_people_enrichment") && search.excel_file_name ? (
-                              <span className="text-sm">{search.excel_file_name}</span>
+                              <span className="text-sm truncate block" title={search.excel_file_name}>{search.excel_file_name}</span>
                             ) : search.company_name ? (
                               <span className="text-sm">{search.company_name}</span>
                             ) : (
