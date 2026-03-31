@@ -156,7 +156,10 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
 
   const validateHeaders = (headers: string[]): boolean => {
     const norm = headers.map(h => String(h).replace(/\r\n|\r|\n/g, " ").trim().toLowerCase());
-    return EXPECTED_HEADERS.every(e => norm.includes(e.toLowerCase()));
+    return EXPECTED_HEADERS.every(e => {
+      const el = e.toLowerCase();
+      return norm.some(h => h === el || h.startsWith(el + " ") || h.startsWith(el + "("));
+    });
   };
 
   const getCurrentProgress = () => PROCESSING_STEPS.find(s => s.key === currentStep)?.progress || 0;
