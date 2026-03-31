@@ -296,11 +296,12 @@ async function handleFlagAction(
           const nextItem = nextItems[0] as { next_entry_type: string; next_search_data: any; next_search_id: string };
           const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
           
-          const n8nWebhookUrl = nextItem.next_entry_type === 'bulk_people_enrichment'
-            ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
-            : nextItem.next_entry_type === 'manual_entry'
-              ? 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual'
-              : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+          const WEBHOOK_URLS: Record<string, string> = {
+            manual_entry: 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual',
+            bulk_upload: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_search',
+            bulk_people_enrichment: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich',
+          };
+          const n8nWebhookUrl = WEBHOOK_URLS[nextItem.next_entry_type] || WEBHOOK_URLS['bulk_upload'];
 
           const webhookHeaders: Record<string, string> = {
             'Content-Type': 'application/json',

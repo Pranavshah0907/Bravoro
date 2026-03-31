@@ -76,9 +76,12 @@ serve(async (req) => {
       const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
       
       // Determine webhook URL based on entry type
-      const n8nWebhookUrl = nextItem.next_entry_type === 'bulk_people_enrichment'
-        ? 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich'
-        : 'https://n8n.srv1081444.hstgr.cloud/webhook/incoming_request';
+      const WEBHOOK_URLS: Record<string, string> = {
+        manual_entry: 'https://n8n.srv1081444.hstgr.cloud/webhook/enrichment_bulk_manual',
+        bulk_upload: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_search',
+        bulk_people_enrichment: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich',
+      };
+      const n8nWebhookUrl = WEBHOOK_URLS[nextItem.next_entry_type] || WEBHOOK_URLS['bulk_upload'];
 
       // Build headers
       const webhookHeaders: Record<string, string> = {
