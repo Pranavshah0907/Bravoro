@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -9,11 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import {
   Terminal, RefreshCw, Trash2, Clock, Loader2, Inbox,
   Square, Copy, Check, Filter, CheckCircle2, AlertTriangle,
-  XCircle, ArrowUpDown, ChevronUp, ChevronDown, Lock, Download, FileText,
+  XCircle, ArrowUpDown, ChevronUp, ChevronDown, Lock,
+  MoreHorizontal, Download, FileText,
 } from "lucide-react";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import { differenceInHours, format } from "date-fns";
@@ -259,172 +263,391 @@ const DevTools = () => {
     }
   };
 
-  // ── Export: Excel ──────────────────────────────────────────────────────────
-  const exportExcel = () => {
-    const rows = filteredSearches.map((s, i) => ({
-      "#": i + 1,
-      "Search ID": s.search_id,
-      "User Email": s.user_email,
-      "User Name": s.full_name,
-      "Type": s.type_label,
-      "Method": s.entry_method,
-      "File Name": s.excel_file_name ?? "",
-      "Results": s.result_count,
-      "Status": getDisplayStatus(s).replace("_", " "),
-      "Error Message": s.error_message ?? "",
-      "Date / Time": formatDateTime(s.updated_at ?? s.created_at),
+  // ── Per-search export helpers ────────────────────────────────────────────
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  interface Contact {
+    Record_ID?: string;
+    First_Name: string;
+    Last_Name: string;
+    Domain: string;
+    Organization: string;
+    Title: string;
+    Email: string;
+    LinkedIn: string;
+    Phone_Number_1: string;
+    Phone_Number_2: string;
+    job_search_result?: { job_search_status: string; results: any[] };
+    Provider?: string;
+    People_Search_By?: string;
+    Credits_Used?: number;
+  }
+
+  interface ResultRow {
+    id: string;
+    search_id: string;
+    company_name: string;
+    domain: string | null;
+    contact_data: Contact[];
+    result_type?: string;
+  }
+
+  const fetchResults = async (searchId: string): Promise<ResultRow[]> => {
+    const { data, error } = await supabase
+      .from("search_results")
+      .select("*")
+      .eq("search_id", searchId);
+    if (error) throw error;
+    return (data || []).map(item => ({
+      ...item,
+      contact_data: Array.isArray(item.contact_data) ? item.contact_data as unknown as Contact[] : [],
     }));
-
-    if (filteredQueued.length > 0) {
-      filteredQueued.forEach((q, i) => {
-        rows.push({
-          "#": i + 1,
-          "Search ID": q.search_id,
-          "User Email": q.user_email,
-          "User Name": q.full_name,
-          "Type": q.type_label,
-          "Method": q.entry_method,
-          "File Name": "",
-          "Results": 0,
-          "Status": "queued",
-          "Error Message": "",
-          "Date / Time": formatDateTime(q.created_at),
-        });
-      });
-    }
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(rows);
-
-    // Column widths
-    ws["!cols"] = [
-      { wch: 5 }, { wch: 38 }, { wch: 28 }, { wch: 20 }, { wch: 18 },
-      { wch: 18 }, { wch: 25 }, { wch: 8 }, { wch: 12 }, { wch: 50 }, { wch: 22 },
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, "All Searches");
-    const date = new Date().toISOString().split("T")[0];
-    XLSX.writeFile(wb, `bravoro_searches_${date}.xlsx`);
-    toast({ title: "Excel exported", description: `${rows.length} rows` });
   };
 
-  // ── Export: PDF (Platform Usage Analytics) ────────────────────────────────
-  const exportPDF = () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const now = format(new Date(), "dd MMM yyyy, hh:mm a");
-
-    // Header band
-    doc.setFillColor(6, 25, 26);
-    doc.rect(0, 0, pageW, 28, "F");
-    doc.setFontSize(16);
-    doc.setTextColor(200, 230, 226);
-    doc.text("Platform Usage Analytics", 15, 14);
-    doc.setFontSize(9);
-    doc.setTextColor(140, 170, 166);
-    doc.text(`Bravoro  |  Generated: ${now}`, 15, 22);
-
-    // Summary cards
-    let y = 36;
-    doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    const summaryItems = [
-      `Total Searches: ${counts.total}`,
-      `Completed: ${counts.completed}`,
-      `Processing: ${counts.processing}`,
-      `Stuck: ${counts.stuck}`,
-      `Errored: ${counts.error}`,
-      `Queued: ${counts.queued}`,
-    ];
-    doc.text(summaryItems.join("    |    "), 15, y);
-    y += 4;
-
-    // Filter info
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    const filterDesc = [
-      statusFilter !== "all" ? `Status: ${statusFilter}` : null,
-      timeFilter !== "all" ? `Time: ${timeFilter}` : null,
-      textFilter ? `Search: "${textFilter}"` : null,
-    ].filter(Boolean).join("  |  ");
-    if (filterDesc) {
-      doc.text(`Filters applied: ${filterDesc}`, 15, y + 4);
-      y += 6;
+  const buildJobsCell = (contacts: Contact[]): string => {
+    const seen = new Set<string>();
+    const jobBlocks: string[] = [];
+    for (const c of contacts) {
+      if (c.job_search_result?.job_search_status === "jobs_found" && Array.isArray(c.job_search_result.results)) {
+        for (const resultGroup of c.job_search_result.results) {
+          const jobList = Array.isArray((resultGroup as any).jobs) ? (resultGroup as any).jobs : [resultGroup];
+          for (const job of jobList) {
+            const key = job.job_link || job.job_title;
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            const lines = [job.job_title || "", job.job_link || "", job.location || "", job.last_posted_date || ""];
+            if (job.hiring_team_name) lines.push(job.hiring_team_name);
+            if (job.recruiter_phone_number) lines.push(job.recruiter_phone_number);
+            jobBlocks.push(lines.filter(Boolean).join("\n"));
+          }
+        }
+      }
     }
+    return jobBlocks.join("\n\n");
+  };
 
-    // Main table
-    const tableRows = filteredSearches.map((s, i) => [
-      String(i + 1),
-      s.search_id.slice(0, 8) + "...",
-      s.user_email,
-      s.full_name,
-      s.type_label,
-      s.entry_method,
-      String(s.result_count),
-      getDisplayStatus(s).replace("_", " "),
-      s.error_message ? (s.error_message.length > 60 ? s.error_message.slice(0, 57) + "..." : s.error_message) : "",
-      formatDateTime(s.updated_at ?? s.created_at),
-    ]);
+  // ── Export Excel (per search — same as Results page) ──────────────────────
+  const handleExportExcel = async (item: SearchItem) => {
+    setExporting(item.search_id);
+    try {
+      const results = await fetchResults(item.search_id);
+      if (!results.length) { toast({ title: "No results to export", variant: "destructive" }); return; }
 
-    autoTable(doc, {
-      startY: y + 4,
-      head: [["#", "Search ID", "Email", "Name", "Type", "Method", "Results", "Status", "Error", "Date / Time"]],
-      body: tableRows,
-      margin: { left: 10, right: 10 },
-      styles: { fontSize: 7, cellPadding: 2, overflow: "linebreak" },
-      headStyles: { fillColor: [10, 31, 31], textColor: [200, 230, 226], fontStyle: "bold", fontSize: 7 },
-      alternateRowStyles: { fillColor: [245, 248, 248] },
-      columnStyles: {
-        0: { cellWidth: 8 },
-        1: { cellWidth: 22, font: "courier" },
-        6: { cellWidth: 14, halign: "center" },
-        7: { cellWidth: 18 },
-        8: { cellWidth: 45 },
-        9: { cellWidth: 32 },
-      },
-    });
+      const isPeopleEnrichment = item.search_type === "bulk_people_enrichment";
+      const wb = XLSX.utils.book_new();
 
-    // Queued table (if any)
-    if (filteredQueued.length > 0) {
-      const lastY = (doc as any).lastAutoTable?.finalY ?? y + 20;
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      doc.text(`Queued Items (${filteredQueued.length})`, 15, lastY + 10);
+      if (isPeopleEnrichment) {
+        const enriched = results.find(r => r.result_type === "enriched" || r.company_name === "People Enriched");
+        const missing = results.find(r => r.result_type === "missing" || r.company_name === "People not found");
+        if (enriched?.contact_data?.length) {
+          const ws = XLSX.utils.json_to_sheet(enriched.contact_data.map(c => ({
+            Record_ID: c.Record_ID || "", First_Name: c.First_Name, Last_Name: c.Last_Name,
+            Domain: c.Domain, Organization: c.Organization, Title: c.Title,
+            Email: c.Email, LinkedIn: c.LinkedIn, Phone_Number_1: c.Phone_Number_1, Phone_Number_2: c.Phone_Number_2,
+          })));
+          XLSX.utils.book_append_sheet(wb, ws, "Output");
+        }
+        if (missing?.contact_data?.length) {
+          const ws = XLSX.utils.json_to_sheet(missing.contact_data.map(c => ({
+            Record_ID: c.Record_ID || "", First_Name: c.First_Name, Last_Name: c.Last_Name,
+            Domain: c.Domain || "", Organization: c.Organization || "", Title: c.Title || "",
+            Email: c.Email || "", LinkedIn: c.LinkedIn || "", Phone_Number_1: c.Phone_Number_1 || "", Phone_Number_2: c.Phone_Number_2 || "",
+          })));
+          XLSX.utils.book_append_sheet(wb, ws, "Missing_contacts");
+        }
+      } else {
+        const companyResults = results.filter(r => r.result_type !== "missing_company");
+        const missingCompanies = results.filter(r => r.result_type === "missing_company");
+        const allContacts: any[] = [];
+        companyResults.forEach(r => {
+          const jobsCell = buildJobsCell(r.contact_data);
+          r.contact_data.forEach(c => {
+            allContacts.push({
+              Company: r.company_name, Domain: r.domain || c.Domain,
+              First_Name: c.First_Name, Last_Name: c.Last_Name, Title: c.Title,
+              Email: c.Email, LinkedIn: c.LinkedIn, Phone_1: c.Phone_Number_1, Phone_2: c.Phone_Number_2,
+              open_job_positions: jobsCell,
+            });
+          });
+        });
+        if (allContacts.length) {
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allContacts), "Contacts");
+        }
+        if (missingCompanies.length) {
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+            missingCompanies.map(mc => ({ Company_Name: mc.company_name, Domain: mc.domain || "" }))
+          ), "Missing_Companies");
+        }
+      }
 
-      const queueRows = filteredQueued.map((q, i) => [
-        String(i + 1),
-        q.search_id.slice(0, 8) + "...",
-        q.user_email,
-        q.full_name,
-        q.type_label,
-        q.entry_method,
-        formatDateTime(q.created_at),
-      ]);
+      if (!wb.SheetNames.length) { toast({ title: "No data to export", variant: "destructive" }); return; }
+      const srcName = item.excel_file_name?.replace(/\.[^.]+$/, "");
+      XLSX.writeFile(wb, `${srcName || "search_results"}_processed.xlsx`);
+      toast({ title: "Excel exported" });
+    } catch (err) {
+      toast({ title: "Export failed", description: String(err), variant: "destructive" });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  // ── Export PDF (per search — same as Results page) ────────────────────────
+  const handleExportPDF = async (item: SearchItem) => {
+    setExporting(item.search_id);
+    try {
+      const results = await fetchResults(item.search_id);
+      if (!results.length) { toast({ title: "No results to export", variant: "destructive" }); return; }
+
+      const companyResults = results.filter(r => r.result_type !== "missing_company");
+      const allContacts = companyResults.flatMap(r => r.contact_data);
+      if (!allContacts.length) { toast({ title: "No contacts for PDF", variant: "destructive" }); return; }
+
+      const C = {
+        white: [255, 255, 255] as [number,number,number],
+        accent: [0, 160, 125] as [number,number,number],
+        accentDark: [0, 110, 88] as [number,number,number],
+        accentPale: [220, 245, 240] as [number,number,number],
+        headerBg: [15, 60, 55] as [number,number,number],
+        text: [30, 40, 38] as [number,number,number],
+        textMid: [80, 95, 92] as [number,number,number],
+        textLight: [140, 155, 152] as [number,number,number],
+        rowAlt: [244, 250, 248] as [number,number,number],
+        border: [210, 230, 226] as [number,number,number],
+        totalRow: [230, 245, 240] as [number,number,number],
+      };
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const PW = doc.internal.pageSize.getWidth();
+      const PH = doc.internal.pageSize.getHeight();
+      const ML = 15, MR = 15, TW = PW - ML - MR;
+
+      // Header band
+      doc.setFillColor(...C.headerBg);
+      doc.rect(0, 0, PW, 28, "F");
+      doc.setFillColor(...C.accent);
+      doc.rect(0, 0, 5, 28, "F");
+      doc.setTextColor(...C.accent);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("BRAVORO", ML + 4, 13);
+      doc.setTextColor(200, 230, 226);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("Enrichment Report", ML + 4, 21);
+      const label = item.excel_file_name || item.user_email || `ID: ${item.search_id.slice(0, 8)}`;
+      doc.setTextColor(160, 200, 195);
+      doc.setFontSize(8);
+      doc.text(label, PW - MR, 13, { align: "right" });
+      doc.text(new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), PW - MR, 21, { align: "right" });
+
+      let cursorY = 36;
+
+      const sectionHeading = (title: string, y: number) => {
+        doc.setFillColor(...C.accentPale);
+        doc.rect(ML, y - 4, TW, 7, "F");
+        doc.setFillColor(...C.accent);
+        doc.rect(ML, y - 4, 3, 7, "F");
+        doc.setTextColor(...C.accentDark);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.text(title.toUpperCase(), ML + 6, y + 0.5);
+      };
+
+      // Contact Details table
+      sectionHeading("Contact Details", cursorY);
+      cursorY += 5;
+      const contactRows = allContacts.map(c => {
+        const name = [c.First_Name, c.Last_Name].filter(Boolean).join(" ") || "—";
+        const phones = [c.Phone_Number_1, c.Phone_Number_2].filter(p => p && String(p).trim());
+        const provider = (c.Provider || "").trim();
+        const phoneStr = phones.length ? (provider ? `[${provider}]  ${phones.join("  ·  ")}` : phones.join("  ·  ")) : "—";
+        return [name, c.Organization || "—", c.Title || "—", phoneStr];
+      });
 
       autoTable(doc, {
-        startY: lastY + 14,
-        head: [["#", "Search ID", "Email", "Name", "Type", "Method", "Submitted"]],
-        body: queueRows,
-        margin: { left: 10, right: 10 },
-        styles: { fontSize: 7, cellPadding: 2 },
-        headStyles: { fillColor: [10, 31, 31], textColor: [200, 230, 226], fontStyle: "bold", fontSize: 7 },
-        alternateRowStyles: { fillColor: [245, 248, 248] },
+        startY: cursorY,
+        head: [["Name", "Organisation", "Title", "Phone (Provider)"]],
+        body: contactRows,
+        margin: { left: ML, right: MR },
+        styles: { fontSize: 8, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: C.text, lineColor: C.border, lineWidth: 0.15, fillColor: C.white, font: "helvetica", overflow: "linebreak" },
+        headStyles: { fillColor: C.headerBg, textColor: [200, 230, 226] as [number,number,number], fontStyle: "bold", fontSize: 8, lineWidth: 0 },
+        alternateRowStyles: { fillColor: C.rowAlt },
+        columnStyles: { 0: { cellWidth: 38 }, 1: { cellWidth: 42 }, 2: { cellWidth: 52 }, 3: { cellWidth: "auto" } },
       });
-    }
 
-    // Footer
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7);
-      doc.setTextColor(160, 160, 160);
-      const pageH = doc.internal.pageSize.getHeight();
-      doc.text(`Bravoro — Platform Usage Analytics — Page ${i} of ${pageCount}`, 15, pageH - 6);
-    }
+      // Provider statistics
+      const providerMap: Record<string, number> = {};
+      allContacts.forEach(c => {
+        const hasPhone = [c.Phone_Number_1, c.Phone_Number_2].some(p => p && String(p).trim());
+        if (!hasPhone) return;
+        providerMap[(c.Provider || "Unknown").trim()] = (providerMap[(c.Provider || "Unknown").trim()] || 0) + 1;
+      });
+      const total = Object.values(providerMap).reduce((a, b) => a + b, 0);
+      const providerEntries = Object.entries(providerMap).sort((a, b) => b[1] - a[1]);
 
-    const date = new Date().toISOString().split("T")[0];
-    doc.save(`bravoro_platform_analytics_${date}.pdf`);
-    toast({ title: "PDF exported", description: "Platform Usage Analytics" });
+      const tableEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
+      cursorY = tableEndY + 10;
+
+      if (providerEntries.length > 0) {
+        sectionHeading("Provider Summary", cursorY);
+        cursorY += 5;
+        const statsRows = providerEntries.map(([prov, count]) => [prov, String(count), `${((count / total) * 100).toFixed(1)}%`]);
+        statsRows.push(["Total", String(total), "100%"]);
+
+        autoTable(doc, {
+          startY: cursorY,
+          head: [["Provider", "Contacts Found", "Share"]],
+          body: statsRows,
+          margin: { left: ML, right: MR },
+          tableWidth: TW,
+          styles: { fontSize: 8, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: C.text, lineColor: C.border, lineWidth: 0.15, fillColor: C.white },
+          headStyles: { fillColor: C.headerBg, textColor: [200, 230, 226] as [number,number,number], fontStyle: "bold", fontSize: 8, lineWidth: 0 },
+          alternateRowStyles: { fillColor: C.rowAlt },
+          didParseCell: (data) => {
+            if (data.row.index === statsRows.length - 1 && data.section === "body") {
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.textColor = C.accentDark;
+              data.cell.styles.fillColor = C.totalRow;
+            }
+          },
+          columnStyles: { 0: { cellWidth: "auto" }, 1: { cellWidth: 50, halign: "center" }, 2: { cellWidth: 36, halign: "center" } },
+        });
+
+        // Pie chart
+        const statsEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
+        cursorY = statsEndY + 10;
+        doc.setTextColor(...C.accentDark);
+        doc.setFontSize(7.5);
+        doc.setFont("helvetica", "bold");
+        doc.text("PROVIDER BREAKDOWN", ML, cursorY);
+        cursorY += 5;
+
+        const pieColors: [number,number,number][] = [[0,160,125],[230,90,60],[60,130,200],[200,160,30],[140,80,200],[40,190,155]];
+        const sf = doc.internal.scaleFactor;
+        const pageH = doc.internal.pageSize.getHeight();
+        const drawPieSlice = (cx: number, cy: number, r: number, startAng: number, endAng: number, color: [number,number,number]) => {
+          if (Math.abs(endAng - startAng) < 0.0001) return;
+          doc.setFillColor(...color);
+          const steps = 48;
+          const toX = (x: number) => (x * sf).toFixed(3);
+          const toY = (y: number) => ((pageH - y) * sf).toFixed(3);
+          const parts: string[] = [`${toX(cx)} ${toY(cy)} m`];
+          for (let s = 0; s <= steps; s++) {
+            const a = startAng + (endAng - startAng) * s / steps;
+            parts.push(`${toX(cx + r * Math.cos(a))} ${toY(cy + r * Math.sin(a))} l`);
+          }
+          parts.push(`${toX(cx)} ${toY(cy)} l f`);
+          (doc.internal as any).out(parts.join(" "));
+        };
+
+        const r = 16, cx = ML + r + 4, chartTopY = cursorY, cy = chartTopY + r;
+        let angle = -Math.PI / 2;
+        providerEntries.forEach(([, count], i) => {
+          const sweep = (count / total) * 2 * Math.PI;
+          drawPieSlice(cx, cy, r, angle, angle + sweep - 0.03, pieColors[i % pieColors.length]);
+          angle += sweep;
+        });
+        doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.6); doc.circle(cx, cy, r, "S");
+        doc.setFillColor(...C.white); doc.circle(cx, cy, r * 0.44, "F");
+        doc.setDrawColor(...C.border); doc.setLineWidth(0.15); doc.circle(cx, cy, r * 0.44, "S");
+
+        const legendX = cx + r + 10, rowH = 7;
+        const legendStartY = cy - (providerEntries.length * rowH) / 2 + rowH * 0.5;
+        const pctX = ML + TW;
+        providerEntries.forEach(([prov, count], i) => {
+          const pct = ((count / total) * 100).toFixed(1);
+          const ly = legendStartY + i * rowH;
+          doc.setFillColor(...pieColors[i % pieColors.length]);
+          doc.circle(legendX + 1.8, ly - 1.5, 2.2, "F");
+          doc.setTextColor(...C.text); doc.setFontSize(8.5); doc.setFont("helvetica", "normal");
+          doc.text(prov, legendX + 7, ly);
+          doc.setTextColor(...C.textMid); doc.setFont("helvetica", "bold");
+          doc.text(`${pct}%`, pctX, ly, { align: "right" });
+          doc.setDrawColor(...C.border); doc.setLineWidth(0.15);
+          const nameEndX = legendX + 7 + doc.getStringUnitWidth(prov) * 8.5 / sf / (72 / 25.4) + 2;
+          doc.setLineDashPattern([0.8, 1.2], 0);
+          doc.line(nameEndX, ly - 1, pctX - doc.getStringUnitWidth(`${pct}%`) * 8.5 / sf / (72 / 25.4) - 3, ly - 1);
+          doc.setLineDashPattern([], 0);
+        });
+
+        // Cost breakdown
+        const COST_PER_CREDIT: Record<string, number> = { cognism: 0.76, apollo: 0.01975, aleads: 0.00683, lusha: 0.087416, theirstack: 0.0326 };
+        const PLATFORM_LABELS: Record<string, string> = { cognism: "Cognism", apollo: "Apollo", aleads: "A-Leads", lusha: "Lusha", theirstack: "Theirstack" };
+
+        const { data: creditRow } = await supabase
+          .from("credit_usage")
+          .select("cognism_credits, apollo_credits, aleads_credits, lusha_credits, theirstack_credits")
+          .eq("search_id", item.search_id)
+          .maybeSingle();
+
+        if (creditRow) {
+          const creditFields = [
+            { key: "cognism", dbField: "cognism_credits" as const },
+            { key: "apollo", dbField: "apollo_credits" as const },
+            { key: "aleads", dbField: "aleads_credits" as const },
+            { key: "lusha", dbField: "lusha_credits" as const },
+            { key: "theirstack", dbField: "theirstack_credits" as const },
+          ];
+          const costRows: string[][] = [];
+          let grandTotal = 0;
+          creditFields.forEach(({ key, dbField }) => {
+            const credits = Number(creditRow[dbField]) || 0;
+            if (credits <= 0) return;
+            const rate = COST_PER_CREDIT[key];
+            const lineCost = credits * rate;
+            grandTotal += lineCost;
+            costRows.push([PLATFORM_LABELS[key], String(credits), `€ ${rate.toFixed(4)}`, `€ ${lineCost.toFixed(2)}`]);
+          });
+          if (costRows.length > 0) {
+            costRows.push(["Total", "", "", `€ ${grandTotal.toFixed(2)}`]);
+            const pieBottomY = cy + r + 6;
+            const costBlockH = 12 + costRows.length * 8 + 10;
+            if (pieBottomY + costBlockH + 14 > PH - 14) { doc.addPage(); cursorY = 20; } else { cursorY = pieBottomY + 6; }
+            sectionHeading("Cost Breakdown", cursorY);
+            cursorY += 5;
+            autoTable(doc, {
+              startY: cursorY,
+              head: [["Platform", "Credits Used", "Cost / Credit", "Total Cost"]],
+              body: costRows,
+              margin: { left: ML, right: MR },
+              tableWidth: TW,
+              styles: { fontSize: 8, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: C.text, lineColor: C.border, lineWidth: 0.15, fillColor: C.white },
+              headStyles: { fillColor: C.headerBg, textColor: [200, 230, 226] as [number,number,number], fontStyle: "bold", fontSize: 8, lineWidth: 0 },
+              alternateRowStyles: { fillColor: C.rowAlt },
+              didParseCell: (data) => {
+                if (data.row.index === costRows.length - 1 && data.section === "body") {
+                  data.cell.styles.fontStyle = "bold";
+                  data.cell.styles.textColor = C.accentDark;
+                  data.cell.styles.fillColor = C.totalRow;
+                }
+              },
+              columnStyles: { 0: { cellWidth: "auto" }, 1: { cellWidth: 36, halign: "center" }, 2: { cellWidth: 36, halign: "center" }, 3: { cellWidth: 36, halign: "right" } },
+            });
+          }
+        }
+      }
+
+      // Footer on all pages
+      const totalPages = (doc.internal as any).getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(...C.accent); doc.setLineWidth(0.4);
+        doc.line(ML, PH - 10, PW - MR, PH - 10);
+        doc.setTextColor(...C.textLight); doc.setFontSize(6.5); doc.setFont("helvetica", "normal");
+        doc.text("Bravoro · Confidential", ML, PH - 5);
+        doc.text(`Page ${i} of ${totalPages}`, PW - MR, PH - 5, { align: "right" });
+      }
+
+      const filename = item.excel_file_name
+        ? `bravoro_report_${item.excel_file_name.replace(/\.[^.]+$/, "").replace(/\s+/g, "_").toLowerCase()}.pdf`
+        : `bravoro_report_${item.search_id.slice(0, 8)}.pdf`;
+      doc.save(filename);
+      toast({ title: "PDF exported", description: "Enrichment Report" });
+    } catch (err) {
+      toast({ title: "PDF export failed", description: String(err), variant: "destructive" });
+    } finally {
+      setExporting(null);
+    }
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -467,22 +690,6 @@ const DevTools = () => {
                 {format(lastRefreshed, "hh:mm:ss a")}
               </span>
             )}
-            <div className="h-5 w-px bg-border/30" />
-            <Button
-              size="sm" variant="outline" onClick={exportExcel}
-              className="h-8 text-xs border-border/40 hover:border-emerald-500/40 hover:text-emerald-400 transition-colors"
-            >
-              <Download className="h-3 w-3 mr-1.5" />
-              Export Excel
-            </Button>
-            <Button
-              size="sm" variant="outline" onClick={exportPDF}
-              className="h-8 text-xs border-border/40 hover:border-primary/40 hover:text-primary transition-colors"
-            >
-              <FileText className="h-3 w-3 mr-1.5" />
-              Platform Usage Analytics
-            </Button>
-            <div className="h-5 w-px bg-border/30" />
             <Button
               size="sm" variant="outline" onClick={fetchData} disabled={fetching}
               className="h-8 text-xs border-border/40 hover:border-primary/40 hover:text-primary transition-colors"
@@ -735,15 +942,44 @@ const DevTools = () => {
                                 </td>
 
                                 <td className="px-4 py-3">
-                                  {(ds === "processing" || ds === "stuck") && (
-                                    <button
-                                      onClick={() => setStopTarget({ searchId: item.search_id, label: item.user_email || item.search_id.slice(0, 8) })}
-                                      className="p-1.5 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                                      title="Stop with note"
-                                    >
-                                      <Square className="h-3.5 w-3.5" />
-                                    </button>
-                                  )}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+                                        {exporting === item.search_id
+                                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                                          : <MoreHorizontal className="h-4 w-4" />}
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48" style={{ background: "#0c1d1d", border: "1px solid rgba(255,255,255,0.1)" }}>
+                                      {item.result_count > 0 && (
+                                        <>
+                                          <DropdownMenuItem
+                                            onClick={() => handleExportExcel(item)}
+                                            className="text-xs gap-2 cursor-pointer"
+                                          >
+                                            <Download className="h-3.5 w-3.5" />
+                                            Export Excel
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleExportPDF(item)}
+                                            className="text-xs gap-2 cursor-pointer"
+                                          >
+                                            <FileText className="h-3.5 w-3.5" />
+                                            Download Report
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                      {(ds === "processing" || ds === "stuck") && (
+                                        <DropdownMenuItem
+                                          onClick={() => setStopTarget({ searchId: item.search_id, label: item.user_email || item.search_id.slice(0, 8) })}
+                                          className="text-xs gap-2 cursor-pointer text-red-400 focus:text-red-400"
+                                        >
+                                          <Square className="h-3.5 w-3.5" />
+                                          Stop Search
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </td>
                               </tr>
                               {/* Expanded error row */}
