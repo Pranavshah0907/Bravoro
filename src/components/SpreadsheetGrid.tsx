@@ -335,9 +335,13 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     loadRows: (newRows, newDraftId, newDraftName) => {
       skipDirtyRef.current = true;
       undoStackRef.current = [];
-      const padded = [...newRows];
-      while (padded.length < ROWS_DEFAULT) padded.push(emptyRow());
-      setRows(padded);
+      const safe = (Array.isArray(newRows) ? newRows : []).map(r => {
+        const base = emptyRow();
+        for (const k of Object.keys(base) as ColKey[]) base[k] = typeof r[k] === "string" ? r[k] : base[k];
+        return base;
+      });
+      while (safe.length < ROWS_DEFAULT) safe.push(emptyRow());
+      setRows(safe);
       setDraftId(newDraftId ?? null);
       setDraftName(newDraftName ?? "Untitled Draft");
       setDraftStatus(newDraftId ? "saved" : "idle");

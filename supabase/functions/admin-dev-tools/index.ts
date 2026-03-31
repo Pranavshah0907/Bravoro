@@ -14,6 +14,25 @@ const WEBHOOK_URLS: Record<string, string> = {
   bulk_people_enrichment: 'https://n8n.srv1081444.hstgr.cloud/webhook/bulk_enrich',
 };
 
+// Derive human-readable type + method from a search record
+function getEntryInfo(s: { search_type: string; excel_file_name: string | null; grid_data: unknown }) {
+  if (s.search_type === 'manual')
+    return { type_label: 'Single Search', entry_method: 'Manual Form' };
+  if (s.search_type === 'bulk_people_enrichment') {
+    if (s.excel_file_name?.startsWith('google_sheet_'))
+      return { type_label: 'People Enrichment', entry_method: 'Google Sheet URL' };
+    return { type_label: 'People Enrichment', entry_method: 'File Upload' };
+  }
+  // search_type === 'bulk'
+  if (s.grid_data)
+    return { type_label: 'Bulk Search', entry_method: 'Spreadsheet Grid' };
+  if (s.excel_file_name?.startsWith('google_sheet_'))
+    return { type_label: 'Bulk Search', entry_method: 'Google Sheet URL' };
+  if (s.excel_file_name)
+    return { type_label: 'Bulk Search', entry_method: 'File Upload' };
+  return { type_label: 'Bulk Search', entry_method: 'Unknown' };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -24,7 +43,7 @@ serve(async (req) => {
     });
 
   try {
-    // Verify JWT
+    // ── Auth ────────────────────────────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) return respond({ error: 'Unauthorized' }, 401);
     const token = authHeader.replace('Bearer ', '');
@@ -48,146 +67,243 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify admin role
     const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-
+      .from('user_roles').select('role').eq('user_id', userId).single();
     if (roleData?.role !== 'admin') return respond({ error: 'Forbidden' }, 403);
 
     const body = await req.json();
     const { action } = body;
 
-    // ── GET QUEUE ──────────────────────────────────────────────────────────────
+    // ── GET QUEUE (dashboard data) ─────────────────────────────────────────────
     if (action === 'get_queue') {
-      // 1. Processing flag state
+      // 1. Processing flag
       const { data: slot } = await supabase
         .from('api_slots')
-        .select('slot_name, is_locked, locked_by_search_id, locked_at')
+        .select('is_locked, locked_by_search_id, locked_at')
         .eq('slot_name', 'processing')
         .single();
 
-      let processing = null;
-      if (slot?.is_locked && slot.locked_by_search_id) {
-        const { data: search } = await supabase
-          .from('searches')
-          .select('id, search_type, user_id, created_at')
-          .eq('id', slot.locked_by_search_id)
-          .single();
+      const flagSearchId = slot?.is_locked ? slot.locked_by_search_id : null;
+      const flagLockedAt = slot?.locked_at ?? null;
 
-        let userEmail = '';
-        let fullName = '';
-        if (search?.user_id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('email, full_name')
-            .eq('id', search.user_id)
-            .single();
-          userEmail = profile?.email ?? '';
-          fullName = profile?.full_name ?? '';
-        }
-
-        processing = {
-          search_id: slot.locked_by_search_id,
-          locked_at: slot.locked_at,
-          search_type: search?.search_type ?? '',
-          user_email: userEmail,
-          full_name: fullName,
-        };
-      }
-
-      // 2. Queued items (FIFO order)
+      // 2. Request queue
       const { data: queueItems } = await supabase
         .from('request_queue')
-        .select('id, search_id, entry_type, status, created_at, search_data')
+        .select('id, search_id, entry_type, created_at, search_data')
         .eq('status', 'queued')
         .order('created_at', { ascending: true });
 
-      const queued = (queueItems ?? []).map((item) => ({
-        id: item.id,
-        search_id: item.search_id,
-        entry_type: item.entry_type,
-        created_at: item.created_at,
-        user_email: item.search_data?.user_email ?? '',
-      }));
+      // 3. All searches with status = 'processing' — avoid fetching grid_data (large JSONB)
+      const { data: processings } = await supabase
+        .from('searches')
+        .select('id, user_id, search_type, excel_file_name, created_at, updated_at')
+        .eq('status', 'processing')
+        .order('updated_at', { ascending: false });
 
-      return respond({ processing, queued });
-    }
-
-    // ── DELETE ITEM ────────────────────────────────────────────────────────────
-    if (action === 'delete_item') {
-      const { itemType, queueItemId, searchId } = body;
-
-      if (itemType === 'queued') {
-        if (queueItemId) {
-          await supabase.from('request_queue').delete().eq('id', queueItemId);
-        }
-        await supabase.from('searches').update({
-          status: 'cancelled',
-          error_message: 'Cancelled by admin',
-          updated_at: new Date().toISOString(),
-        }).eq('id', searchId);
-
-        return respond({ success: true });
+      // 3b. Lightweight check: which processing searches have grid_data
+      const procIds = (processings ?? []).map(s => s.id);
+      const gridDataIds = new Set<string>();
+      if (procIds.length > 0) {
+        const { data: withGrid } = await supabase
+          .from('searches')
+          .select('id')
+          .in('id', procIds)
+          .not('grid_data', 'is', null);
+        for (const r of withGrid ?? []) gridDataIds.add(r.id);
       }
 
-      if (itemType === 'processing') {
-        // Mark current search cancelled
-        await supabase.from('searches').update({
-          status: 'cancelled',
-          error_message: 'Cancelled by admin',
-          updated_at: new Date().toISOString(),
-        }).eq('id', searchId);
+      // 3c. Cross-reference: how many results does each processing search have?
+      const resultCountMap: Record<string, number> = {};
+      if (procIds.length > 0) {
+        const { data: resultRows } = await supabase
+          .from('search_results')
+          .select('search_id')
+          .in('search_id', procIds);
+        for (const r of resultRows ?? []) {
+          resultCountMap[r.search_id] = (resultCountMap[r.search_id] ?? 0) + 1;
+        }
+      }
 
+      // 4. Collect all user_ids to batch-fetch profiles
+      const userIdSet = new Set<string>();
+      for (const s of processings ?? []) if (s.user_id) userIdSet.add(s.user_id);
+
+      // Also get search records for queued items (to get method info)
+      const queueSearchIds = (queueItems ?? []).map(q => q.search_id).filter(Boolean);
+      let queueSearches: Record<string, any> = {};
+      if (queueSearchIds.length > 0) {
+        const { data: qs } = await supabase
+          .from('searches')
+          .select('id, user_id, search_type, excel_file_name, created_at, updated_at')
+          .in('id', queueSearchIds);
+        // Check grid_data for queue searches too
+        const { data: qGrid } = await supabase
+          .from('searches')
+          .select('id')
+          .in('id', queueSearchIds)
+          .not('grid_data', 'is', null);
+        const qGridSet = new Set((qGrid ?? []).map(r => r.id));
+        for (const s of qs ?? []) {
+          queueSearches[s.id] = { ...s, grid_data: qGridSet.has(s.id) ? true : null };
+          if (s.user_id) userIdSet.add(s.user_id);
+        }
+      }
+
+      // 5. Batch fetch profiles
+      const profileMap: Record<string, { email: string; full_name: string }> = {};
+      if (userIdSet.size > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', Array.from(userIdSet));
+        for (const p of profiles ?? []) {
+          profileMap[p.id] = { email: p.email ?? '', full_name: p.full_name ?? '' };
+        }
+      }
+
+      // 6. Build response — flag item
+      let flag_item = null;
+      if (flagSearchId) {
+        const search = (processings ?? []).find(s => s.id === flagSearchId);
+        if (search) {
+          const profile = profileMap[search.user_id] ?? { email: '', full_name: '' };
+          const info = getEntryInfo({ ...search, grid_data: gridDataIds.has(search.id) ? true : null });
+          flag_item = {
+            search_id: search.id,
+            user_email: profile.email,
+            full_name: profile.full_name,
+            search_type: search.search_type,
+            ...info,
+            excel_file_name: search.excel_file_name ?? null,
+            result_count: resultCountMap[search.id] ?? 0,
+            locked_at: flagLockedAt,
+            created_at: search.created_at,
+            updated_at: search.updated_at,
+          };
+        }
+      }
+
+      // 7. In-progress searches (NOT the flag-locked one)
+      const in_progress = (processings ?? [])
+        .filter(s => s.id !== flagSearchId)
+        .map(s => {
+          const profile = profileMap[s.user_id] ?? { email: '', full_name: '' };
+          const info = getEntryInfo({ ...s, grid_data: gridDataIds.has(s.id) ? true : null });
+          return {
+            search_id: s.id,
+            user_email: profile.email,
+            full_name: profile.full_name,
+            search_type: s.search_type,
+            ...info,
+            excel_file_name: s.excel_file_name ?? null,
+            result_count: resultCountMap[s.id] ?? 0,
+            created_at: s.created_at,
+            updated_at: s.updated_at,
+          };
+        });
+
+      // 8. Queued items — enriched with search info
+      const queued = (queueItems ?? []).map((q) => {
+        const search = queueSearches[q.search_id];
+        const profile = search ? profileMap[search.user_id] : null;
+        const info = search ? getEntryInfo(search) : {
+          type_label: q.entry_type === 'bulk_people_enrichment' ? 'People Enrichment'
+            : q.entry_type === 'manual_entry' ? 'Single Search' : 'Bulk Search',
+          entry_method: 'Unknown',
+        };
+        return {
+          id: q.id,
+          search_id: q.search_id,
+          entry_type: q.entry_type,
+          user_email: profile?.email ?? q.search_data?.user_email ?? '',
+          full_name: profile?.full_name ?? '',
+          ...info,
+          created_at: q.created_at,
+        };
+      });
+
+      return respond({ flag_item, in_progress, queued });
+    }
+
+    // ── STOP SEARCH (mark error with note) ─────────────────────────────────────
+    if (action === 'stop_search') {
+      const { searchId, note } = body;
+      if (!searchId) return respond({ error: 'searchId required' }, 400);
+
+      const errorMsg = note?.trim() || 'Stopped by admin';
+
+      // Mark as error
+      await supabase.from('searches').update({
+        status: 'error',
+        error_message: errorMsg,
+        updated_at: new Date().toISOString(),
+      }).eq('id', searchId);
+
+      // Check if this search holds the processing flag
+      const { data: slot } = await supabase
+        .from('api_slots')
+        .select('locked_by_search_id')
+        .eq('slot_name', 'processing')
+        .single();
+
+      let flagReleased = false;
+      let nextDispatched = false;
+
+      if (slot?.locked_by_search_id === searchId) {
         // Release flag — atomically picks up next queued item
-        const { data: nextItems, error: releaseError } = await supabase
+        const { data: nextItems } = await supabase
           .rpc('release_processing_flag', { p_search_id: searchId });
 
-        if (releaseError) {
-          console.error('release_processing_flag error:', releaseError);
-          throw releaseError;
-        }
-
-        let nextDispatched = false;
+        flagReleased = true;
 
         if (nextItems && nextItems.length > 0) {
           const next = nextItems[0];
           const n8nUrl = WEBHOOK_URLS[next.next_entry_type] ?? WEBHOOK_URLS['bulk_upload'];
-          const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
-
-          const webhookHeaders: Record<string, string> = {
+          const n8nSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
+          const headers: Record<string, string> = {
             'Content-Type': 'application/json; charset=utf-8',
             'type_of_entry': next.next_entry_type,
           };
-          if (n8nWebhookSecret) webhookHeaders['x-webhook-secret'] = n8nWebhookSecret;
+          if (n8nSecret) headers['x-webhook-secret'] = n8nSecret;
 
           const r = await fetch(n8nUrl, {
             method: 'POST',
-            headers: webhookHeaders,
+            headers,
             body: JSON.stringify(next.next_search_data),
           });
 
           if (r.ok) {
             nextDispatched = true;
-            console.log(`Next queued item ${next.next_search_id} dispatched to n8n`);
           } else {
-            console.error(`n8n dispatch failed for ${next.next_search_id}: ${r.status}`);
-            // Release flag again so the queue isn't stuck
             await supabase.rpc('release_processing_flag', { p_search_id: next.next_search_id });
             await supabase.from('searches').update({
               status: 'error',
-              error_message: 'Failed to dispatch after previous item was cancelled',
+              error_message: 'Failed to dispatch after previous item was stopped',
               updated_at: new Date().toISOString(),
             }).eq('id', next.next_search_id);
           }
         }
-
-        return respond({ success: true, next_dispatched: nextDispatched });
       }
 
-      return respond({ error: 'Unknown itemType' }, 400);
+      return respond({ success: true, flag_released: flagReleased, next_dispatched: nextDispatched });
+    }
+
+    // ── DELETE QUEUE ITEM ──────────────────────────────────────────────────────
+    if (action === 'delete_item') {
+      const { queueItemId, searchId } = body;
+
+      if (queueItemId) {
+        await supabase.from('request_queue').delete().eq('id', queueItemId);
+      }
+      if (searchId) {
+        await supabase.from('searches').update({
+          status: 'cancelled',
+          error_message: 'Removed from queue by admin',
+          updated_at: new Date().toISOString(),
+        }).eq('id', searchId);
+      }
+
+      return respond({ success: true });
     }
 
     return respond({ error: `Unknown action: ${action}` }, 400);
