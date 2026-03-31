@@ -424,200 +424,191 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
             <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
           </div>
 
-          <div className="space-y-5">
-            <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">Paste your filled Google Sheet URL</span>
+          {/* ── Two-column layout: URL import | File upload ───────────── */}
+          <div className="flex gap-0 min-h-[220px]">
 
-            {/* URL input + Import button */}
-            <div className="flex gap-3">
-              <div className="flex-1 relative">
-                <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#3d7070] pointer-events-none" />
-                <input
-                  type="text"
-                  value={sheetsUrl}
-                  onChange={e => { setSheetsUrl(e.target.value); if (sheetsResult) setSheetsResult(null); }}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSheetsImport(); } }}
-                  placeholder="https://docs.google.com/spreadsheets/d/..."
-                  className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#0a1818] border border-[#254848] text-[14px] text-white placeholder:text-[#2e5252] focus:outline-none focus:border-[#009da5]/60 focus:ring-1 focus:ring-[#009da5]/30 transition-colors"
-                />
+            {/* LEFT: Paste URL */}
+            <div className="flex-1 flex flex-col gap-4 pr-6">
+              <span className="text-[12px] font-bold text-white/60 tracking-[0.08em] uppercase">Paste Google Sheet URL</span>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#3d7070] pointer-events-none" />
+                  <input
+                    type="text"
+                    value={sheetsUrl}
+                    onChange={e => { setSheetsUrl(e.target.value); if (sheetsResult) setSheetsResult(null); }}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSheetsImport(); } }}
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-[#0a1818] border border-[#254848] text-[13px] text-white placeholder:text-[#2e5252] focus:outline-none focus:border-[#009da5]/60 focus:ring-1 focus:ring-[#009da5]/30 transition-colors"
+                  />
+                </div>
+                <button
+                  onClick={handleSheetsImport}
+                  disabled={!sheetsUrl.trim() || sheetsValidating}
+                  className="h-9 px-4 rounded-lg border border-[#254848] bg-[#0a1818] text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 shrink-0"
+                >
+                  {sheetsValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  {sheetsValidating ? "Checking..." : "Import"}
+                </button>
               </div>
+              <p className="text-[11px] text-white/50 leading-relaxed">
+                Sheet must be public: <span className="text-[#58dddd]/70">Share</span> &rarr; <span className="text-[#58dddd]/70">Anyone with the link</span> &rarr; <span className="text-[#58dddd]/70">Viewer</span>
+              </p>
               <button
-                onClick={handleSheetsImport}
-                disabled={!sheetsUrl.trim() || sheetsValidating}
-                className="h-11 px-6 rounded-xl border border-[#254848] bg-[#0a1818] text-[13px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 shrink-0"
+                onClick={handleSheetsSubmit}
+                disabled={sheetsResult?.status !== "ok" || sheetsSubmitting}
+                className={`mt-auto h-10 rounded-lg font-semibold text-[13px] tracking-wide transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
+                  sheetsResult?.status === "ok" && !sheetsSubmitting
+                    ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_2px_12px_rgba(0,157,165,0.2)]"
+                    : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+                }`}
               >
-                {sheetsValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                {sheetsValidating ? "Checking..." : "Import"}
+                {sheetsSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</> : <><Upload className="h-4 w-4" />Upload & Process</>}
               </button>
             </div>
 
-            {/* Sharing hint — plain text */}
-            <p className="text-[12px] text-white/70">
-              Your sheet must be shared publicly. In Google Sheets: <span className="text-[#58dddd]">Share</span> &rarr; <span className="text-[#58dddd]">General access</span> &rarr; <span className="text-[#58dddd]">Anyone with the link</span> &rarr; <span className="text-[#58dddd]">Viewer</span>
-            </p>
-
-            {/* ── Validation result ────────────────────────────────────────── */}
-            {sheetsResult && sheetsResult.status === "error" && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/[0.06] overflow-hidden">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <XCircle className="h-5 w-5 text-red-400 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[13px] font-semibold text-red-300">
-                      {sheetsResult.reason === "not_public"
-                        ? "Sheet is not publicly accessible"
-                        : sheetsResult.reason === "headers_mismatch"
-                        ? "Header columns don't match the template"
-                        : sheetsResult.reason === "validation_failed"
-                        ? `${sheetsResult.errors?.length} validation error${(sheetsResult.errors?.length ?? 0) > 1 ? "s" : ""} found`
-                        : "Import failed"}
-                    </p>
-                    {sheetsResult.reason === "not_public" && (
-                      <p className="text-[12px] text-red-300/70 mt-1">
-                        Open your Google Sheet &rarr; Click <span className="font-medium text-red-200">Share</span> (top right) &rarr; Under "General access", change to <span className="font-medium text-red-200">Anyone with the link</span> &rarr; Set role to <span className="font-medium text-red-200">Viewer</span> &rarr; Click <span className="font-medium text-red-200">Done</span>
-                      </p>
-                    )}
-                    {sheetsResult.reason === "headers_mismatch" && sheetsResult.missingHeaders && (
-                      <p className="text-[12px] text-red-300/70 mt-1">
-                        Missing: {sheetsResult.missingHeaders.join(", ")}. Make sure you're using the Bravoro template.
-                      </p>
-                    )}
-                    {sheetsResult.reason === "network" && (
-                      <p className="text-[12px] text-red-300/70 mt-1">{sheetsResult.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Expandable row-level errors */}
-                {sheetsResult.reason === "validation_failed" && sheetsResult.errors && sheetsResult.errors.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => setSheetsErrorsExpanded(!sheetsErrorsExpanded)}
-                      className="w-full flex items-center justify-between px-4 py-2 border-t border-red-500/20 hover:bg-red-500/[0.04] transition-colors cursor-pointer"
-                    >
-                      <span className="text-[12px] text-red-300/70">
-                        {sheetsResult.summary && `${sheetsResult.summary.totalRows} rows found`}
-                        {sheetsResult.summary?.jobSearchRows ? ` (${sheetsResult.summary.jobSearchRows} with Job Search)` : ""}
-                      </span>
-                      <span className="text-[12px] text-red-300/50 flex items-center gap-1">
-                        {sheetsErrorsExpanded ? "Hide" : "Show"} details
-                        {sheetsErrorsExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                      </span>
-                    </button>
-                    {sheetsErrorsExpanded && (
-                      <div className="px-4 pb-3 space-y-1 max-h-48 overflow-y-auto">
-                        {sheetsResult.errors.map((err, i) => (
-                          <div key={i} className="flex items-start gap-2 text-[12px] text-red-300/80">
-                            <span className="text-red-500 mt-px shrink-0">&bull;</span>
-                            <span>{err.message}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* ── Success result with preview ──────────────────────────────── */}
-            {sheetsResult && sheetsResult.status === "ok" && (
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] overflow-hidden">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <CircleCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[13px] font-semibold text-emerald-300">File OK</p>
-                    <p className="text-[12px] text-emerald-300/70 mt-0.5">
-                      {sheetsResult.summary?.totalRows} row{(sheetsResult.summary?.totalRows ?? 0) !== 1 ? "s" : ""} ready to process
-                      {sheetsResult.summary?.jobSearchRows ? ` \u00B7 ${sheetsResult.summary.jobSearchRows} with Job Search` : ""}
-                    </p>
-                  </div>
-                  <div className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25">
-                    <span className="text-[11px] font-semibold text-emerald-300 tracking-wide">VALIDATED</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Submit button for URL import */}
-            <button
-              onClick={handleSheetsSubmit}
-              disabled={sheetsResult?.status !== "ok" || sheetsSubmitting}
-              className={`w-full h-12 rounded-xl font-semibold text-[15px] tracking-wide transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
-                sheetsResult?.status === "ok" && !sheetsSubmitting
-                  ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
-                  : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
-              }`}
-            >
-              {sheetsSubmitting ? <><Loader2 className="h-5 w-5 animate-spin" />Processing...</> : <><Upload className="h-5 w-5" />Upload & Process</>}
-            </button>
-
-            {/* ── OR divider ──────────────────────────────────────────────── */}
-            <div className="flex items-center gap-4 py-1">
-              <div className="flex-1 h-px bg-[#1e4040]/60" />
-              <span className="text-[12px] font-semibold text-[#3d7070] tracking-[0.1em] uppercase">or</span>
-              <div className="flex-1 h-px bg-[#1e4040]/60" />
+            {/* CENTER: Vertical OR divider */}
+            <div className="flex flex-col items-center gap-2 px-1">
+              <div className="flex-1 w-px bg-[#1e4040]/60" />
+              <span className="text-[11px] font-semibold text-[#3d7070] tracking-[0.1em] uppercase">or</span>
+              <div className="flex-1 w-px bg-[#1e4040]/60" />
             </div>
 
-            {/* ── File upload (same drag & drop as Excel) ─────────────────── */}
-            <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">Upload Filled Template</span>
-
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
-              onDrop={e => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files?.[0]; if (f && validateFile(f)) setSelectedFile(f); }}
-              className={`relative cursor-pointer rounded-xl border-2 border-dashed p-8 transition-all duration-300 ${
-                isDragging ? "border-[#009da5] bg-[#009da5]/8"
-                  : selectedFile ? "border-[#009da5]/50 bg-[#009da5]/5"
-                  : "border-[#254848] hover:border-[#009da5]/40 hover:bg-[#009da5]/5"
-              }`}
-            >
-              <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm,.csv" onChange={handleFileChange} disabled={loading} className="hidden" />
-              <div className="flex flex-col items-center justify-center gap-3 text-center">
+            {/* RIGHT: File upload */}
+            <div className="flex-1 flex flex-col gap-4 pl-6">
+              <span className="text-[12px] font-bold text-white/60 tracking-[0.08em] uppercase">Upload Filled Template</span>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
+                onDrop={e => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files?.[0]; if (f && validateFile(f)) setSelectedFile(f); }}
+                className={`flex-1 relative cursor-pointer rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 p-5 transition-colors ${
+                  isDragging ? "border-[#009da5] bg-[#009da5]/8"
+                    : selectedFile ? "border-[#009da5]/50 bg-[#009da5]/5"
+                    : "border-[#254848] hover:border-[#009da5]/40 hover:bg-[#009da5]/5"
+                }`}
+              >
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm,.csv" onChange={handleFileChange} disabled={loading} className="hidden" />
                 {selectedFile ? (
                   <>
-                    <div className="p-3 rounded-full bg-[#009da5]/12"><FileSpreadsheet className="h-8 w-8 text-[#009da5]" /></div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-white">{selectedFile.name}</p>
-                      <p className="text-[12px] text-[#5e9898] mt-1">Click or drag to replace</p>
-                    </div>
+                    <div className="p-2 rounded-full bg-[#009da5]/12"><FileSpreadsheet className="h-6 w-6 text-[#009da5]" /></div>
+                    <p className="text-[13px] font-semibold text-white truncate max-w-full">{selectedFile.name}</p>
+                    <p className="text-[11px] text-[#5e9898]">Click or drag to replace</p>
                   </>
                 ) : (
                   <>
-                    <div className={`p-3 rounded-full transition-colors ${isDragging ? "bg-[#009da5]/20" : "bg-[#1a3535]"}`}>
-                      <Upload className={`h-8 w-8 ${isDragging ? "text-[#009da5]" : "text-[#3d7070]"}`} />
+                    <div className={`p-2 rounded-full transition-colors ${isDragging ? "bg-[#009da5]/20" : "bg-[#1a3535]"}`}>
+                      <Upload className={`h-6 w-6 ${isDragging ? "text-[#009da5]" : "text-[#3d7070]"}`} />
                     </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-white">{isDragging ? "Drop your file here" : "Drag & drop your file here"}</p>
-                      <p className="text-[13px] text-[#5e9898] mt-1">or <span className="text-[#58dddd] font-medium">browse</span> to choose a file</p>
-                      <p className="text-[12px] text-[#3d6060] mt-2">Supports .xlsx, .xlsm, .csv</p>
-                    </div>
+                    <p className="text-[13px] font-semibold text-white">{isDragging ? "Drop here" : "Drag & drop file"}</p>
+                    <p className="text-[11px] text-[#5e9898]">or <span className="text-[#58dddd] font-medium">browse</span> &middot; .xlsx, .xlsm, .csv</p>
                   </>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={handleFileSubmit as any}
+                disabled={!selectedFile || loading}
+                className={`h-10 rounded-lg font-semibold text-[13px] tracking-wide transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
+                  selectedFile && !loading
+                    ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_2px_12px_rgba(0,157,165,0.2)]"
+                    : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+                }`}
+              >
+                {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</> : <><Upload className="h-4 w-4" />Upload & Process</>}
+              </button>
             </div>
-
-            {loading && currentStep !== "idle" && (
-              <div className="space-y-3 p-4 rounded-xl bg-[#0a1818] border border-[#1e4040]/55">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-medium text-white">{PROCESSING_STEPS.find(s => s.key === currentStep)?.label}</span>
-                  <span className="text-[13px] text-[#3d7070]">{getCurrentProgress()}%</span>
-                </div>
-                <Progress value={getCurrentProgress()} className="h-2" />
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleFileSubmit as any}
-              disabled={!selectedFile || loading}
-              className={`w-full h-12 rounded-xl font-semibold text-[15px] tracking-wide transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
-                selectedFile && !loading
-                  ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
-                  : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
-              }`}
-            >
-              {loading ? <><Loader2 className="h-5 w-5 animate-spin" />Processing...</> : <><Upload className="h-5 w-5" />Upload & Process</>}
-            </button>
           </div>
+
+          {/* ── Progress bar (spans full width below) ──────────────────── */}
+          {loading && currentStep !== "idle" && (
+            <div className="space-y-3 p-4 mt-5 rounded-xl bg-[#0a1818] border border-[#1e4040]/55">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-white">{PROCESSING_STEPS.find(s => s.key === currentStep)?.label}</span>
+                <span className="text-[13px] text-[#3d7070]">{getCurrentProgress()}%</span>
+              </div>
+              <Progress value={getCurrentProgress()} className="h-2" />
+            </div>
+          )}
+
+          {/* ── Validation / error / success results (full width) ──────── */}
+          {sheetsResult && sheetsResult.status === "error" && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/[0.06] overflow-hidden mt-5">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <XCircle className="h-5 w-5 text-red-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-[13px] font-semibold text-red-300">
+                    {sheetsResult.reason === "not_public"
+                      ? "Sheet is not publicly accessible"
+                      : sheetsResult.reason === "headers_mismatch"
+                      ? "Header columns don't match the template"
+                      : sheetsResult.reason === "validation_failed"
+                      ? `${sheetsResult.errors?.length} validation error${(sheetsResult.errors?.length ?? 0) > 1 ? "s" : ""} found`
+                      : "Import failed"}
+                  </p>
+                  {sheetsResult.reason === "not_public" && (
+                    <p className="text-[12px] text-red-300/70 mt-1">
+                      Open your Google Sheet &rarr; Click <span className="font-medium text-red-200">Share</span> (top right) &rarr; Under "General access", change to <span className="font-medium text-red-200">Anyone with the link</span> &rarr; Set role to <span className="font-medium text-red-200">Viewer</span> &rarr; Click <span className="font-medium text-red-200">Done</span>
+                    </p>
+                  )}
+                  {sheetsResult.reason === "headers_mismatch" && sheetsResult.missingHeaders && (
+                    <p className="text-[12px] text-red-300/70 mt-1">
+                      Missing: {sheetsResult.missingHeaders.join(", ")}. Make sure you're using the Bravoro template.
+                    </p>
+                  )}
+                  {sheetsResult.reason === "network" && (
+                    <p className="text-[12px] text-red-300/70 mt-1">{sheetsResult.message}</p>
+                  )}
+                </div>
+              </div>
+
+              {sheetsResult.reason === "validation_failed" && sheetsResult.errors && sheetsResult.errors.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setSheetsErrorsExpanded(!sheetsErrorsExpanded)}
+                    className="w-full flex items-center justify-between px-4 py-2 border-t border-red-500/20 hover:bg-red-500/[0.04] transition-colors cursor-pointer"
+                  >
+                    <span className="text-[12px] text-red-300/70">
+                      {sheetsResult.summary && `${sheetsResult.summary.totalRows} rows found`}
+                      {sheetsResult.summary?.jobSearchRows ? ` (${sheetsResult.summary.jobSearchRows} with Job Search)` : ""}
+                    </span>
+                    <span className="text-[12px] text-red-300/50 flex items-center gap-1">
+                      {sheetsErrorsExpanded ? "Hide" : "Show"} details
+                      {sheetsErrorsExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </span>
+                  </button>
+                  {sheetsErrorsExpanded && (
+                    <div className="px-4 pb-3 space-y-1 max-h-48 overflow-y-auto">
+                      {sheetsResult.errors.map((err, i) => (
+                        <div key={i} className="flex items-start gap-2 text-[12px] text-red-300/80">
+                          <span className="text-red-500 mt-px shrink-0">&bull;</span>
+                          <span>{err.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {sheetsResult && sheetsResult.status === "ok" && (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] overflow-hidden mt-5">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <CircleCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-[13px] font-semibold text-emerald-300">File OK</p>
+                  <p className="text-[12px] text-emerald-300/70 mt-0.5">
+                    {sheetsResult.summary?.totalRows} row{(sheetsResult.summary?.totalRows ?? 0) !== 1 ? "s" : ""} ready to process
+                    {sheetsResult.summary?.jobSearchRows ? ` \u00B7 ${sheetsResult.summary.jobSearchRows} with Job Search` : ""}
+                  </p>
+                </div>
+                <div className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25">
+                  <span className="text-[11px] font-semibold text-emerald-300 tracking-wide">VALIDATED</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
