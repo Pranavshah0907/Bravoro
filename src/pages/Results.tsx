@@ -1121,12 +1121,15 @@ const Results = () => {
       doc.text(`Page ${i} of ${totalPages}`, PW - MR, PH - 5, { align: "right" });
     }
 
-    const filename = search?.company_name
-      ? `bravoro_report_${search.company_name.replace(/\s+/g, "_").toLowerCase()}.pdf`
-      : `bravoro_report_${searchId.slice(0, 8)}.pdf`;
+    const baseName = search?.excel_file_name
+      ? search.excel_file_name.replace(/\.[^/.]+$/, "")
+      : search?.company_name
+        ? search.company_name.replace(/\s+/g, "_")
+        : searchId.slice(0, 8);
+    const filename = `${baseName}_UsageAnalytics.pdf`;
     doc.save(filename);
 
-    toast({ title: "PDF Exported", description: "Admin report downloaded" });
+    toast({ title: "PDF Exported", description: "Usage Analytics Report downloaded" });
   };
 
   const handleBulkDelete = async () => {
@@ -1322,10 +1325,10 @@ const Results = () => {
                     variant="outline"
                     onClick={() => handleExportAdminPDF(search.id)}
                     className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                    title="Admin: Export PDF Report"
+                    title="Usage Analytics Report"
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    PDF Report
+                    Usage Analytics Report
                   </Button>
                 )}
               </div>
@@ -1394,10 +1397,10 @@ const Results = () => {
                   variant="outline"
                   onClick={() => handleExportAdminPDF(search.id)}
                   className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                  title="Admin: Export PDF Report"
+                  title="Usage Analytics Report"
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  PDF Report
+                  Usage Analytics Report
                 </Button>
               )}
             </div>
@@ -1556,10 +1559,10 @@ const Results = () => {
                 variant="outline"
                 onClick={() => handleExportAdminPDF(search.id)}
                 className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                title="Admin: Export PDF Report"
+                title="Usage Analytics Report"
               >
                 <FileText className="h-4 w-4 mr-2" />
-                PDF Report
+                Usage Analytics Report
               </Button>
             )}
           </div>
