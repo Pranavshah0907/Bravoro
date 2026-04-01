@@ -215,7 +215,7 @@ const DevTools = () => {
   }, [searches, queued]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
-  const handleSignOut = async () => { await supabase.auth.signOut(); navigate("/"); };
+  const handleSignOut = async () => { await supabase.auth.signOut({ scope: 'local' }); navigate("/"); };
 
   const copyId = (id: string) => {
     navigator.clipboard.writeText(id);

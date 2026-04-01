@@ -493,7 +493,7 @@ const Results = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     toast({
       title: "Signed out",
       description: "You have been signed out successfully",
@@ -704,7 +704,7 @@ const Results = () => {
     });
   };
 
-  const handleExportAdminPDF = (searchId: string) => {
+  const handleExportAdminPDF = async (searchId: string) => {
     const results = searchResults[searchId];
     if (!results || results.length === 0) return;
 
@@ -999,6 +999,112 @@ const Results = () => {
       doc.line(nameEndX, ly - 1, pctX - doc.getStringUnitWidth(`${pct}%`) * 8.5 / doc.internal.scaleFactor / (72 / 25.4) - 3, ly - 1);
       doc.setLineDashPattern([], 0);
     });
+
+    // ── TABLE 3: Cost Breakdown ────────────────────────────────────────────
+    const COST_PER_CREDIT: Record<string, number> = {
+      cognism:    0.76,
+      apollo:     0.01975,
+      aleads:     0.00683,
+      lusha:      0.087416,
+      theirstack: 0.0326,
+    };
+
+    const PLATFORM_LABELS: Record<string, string> = {
+      cognism:    "Cognism",
+      apollo:     "Apollo",
+      aleads:     "A-Leads",
+      lusha:      "Lusha",
+      theirstack: "Theirstack",
+    };
+
+    // Fetch credit usage for this search
+    const { data: creditRow } = await supabase
+      .from("credit_usage")
+      .select("cognism_credits, apollo_credits, aleads_credits, lusha_credits, theirstack_credits")
+      .eq("search_id", searchId)
+      .maybeSingle();
+
+    if (creditRow) {
+      const creditFields: { key: string; dbField: keyof typeof creditRow }[] = [
+        { key: "cognism",    dbField: "cognism_credits" },
+        { key: "apollo",     dbField: "apollo_credits" },
+        { key: "aleads",     dbField: "aleads_credits" },
+        { key: "lusha",      dbField: "lusha_credits" },
+        { key: "theirstack", dbField: "theirstack_credits" },
+      ];
+
+      const costRows: string[][] = [];
+      let grandTotal = 0;
+
+      creditFields.forEach(({ key, dbField }) => {
+        const credits = Number(creditRow[dbField]) || 0;
+        if (credits <= 0) return;
+        const rate = COST_PER_CREDIT[key];
+        const lineCost = credits * rate;
+        grandTotal += lineCost;
+        costRows.push([
+          PLATFORM_LABELS[key],
+          String(credits),
+          `€ ${rate.toFixed(4)}`,
+          `€ ${lineCost.toFixed(2)}`,
+        ]);
+      });
+
+      if (costRows.length > 0) {
+        // Add grand total row
+        costRows.push(["Total", "", "", `€ ${grandTotal.toFixed(2)}`]);
+
+        // Page-break check
+        const pieBottomY = cy + r + 6;
+        const costBlockH = 12 + costRows.length * 8 + 10;
+        if (pieBottomY + costBlockH + 14 > PH - 14) {
+          doc.addPage();
+          cursorY = 20;
+        } else {
+          cursorY = pieBottomY + 6;
+        }
+
+        sectionHeading("Cost Breakdown", cursorY);
+        cursorY += 5;
+
+        autoTable(doc, {
+          startY: cursorY,
+          head: [["Platform", "Credits Used", "Cost / Credit", "Total Cost"]],
+          body: costRows,
+          margin: { left: ML, right: MR },
+          tableWidth: TW,
+          styles: {
+            fontSize: 8,
+            cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+            textColor: C.text,
+            lineColor: C.border,
+            lineWidth: 0.15,
+            fillColor: C.white,
+          },
+          headStyles: {
+            fillColor: C.headerBg,
+            textColor: [200, 230, 226] as [number, number, number],
+            fontStyle: "bold",
+            fontSize: 8,
+            lineWidth: 0,
+          },
+          alternateRowStyles: { fillColor: C.rowAlt },
+          didParseCell: (data) => {
+            if (data.row.index === costRows.length - 1 && data.section === "body") {
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.textColor = C.accentDark;
+              data.cell.styles.fillColor = C.totalRow;
+            }
+          },
+          columnStyles: {
+            0: { cellWidth: "auto" },
+            1: { cellWidth: 36, halign: "center" },
+            2: { cellWidth: 36, halign: "center" },
+            3: { cellWidth: 36, halign: "right" },
+          },
+        });
+      }
+    }
 
     // ── Footer ────────────────────────────────────────────────────────────────
     const totalPages = (doc.internal as any).getNumberOfPages();

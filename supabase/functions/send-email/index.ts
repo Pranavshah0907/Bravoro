@@ -102,7 +102,7 @@ function getWelcomeEmailHtml(fullName: string, email: string, tempPassword: stri
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 8px 0 32px 0;">
                 <tr>
                   <td>
-                    <a href="https://app.bravoro.com/auth" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
+                    <a href="https://bravoro-v2-test.vercel.app/auth" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
                       Log In Now
                     </a>
                   </td>
@@ -194,7 +194,7 @@ function getSuccessEmailHtml(searchType?: string): string {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
                 <tr>
                   <td>
-                    <a href="https://app.bravoro.com/results" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
+                    <a href="https://bravoro-v2-test.vercel.app/results" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
                       View Results
                     </a>
                   </td>
@@ -291,7 +291,7 @@ function getErrorEmailHtml(errorMessage: string, searchType?: string): string {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
                 <tr>
                   <td>
-                    <a href="https://app.bravoro.com/dashboard" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
+                    <a href="https://bravoro-v2-test.vercel.app/dashboard" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
                       Try Again
                     </a>
                   </td>
@@ -579,7 +579,7 @@ serve(async (req: Request): Promise<Response> => {
         }
 
         // Use the production Bravoro custom domain for reset links
-        const resetLink = `https://app.bravoro.com/reset-password?token=${token}`;
+        const resetLink = `https://bravoro-v2-test.vercel.app/reset-password?token=${token}`;
 
         emailResponse = await resend.emails.send({
           from: "Bravoro <service@mail.bravoro.com>",

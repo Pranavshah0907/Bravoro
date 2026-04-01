@@ -162,7 +162,7 @@ const UsageAnalytics = () => {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     toast.success("Signed out successfully");
     navigate("/auth");
   };

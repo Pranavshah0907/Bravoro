@@ -113,7 +113,7 @@ const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     toast({
       title: "Signed out",
       description: "You have been signed out successfully",
