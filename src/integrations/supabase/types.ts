@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -374,8 +373,10 @@ export type Database = {
           email: string
           enrichment_limit: number
           enrichment_used: number
+          first_name: string | null
           full_name: string | null
           id: string
+          last_name: string | null
           requires_password_reset: boolean | null
           updated_at: string | null
           workspace_id: string | null
@@ -385,8 +386,10 @@ export type Database = {
           email: string
           enrichment_limit?: number
           enrichment_used?: number
+          first_name?: string | null
           full_name?: string | null
           id: string
+          last_name?: string | null
           requires_password_reset?: boolean | null
           updated_at?: string | null
           workspace_id?: string | null
@@ -396,8 +399,10 @@ export type Database = {
           email?: string
           enrichment_limit?: number
           enrichment_used?: number
+          first_name?: string | null
           full_name?: string | null
           id?: string
+          last_name?: string | null
           requires_password_reset?: boolean | null
           updated_at?: string | null
           workspace_id?: string | null
@@ -802,5 +807,3 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.84.2 (currently installed v2.75.0)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

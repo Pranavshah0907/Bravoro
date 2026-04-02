@@ -5,7 +5,6 @@ import {
   BarChart3,
   FileText,
   Shield,
-  LogOut,
   ChevronRight,
   Database,
   Plus,
@@ -29,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
+import { UserAvatarMenu } from "@/components/UserAvatarMenu";
 
 interface AiConv {
   id: string;
@@ -421,29 +421,9 @@ export const AppSidebar = ({
         )}
       </nav>
 
-      {/* Bottom Actions */}
-      <div className="p-2 border-t border-sidebar-border/50 flex flex-col gap-1">
-        {/* Sign out */}
-        <button
-          onClick={onSignOut}
-          className={cn(
-            "group relative flex items-center w-full rounded-xl duration-300",
-            "hover:bg-destructive/10",
-            isExpanded ? "px-4 py-3 gap-4" : "p-3 justify-center"
-          )}
-        >
-          <div className="relative flex items-center justify-center duration-300 group-hover:scale-110">
-            <LogOut className="h-5 w-5 duration-200 text-sidebar-foreground/70 group-hover:text-destructive" />
-          </div>
-          <span
-            className={cn(
-              "font-medium text-sm whitespace-nowrap duration-300 text-sidebar-foreground/80 group-hover:text-destructive",
-              isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 absolute"
-            )}
-          >
-            Sign Out
-          </span>
-        </button>
+      {/* Bottom — User Avatar Menu */}
+      <div className="p-2 border-t border-sidebar-border/50">
+        <UserAvatarMenu isExpanded={isExpanded} onSignOut={onSignOut} />
       </div>
 
       {/* Expand indicator */}

@@ -15,6 +15,7 @@ import UserDatabase from "./pages/UserDatabase";
 import Contact from "./pages/Contact";
 import GoogleSheetsGuide from "./pages/GoogleSheetsGuide";
 import ResetPassword from "./pages/ResetPassword";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/google-sheets-guide" element={<GoogleSheetsGuide />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
