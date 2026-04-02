@@ -249,6 +249,7 @@ const Dashboard = () => {
               <AIChatInterface
                 ref={aiChatRef}
                 userId={user?.id || ""}
+                isAdmin={isAdmin}
                 externalActiveId={aiActiveId}
                 onConvsChange={handleConvsChange}
               />

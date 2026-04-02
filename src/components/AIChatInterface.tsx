@@ -12,11 +12,17 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  X,
+  UserCheck,
 } from "lucide-react";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { parseN8nResponse } from "./ai-chat/parseMessage";
+import { RichMessageContent, CreditsLine, contactKey } from "./ai-chat/RichMessageContent";
+import { FormattedText } from "./ai-chat/FormattedText";
+import type { MessageMetadata, ContactData } from "./ai-chat/types";
 
 export type ConversationMeta = {
   id: string;
@@ -29,6 +35,7 @@ type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  metadata?: MessageMetadata | null;
 };
 
 export type AIChatHandle = {
@@ -48,12 +55,13 @@ const EXAMPLES = [
 
 interface AIChatInterfaceProps {
   userId: string;
+  isAdmin?: boolean;
   externalActiveId?: string;
   onConvsChange?: (convs: ConversationMeta[], activeId: string) => void;
 }
 
 export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
-  ({ userId, externalActiveId, onConvsChange }, ref) => {
+  ({ userId, isAdmin, externalActiveId, onConvsChange }, ref) => {
     const [conversations, setConversations] = useState<ConversationMeta[]>([]);
     const [messages, setMessages] = useState<Record<string, Message[]>>({});
     const [activeId, setActiveId] = useState<string>("");
@@ -64,6 +72,9 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
     const [exampleIdx, setExampleIdx] = useState(() =>
       Math.floor(Math.random() * EXAMPLES.length)
     );
+    // Selected contacts for sending with next message: key → ContactData
+    const [selectedContacts, setSelectedContacts] = useState<Map<string, ContactData>>(new Map());
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const isCreatingRef = useRef(false);
@@ -91,6 +102,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
     useEffect(() => {
       if (externalActiveId && externalActiveId !== activeId) {
         setActiveId(externalActiveId);
+        clearSelectedContacts();
       }
     }, [externalActiveId]);
 
@@ -106,6 +118,23 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
       renameConv: handleRenameConv,
       deleteConv: handleDeleteConv,
     }));
+
+    // Derived: set of selected contact keys for quick lookup
+    const selectedContactKeys = new Set(selectedContacts.keys());
+
+    const handleToggleContact = (contact: ContactData, key: string) => {
+      setSelectedContacts((prev) => {
+        const next = new Map(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.set(key, contact);
+        }
+        return next;
+      });
+    };
+
+    const clearSelectedContacts = () => setSelectedContacts(new Map());
 
     const loadConversations = async () => {
       setLoadingConvs(true);
@@ -132,11 +161,14 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
       setLoadingMsgs(true);
       const { data } = await supabase
         .from("ai_chat_messages")
-        .select("id, role, content")
+        .select("id, role, content, metadata")
         .eq("conversation_id", convId)
         .order("created_at", { ascending: true });
 
-      setMessages((prev) => ({ ...prev, [convId]: (data as Message[]) ?? [] }));
+      setMessages((prev) => ({
+        ...prev,
+        [convId]: (data as Message[]) ?? [],
+      }));
       setLoadingMsgs(false);
     };
 
@@ -262,8 +294,16 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
         }));
       }
 
+      // Capture and clear selected contacts BEFORE the async call
+      const contactsToSend = selectedContacts.size > 0
+        ? Array.from(selectedContacts.values())
+        : undefined;
+      if (contactsToSend) clearSelectedContacts();
+
       let replyContent =
         "The AI assistant is currently unavailable. Please try again later.";
+      let replyMetadata: MessageMetadata | null = null;
+
       try {
         const res = await fetch(
           "https://n8n.srv1081444.hstgr.cloud/webhook/chat_bot",
@@ -273,6 +313,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
             body: JSON.stringify({
               message: content,
               session_id: conv.session_id,
+              ...(contactsToSend ? { selected_contacts: contactsToSend } : {}),
               user_id: userId,
             }),
           }
@@ -296,20 +337,28 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
           throw new Error("Service error");
         }
         const item = Array.isArray(data) ? data[0] : data;
-        const reply =
-          item?.text ??
-          item?.response ??
-          item?.action?.message ??
-          item?.message ??
-          item?.output ??
-          (typeof item === "string" ? item : null);
-        if (reply) replyContent = String(reply);
+
+        // Parse structured data, credits, chatName from the response
+        const parsed = parseN8nResponse(item);
+        replyContent = parsed.cleanText || replyContent;
+
+        // Build metadata if we have structured data or credits
+        if (parsed.structuredData || parsed.credits) {
+          replyMetadata = {};
+          if (parsed.structuredData) replyMetadata.data = parsed.structuredData;
+          if (parsed.credits) replyMetadata.credits = parsed.credits;
+        }
+
+        // Auto-rename conversation from chatName
+        if (parsed.chatName) {
+          await handleRenameConv(activeId, parsed.chatName);
+        }
       } catch (err) {
         console.error("[AIChatInterface] n8n fetch failed:", err);
         // replyContent stays as offline message
       }
 
-      // Extract chatname if present and rename conversation
+      // Legacy chatname: prefix handling (in case some responses still use it)
       if (replyContent.toLowerCase().startsWith("chatname:")) {
         const lines = replyContent.split("\n");
         const chatName = lines[0].replace(/^chatname:\s*/i, "").trim();
@@ -325,8 +374,9 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
           conversation_id: activeId,
           role: "assistant",
           content: replyContent,
+          ...(replyMetadata ? { metadata: replyMetadata as unknown as Record<string, unknown> } : {}),
         })
-        .select("id, role, content")
+        .select("id, role, content, metadata")
         .single();
 
       setMessages((prev) => ({
@@ -337,6 +387,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
             id: crypto.randomUUID(),
             role: "assistant",
             content: replyContent,
+            metadata: replyMetadata,
           },
         ],
       }));
@@ -422,35 +473,56 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                activeMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      "flex gap-3 animate-fade-in",
-                      msg.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {msg.role === "assistant" && (
-                      <div className="shrink-0 w-7 h-7 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center mt-0.5 overflow-hidden">
-                        <img
-                          src={bravoroIcon}
-                          alt="Bravoro"
-                          className="w-full h-full object-cover"
-                        />
+                activeMessages.map((msg) => {
+                  const msgMeta = msg.metadata as MessageMetadata | null | undefined;
+                  const hasRichContent = msg.role === "assistant" && msgMeta?.data;
+
+                  return (
+                    <div key={msg.id} className="animate-fade-in">
+                      <div
+                        className={cn(
+                          "flex gap-3",
+                          msg.role === "user" ? "justify-end" : "justify-start"
+                        )}
+                      >
+                        {msg.role === "assistant" && (
+                          <div className="shrink-0 w-7 h-7 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center mt-0.5 overflow-hidden">
+                            <img
+                              src={bravoroIcon}
+                              alt="Bravoro"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div
+                          className={cn(
+                            "px-4 py-3 text-sm leading-relaxed",
+                            msg.role === "user"
+                              ? "max-w-[78%] bg-primary text-primary-foreground rounded-2xl rounded-tr-sm shadow-md shadow-primary/20 whitespace-pre-wrap"
+                              : "max-w-[90%] bg-muted/60 text-foreground rounded-2xl rounded-tl-sm border border-border/40"
+                          )}
+                        >
+                          {msg.role === "user" ? (
+                            msg.content
+                          ) : hasRichContent ? (
+                            <RichMessageContent
+                              content={msg.content}
+                              metadata={msgMeta}
+                              selectedContactKeys={selectedContactKeys}
+                              onToggleContact={handleToggleContact}
+                            />
+                          ) : (
+                            <FormattedText text={msg.content} />
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-[78%] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm shadow-md shadow-primary/20"
-                          : "bg-muted/60 text-foreground rounded-2xl rounded-tl-sm border border-border/40"
+                      {/* Credits line — admin only, assistant messages only */}
+                      {isAdmin && msg.role === "assistant" && msgMeta?.credits && (
+                        <CreditsLine credits={msgMeta.credits} />
                       )}
-                    >
-                      {msg.content}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
 
               {sending && (
@@ -483,6 +555,26 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
             {/* Bottom input */}
             <div className="shrink-0 py-4 border-t border-border/30 bg-card/30 backdrop-blur-sm">
               <div className="max-w-4xl mx-auto px-5">
+              {/* Selected contacts badge */}
+              {selectedContacts.size > 0 && (
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                    <UserCheck className="h-3 w-3" />
+                    <span>{selectedContacts.size} contact{selectedContacts.size > 1 ? "s" : ""} selected</span>
+                    <button
+                      type="button"
+                      onClick={clearSelectedContacts}
+                      className="ml-1 p-0.5 rounded hover:bg-emerald-500/20 transition-colors"
+                      title="Clear selection"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground/50">
+                    Will be sent with your next message
+                  </span>
+                </div>
+              )}
               <div className="flex gap-3 items-end">
                 <textarea
                   ref={inputRef}
