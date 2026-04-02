@@ -54,9 +54,9 @@ export function parseN8nResponse(item: Record<string, unknown>): {
     }
   }
 
-  // c) Fall back to `output` JSON markers ONLY when there is no separate `text` field
-  //    (if `text` exists but lacks markers, `output` is cumulative — skip it)
-  if (!structuredData && !hasTextField) {
+  // c) Fall back to `output` JSON markers as last resort
+  //    Only reached when rawText had no markers AND `data` field was empty/missing
+  if (!structuredData) {
     const rawOutput = typeof item?.output === "string" ? item.output : "";
     if (rawOutput) {
       jsonBlockRegex.lastIndex = 0;
