@@ -55,7 +55,10 @@ export function parseN8nResponse(item: Record<string, unknown>): {
   }
 
   // c) Fall back to `output` JSON markers as last resort
-  //    Only reached when rawText had no markers AND `data` field was empty/missing
+  //    Only reached when rawText had no markers AND `data` field was empty/missing.
+  //    IMPORTANT: `output` is cumulative (contains ALL structured data from the
+  //    entire conversation). Only use it if the extracted data actually has non-empty
+  //    arrays — otherwise we'd re-show companies/contacts from earlier messages.
   if (!structuredData) {
     const rawOutput = typeof item?.output === "string" ? item.output : "";
     if (rawOutput) {
@@ -67,7 +70,14 @@ export function parseN8nResponse(item: Record<string, unknown>): {
       }
       if (lastMatch) {
         try {
-          structuredData = JSON.parse(lastMatch[1]) as StructuredData;
+          const parsed = JSON.parse(lastMatch[1]) as StructuredData;
+          // Guard: only use if it has non-empty companies or contacts
+          if (
+            (Array.isArray(parsed.companies) && parsed.companies.length > 0) ||
+            (Array.isArray(parsed.contacts) && parsed.contacts.length > 0)
+          ) {
+            structuredData = parsed;
+          }
         } catch {
           // Malformed JSON — ignore
         }
@@ -105,9 +115,10 @@ export function extractConversationalParts(
   }
 
   // Find where structured listing begins
-  // Patterns: "\n\n1. ", "\nCompanies\n", "Contact previews\n", "\n- Name," (bullet contact lists)
+  // Patterns: "1. ", "- Name", "Companies\n", "Contact previews\n"
+  // Also handles text that starts directly with a bullet or numbered item
   const structuredStartIdx = text.search(
-    /\n(?:\d+\.\s|- \S|Companies\s*\n|Contact previews\s*\n)/
+    /(?:^|\n)(?:\d+\.\s|- \S|Companies\s*\n|Contact previews\s*\n)/
   );
 
   const intro =
@@ -115,12 +126,22 @@ export function extractConversationalParts(
       ? text.slice(0, structuredStartIdx).trim()
       : text.trim();
 
-  // Find outro — text after the last structured block (bullets/numbered items).
-  // Look for a blank line after the last bullet/numbered line, then grab everything after it.
-  const outroMatch = text.match(
-    /(?:^|\n)(?:- .+|\d+\..+)\n\n((?!- |\d+\.)[\s\S]+?)$/
-  );
-  const outro = outroMatch ? outroMatch[1].trim() : "";
+  // Find outro — text after the LAST structured block (bullets/numbered items).
+  // Strategy: find the last bullet/numbered line, then check for a blank line + text after it.
+  // We search backwards by finding ALL matches and using the last one.
+  let outro = "";
+  const outroRegex = /(?:^|\n)(?:- .+|\d+\..+)\n\n((?!- |\d+\.)[^\n].*)$/gm;
+  let outroMatch: RegExpExecArray | null;
+  while ((outroMatch = outroRegex.exec(text)) !== null) {
+    outro = outroMatch[1].trim();
+  }
+  // If the last match captured something, also grab any remaining lines after it
+  if (outro) {
+    const outroIdx = text.lastIndexOf(outro);
+    if (outroIdx >= 0) {
+      outro = text.slice(outroIdx).trim();
+    }
+  }
 
   return { intro, outro };
 }

@@ -63,9 +63,10 @@ export function CreditsLine({ credits }: { credits: Credits }) {
 
 function CompanyRow({ company }: { company: CompanyData }) {
   const [jobsOpen, setJobsOpen] = useState(false);
-  const websiteUrl = company.website?.startsWith("http")
-    ? company.website
-    : `https://${company.website}`;
+  const rawUrl = company.website || company.domain;
+  const websiteUrl = rawUrl?.startsWith("http")
+    ? rawUrl
+    : rawUrl ? `https://${rawUrl}` : "";
 
   return (
     <div>
