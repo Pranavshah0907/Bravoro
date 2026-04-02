@@ -407,12 +407,14 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
                 <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Enter Companies</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
               </div>
-              <SpreadsheetGrid
-                ref={gridRef}
-                userId={userId}
-                userEmail={userEmail}
-                onOpenManager={handleOpenManager}
-              />
+              <div className="overflow-x-auto">
+                <SpreadsheetGrid
+                  ref={gridRef}
+                  userId={userId}
+                  userEmail={userEmail}
+                  onOpenManager={handleOpenManager}
+                />
+              </div>
             </>
           )}
         </div>

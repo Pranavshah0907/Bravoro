@@ -15,6 +15,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { EnrichmentCard } from "@/components/EnrichmentCard";
+import { DesktopRecommendedBanner } from "@/components/DesktopRecommendedBanner";
 import { Search, Upload, Users, Bot, UserSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
@@ -348,6 +349,9 @@ const Dashboard = () => {
           ) : (
             /* ── Selected View: Form ── */
             <div className="min-h-screen">
+              {(selectedType === "manual" || selectedType === "bulk" || selectedType === "people_enrichment") && (
+                <DesktopRecommendedBanner pageKey={selectedType} />
+              )}
 
               {/* Form Area — full width now that nav is in sidebar */}
               <div className="p-5 lg:p-8 xl:p-10 2xl:p-12 pt-3 lg:pt-8">

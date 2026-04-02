@@ -25,6 +25,7 @@ import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
+import { DesktopRecommendedBanner } from "@/components/DesktopRecommendedBanner";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, endOfDay, startOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
@@ -642,7 +643,7 @@ const Admin = () => {
 
   // ── Shared user table rows (workspace + independent views) ──
   const renderDetailTable = (tableUsers: UserWithRole[], showAssign = false) => (
-    <div className="rounded-lg border border-border/30 overflow-hidden">
+    <div className="rounded-lg border border-border/30 overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/20 border-border/30 hover:bg-muted/30">
@@ -718,8 +719,10 @@ const Admin = () => {
       <MobileHeader />
       <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} />
 
+      <DesktopRecommendedBanner pageKey="admin" />
+
       {/* ── Two-pane layout ── */}
-      <div className="flex-1 ml-0 md:ml-16 flex h-screen overflow-hidden pt-14 pb-20 md:pt-0 md:pb-0">
+      <div className="flex-1 ml-0 md:ml-16 flex flex-col md:flex-row h-screen overflow-hidden pt-14 pb-20 md:pt-0 md:pb-0">
 
         {/* ────────────────── LEFT TREE PANE ────────────────── */}
         <aside
@@ -1520,7 +1523,7 @@ const Admin = () => {
                           Members ({filteredWorkspaceData.length})
                         </h3>
                       </div>
-                      <div className="rounded-lg border border-border/30 overflow-hidden">
+                      <div className="rounded-lg border border-border/30 overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-muted/20 border-border/30 hover:bg-muted/30">
@@ -1630,7 +1633,7 @@ const Admin = () => {
                             <p className="font-medium">No usage data for this period</p>
                           </div>
                         ) : (
-                          <div className="rounded-lg border border-border/40 overflow-hidden">
+                          <div className="rounded-lg border border-border/40 overflow-x-auto">
                             <Table>
                               <TableHeader>
                                 <TableRow className="bg-muted/30 border-border/30 hover:bg-muted/40">
