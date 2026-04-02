@@ -401,10 +401,8 @@ serve(async (req: Request) => {
 
     const bodyAny = body as unknown as Record<string, unknown>;
 
-    // People enrichment: detected by presence of 'missing_contacts' key at top level.
-    // Enriched contacts come in companies[].contacts[], missing contacts in missing_contacts[].
+    // Missing contacts for people enrichment (contacts that couldn't be found)
     const missingContactsData: Contact[] = Array.isArray(body?.missing_contacts) ? (body.missing_contacts as Contact[]) : [];
-    const isPeopleEnrichmentPayload = 'missing_contacts' in bodyAny;
 
     // Extract credit_counter from new payload format
     const creditCounter = (bodyAny?.credit_counter && typeof bodyAny.credit_counter === 'object')
@@ -437,8 +435,7 @@ serve(async (req: Request) => {
 
     console.log(`[${requestId}] Received request for search_id:`, search_id);
     console.log(`[${requestId}] Number of companies:`, companies.length);
-    console.log(`[${requestId}] Is people enrichment payload:`, isPeopleEnrichmentPayload);
-    console.log(`[${requestId}] Missing contacts data count:`, missingContactsData.length);
+    console.log(`[${requestId}] Missing contacts count:`, missingContactsData.length);
     console.log(`[${requestId}] Body keys:`, Object.keys(bodyAny));
     console.log(`[${requestId}] Credits - Apollo: ${apolloCredits}, A-Leads: ${aleadsCredits}, Lusha: ${lushaCredits}, Cognism: ${cognismCredits}, Theirstack: ${theirstackCredits}`);
     console.log(`[${requestId}] contacts_count: ${contactsCount}, enriched_contacts_count: ${enrichedContactsCount}, grand_total: ${grandTotalCredits}`);
@@ -463,7 +460,7 @@ serve(async (req: Request) => {
     }
 
     // Check if this is a flag-release-only call (no result processing, just release the queue)
-    if (bodyAny?.flag_action === 'release' && !companies.length && !isPeopleEnrichmentPayload && bodyAny?.status !== 'error') {
+    if (bodyAny?.flag_action === 'release' && !companies.length && !missingContactsData.length && bodyAny?.status !== 'error') {
       console.log(`[${requestId}] Flag-only release for search ${search_id}`);
       await handleFlagAction(supabase, requestId, search_id, 'release');
       return new Response(
@@ -473,7 +470,7 @@ serve(async (req: Request) => {
     }
 
     // Check if this is an error payload from n8n
-    const isErrorPayload = bodyAny?.status === 'error' || (bodyAny?.error_message && !companies.length && !isPeopleEnrichmentPayload);
+    const isErrorPayload = bodyAny?.status === 'error' || (bodyAny?.error_message && !companies.length && !missingContactsData.length);
 
     if (isErrorPayload) {
       const errorMessage = (bodyAny?.error_message as string) || 'Unknown error occurred';
@@ -566,115 +563,80 @@ serve(async (req: Request) => {
     let results: { company_name: string; contacts_count: number }[] = [];
     let totalContacts = 0;
 
-    // Handle people enrichment payload format
-    if (isPeopleEnrichmentPayload) {
-      console.log(`[${requestId}] Processing people enrichment payload format`);
+    // Unified storage: insert each company's results as a separate row
+    const insertPromises = companies.map(async (company) => {
+      const { company_name, domain, contacts } = company;
 
-      // Flatten all enriched contacts from companies[] into a single array
-      const enrichedContactsFlat: Contact[] = [];
-      companies.forEach((company) => {
-        if (Array.isArray(company.contacts)) {
-          enrichedContactsFlat.push(...company.contacts);
-        }
-      });
+      console.log(`[${requestId}] Inserting contacts for company:`, company_name);
 
-      // Insert enriched contacts as one row (Results page expects a single 'enriched' row)
-      if (enrichedContactsFlat.length > 0) {
-        const { error: enrichedError } = await supabase
+      const { error } = await supabase
+        .from('search_results')
+        .insert({
+          search_id,
+          company_name: company_name || 'Unknown Company',
+          domain: domain || null,
+          contact_data: contacts || [],
+          result_type: 'enriched'
+        });
+
+      if (error) {
+        console.error(`[${requestId}] Error inserting company:`, error);
+        throw error;
+      }
+
+      return { company_name, contacts_count: contacts?.length || 0 };
+    });
+
+    results = await Promise.all(insertPromises);
+    totalContacts = results.reduce((sum, r) => sum + r.contacts_count, 0);
+
+    // Handle missing companies for bulk search (companies not found)
+    const missingCompanies: MissingCompany[] = Array.isArray(bodyAny?.missing_companies)
+      ? (bodyAny.missing_companies as MissingCompany[])
+      : [];
+
+    if (missingCompanies.length > 0) {
+      console.log(`[${requestId}] Processing ${missingCompanies.length} missing companies`);
+
+      for (const mc of missingCompanies) {
+        const { error: mcError } = await supabase
           .from('search_results')
           .insert({
             search_id,
-            company_name: 'People Enriched',
-            domain: null,
-            contact_data: enrichedContactsFlat,
-            result_type: 'enriched'
+            company_name: mc.companyName || 'Unknown',
+            domain: mc.companyDomain || null,
+            contact_data: [],
+            result_type: 'missing_company'
           });
 
-        if (enrichedError) {
-          console.error(`[${requestId}] Error inserting enriched contacts:`, enrichedError);
-          throw enrichedError;
+        if (mcError) {
+          console.error(`[${requestId}] Error inserting missing company:`, mcError);
         }
-
-        results.push({ company_name: 'People Enriched', contacts_count: enrichedContactsFlat.length });
-        console.log(`[${requestId}] Inserted ${enrichedContactsFlat.length} enriched contacts`);
       }
 
-      // Insert missing contacts as one row
-      if (missingContactsData.length > 0) {
-        const { error: missingError } = await supabase
-          .from('search_results')
-          .insert({
-            search_id,
-            company_name: 'People not found',
-            domain: null,
-            contact_data: missingContactsData,
-            result_type: 'missing'
-          });
+      console.log(`[${requestId}] Inserted ${missingCompanies.length} missing companies`);
+    }
 
-        if (missingError) {
-          console.error(`[${requestId}] Error inserting missing contacts:`, missingError);
-          throw missingError;
-        }
+    // Handle missing contacts for people enrichment (contacts not found)
+    if (missingContactsData.length > 0) {
+      const { error: missingError } = await supabase
+        .from('search_results')
+        .insert({
+          search_id,
+          company_name: 'People not found',
+          domain: null,
+          contact_data: missingContactsData,
+          result_type: 'missing'
+        });
 
-        results.push({ company_name: 'People not found', contacts_count: missingContactsData.length });
-        console.log(`[${requestId}] Inserted ${missingContactsData.length} missing contacts`);
+      if (missingError) {
+        console.error(`[${requestId}] Error inserting missing contacts:`, missingError);
+        throw missingError;
       }
 
-      totalContacts = enrichedContactsFlat.length + missingContactsData.length;
-    } else {
-      // Original logic: Insert each company's results
-      const insertPromises = companies.map(async (company) => {
-        const { company_name, domain, contacts } = company;
-        
-        console.log(`[${requestId}] Inserting contacts for company:`, company_name);
-
-        const { error } = await supabase
-          .from('search_results')
-          .insert({
-            search_id,
-            company_name: company_name || 'Unknown Company',
-            domain: domain || null,
-            contact_data: contacts || [],
-            result_type: 'enriched'
-          });
-
-        if (error) {
-          console.error(`[${requestId}] Error inserting company:`, error);
-          throw error;
-        }
-
-        return { company_name, contacts_count: contacts?.length || 0 };
-      });
-
-      results = await Promise.all(insertPromises);
-      totalContacts = results.reduce((sum, r) => sum + r.contacts_count, 0);
-
-      // Handle missing companies for bulk search (companies not found)
-      const missingCompanies: MissingCompany[] = Array.isArray(bodyAny?.missing_companies) 
-        ? (bodyAny.missing_companies as MissingCompany[])
-        : [];
-
-      if (missingCompanies.length > 0) {
-        console.log(`[${requestId}] Processing ${missingCompanies.length} missing companies`);
-        
-        for (const mc of missingCompanies) {
-          const { error: mcError } = await supabase
-            .from('search_results')
-            .insert({
-              search_id,
-              company_name: mc.companyName || 'Unknown',
-              domain: mc.companyDomain || null,
-              contact_data: [],
-              result_type: 'missing_company'
-            });
-
-          if (mcError) {
-            console.error(`[${requestId}] Error inserting missing company:`, mcError);
-          }
-        }
-        
-        console.log(`[${requestId}] Inserted ${missingCompanies.length} missing companies`);
-      }
+      results.push({ company_name: 'People not found', contacts_count: missingContactsData.length });
+      totalContacts += missingContactsData.length;
+      console.log(`[${requestId}] Inserted ${missingContactsData.length} missing contacts`);
     }
 
     console.log(`[${requestId}] Successfully saved ${results.length} companies with ${totalContacts} total contacts`);

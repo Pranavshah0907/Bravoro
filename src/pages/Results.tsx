@@ -645,17 +645,18 @@ const Results = () => {
 
     const wb = XLSX.utils.book_new();
 
-    // Find enriched and missing results
-    const enrichedResult = results.find(r => 
+    // Find enriched and missing results — enriched may span multiple company rows
+    const enrichedResults = results.filter(r =>
       r.result_type === 'enriched' || r.company_name === 'People Enriched'
     );
-    const missingResult = results.find(r => 
+    const missingResult = results.find(r =>
       r.result_type === 'missing' || r.company_name === 'People not found'
     );
+    const enrichedContacts = enrichedResults.flatMap(r => r.contact_data);
 
     // Sheet 1: Output (enriched contacts) - includes Record_ID if present
-    if (enrichedResult?.contact_data?.length > 0) {
-      const enrichedData = enrichedResult.contact_data.map(c => ({
+    if (enrichedContacts.length > 0) {
+      const enrichedData = enrichedContacts.map(c => ({
         Record_ID: c.Record_ID || '',
         First_Name: c.First_Name,
         Last_Name: c.Last_Name,
@@ -1313,15 +1314,15 @@ const Results = () => {
 
     // For bulk_people_enrichment, show tabs for enriched vs missing contacts
     if (search.search_type === "bulk_people_enrichment") {
-      // Separate results by type
-      const enrichedResult = results.find(r => r.result_type === 'enriched' || r.company_name === 'People Enriched');
+      // Separate results by type — enriched contacts may span multiple company rows
+      const enrichedResults = results.filter(r => r.result_type === 'enriched' || r.company_name === 'People Enriched');
       const missingResult = results.find(r => r.result_type === 'missing' || r.company_name === 'People not found');
-      
-      const enrichedContacts = enrichedResult?.contact_data || [];
+
+      const enrichedContacts = enrichedResults.flatMap(r => r.contact_data);
       const missingContacts = missingResult?.contact_data || [];
-      
+
       // If no categorized results, fall back to showing all contacts as enriched (backwards compatibility)
-      const hasCategories = enrichedResult || missingResult;
+      const hasCategories = enrichedResults.length > 0 || missingResult;
       if (!hasCategories) {
         const allContacts = results.flatMap(r => r.contact_data);
         const pageKey = getPageKey(search.id, 'all');

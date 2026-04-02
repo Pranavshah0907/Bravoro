@@ -340,10 +340,11 @@ const DevTools = () => {
       const wb = XLSX.utils.book_new();
 
       if (isPeopleEnrichment) {
-        const enriched = results.find(r => r.result_type === "enriched" || r.company_name === "People Enriched");
+        const enrichedResults = results.filter(r => r.result_type === "enriched" || r.company_name === "People Enriched");
+        const enrichedContacts = enrichedResults.flatMap(r => r.contact_data);
         const missing = results.find(r => r.result_type === "missing" || r.company_name === "People not found");
-        if (enriched?.contact_data?.length) {
-          const ws = XLSX.utils.json_to_sheet(enriched.contact_data.map(c => ({
+        if (enrichedContacts.length) {
+          const ws = XLSX.utils.json_to_sheet(enrichedContacts.map(c => ({
             Record_ID: c.Record_ID || "", First_Name: c.First_Name, Last_Name: c.Last_Name,
             Domain: c.Domain, Organization: c.Organization, Title: c.Title,
             Email: c.Email, LinkedIn: c.LinkedIn, Phone_Number_1: c.Phone_Number_1, Phone_Number_2: c.Phone_Number_2,
