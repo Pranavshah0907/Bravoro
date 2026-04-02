@@ -410,13 +410,15 @@ export function contactKey(c: ContactData): string {
 function CollapsibleSection({
   title,
   trailing,
+  defaultOpen = true,
   children,
 }: {
   title: string;
   trailing?: React.ReactNode;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="space-y-2">
@@ -552,6 +554,7 @@ export function RichMessageContent({
       {previewContacts.length > 0 && (
         <CollapsibleSection
           title={`Contact Previews (${previewContacts.length})`}
+          defaultOpen={false}
           trailing={
             onToggleContact ? (
               <SelectAllButton
