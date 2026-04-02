@@ -1921,6 +1921,7 @@ const Results = () => {
                   <SelectItem value="bulk">Bulk Upload</SelectItem>
                   <SelectItem value="manual">Manual Entry</SelectItem>
                   <SelectItem value="bulk_people_enrichment">People Enrichment</SelectItem>
+                  <SelectItem value="ai_chat">AI Staffing</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -2094,16 +2095,17 @@ const Results = () => {
                           </TableCell>
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={search.search_type === "bulk" ? "default" : search.search_type === "bulk_people_enrichment" ? "outline" : "secondary"}
+                            <Badge
+                              variant={search.search_type === "bulk" ? "default" : search.search_type === "bulk_people_enrichment" ? "outline" : search.search_type === "ai_chat" ? "outline" : "secondary"}
                               className={cn(
                                 "font-medium",
-                                search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" : 
+                                search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" :
                                 search.search_type === "bulk_people_enrichment" ? "border-accent text-accent" :
+                                search.search_type === "ai_chat" ? "border-emerald-500/40 text-emerald-400" :
                                 "bg-muted text-muted-foreground"
                               )}
                             >
-                              {search.search_type === "bulk" ? "Bulk" : search.search_type === "bulk_people_enrichment" ? "People Enrich" : "Manual"}
+                              {search.search_type === "bulk" ? "Bulk" : search.search_type === "bulk_people_enrichment" ? "People Enrich" : search.search_type === "ai_chat" ? "AI Chat" : "Manual"}
                             </Badge>
                           </TableCell>
                           <TableCell className="max-w-[300px]">
@@ -2131,7 +2133,7 @@ const Results = () => {
                                   <Download className="h-4 w-4 mr-2" />
                                   Export
                                 </Button>
-                              ) : search.search_type === "manual" ? (
+                              ) : search.search_type === "manual" || search.search_type === "ai_chat" ? (
                                 <Button
                                   size="sm"
                                   variant="outline"

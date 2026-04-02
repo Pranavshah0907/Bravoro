@@ -14,7 +14,10 @@ import {
   Trash2,
   X,
   UserCheck,
+  ArrowUpFromLine,
+  Check,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import { cn } from "@/lib/utils";
@@ -22,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseN8nResponse } from "./ai-chat/parseMessage";
 import { RichMessageContent, CreditsLine, contactKey } from "./ai-chat/RichMessageContent";
 import { FormattedText } from "./ai-chat/FormattedText";
+import { syncChatToResults, hasSyncableData } from "./ai-chat/syncToResults";
 import type { MessageMetadata, ContactData } from "./ai-chat/types";
 
 export type ConversationMeta = {
@@ -29,6 +33,7 @@ export type ConversationMeta = {
   title: string;
   session_id: string;
   updated_at: string;
+  synced_search_id?: string | null;
 };
 
 type Message = {
@@ -74,7 +79,9 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
     );
     // Selected contacts for sending with next message: key → ContactData
     const [selectedContacts, setSelectedContacts] = useState<Map<string, ContactData>>(new Map());
+    const [syncing, setSyncing] = useState(false);
 
+    const { toast } = useToast();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const isCreatingRef = useRef(false);
@@ -136,11 +143,53 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
 
     const clearSelectedContacts = () => setSelectedContacts(new Map());
 
+    const handleSyncToResults = async () => {
+      if (syncing || !activeId) return;
+      const conv = conversations.find((c) => c.id === activeId);
+      if (!conv) return;
+
+      setSyncing(true);
+      try {
+        const msgs = messages[activeId] ?? [];
+        const { companiesCount, contactsCount } = await syncChatToResults(
+          userId,
+          activeId,
+          conv.title,
+          msgs,
+          conv.synced_search_id ?? null
+        );
+        // Reload conversation to get updated synced_search_id
+        const { data: updated } = await supabase
+          .from("ai_chat_conversations")
+          .select("id, title, session_id, updated_at, synced_search_id")
+          .eq("id", activeId)
+          .single();
+        if (updated) {
+          setConversations((prev) =>
+            prev.map((c) => (c.id === activeId ? (updated as ConversationMeta) : c))
+          );
+        }
+        toast({
+          title: "Synced to Results",
+          description: `${contactsCount} contacts and ${companiesCount} companies synced. View them on the Results page.`,
+        });
+      } catch (err) {
+        console.error("[AIChatInterface] sync failed:", err);
+        toast({
+          title: "Sync failed",
+          description: err instanceof Error ? err.message : "Something went wrong",
+          variant: "destructive",
+        });
+      } finally {
+        setSyncing(false);
+      }
+    };
+
     const loadConversations = async () => {
       setLoadingConvs(true);
       const { data } = await supabase
         .from("ai_chat_conversations")
-        .select("id, title, session_id, updated_at")
+        .select("id, title, session_id, updated_at, synced_search_id")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false });
 
@@ -187,7 +236,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
       const { data: conv, error } = await supabase
         .from("ai_chat_conversations")
         .insert({ user_id: userId, title })
-        .select("id, title, session_id, updated_at")
+        .select("id, title, session_id, updated_at, synced_search_id")
         .single();
 
       if (error || !conv) return;
@@ -482,7 +531,32 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
               </div>
             </div>
           </div>
-          <img src={bravoroLogo} alt="Bravoro" className="h-5 w-auto shrink-0 self-center opacity-80" />
+          <div className="flex items-center gap-2">
+            {hasSyncableData(activeMessages) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncToResults}
+                disabled={syncing}
+                className={cn(
+                  "h-8 gap-1.5 text-xs font-medium border-border/50",
+                  activeConv?.synced_search_id
+                    ? "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                    : "hover:bg-muted/50"
+                )}
+              >
+                {syncing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : activeConv?.synced_search_id ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <ArrowUpFromLine className="h-3.5 w-3.5" />
+                )}
+                {syncing ? "Syncing..." : activeConv?.synced_search_id ? "Synced" : "Sync to Results"}
+              </Button>
+            )}
+            <img src={bravoroLogo} alt="Bravoro" className="h-5 w-auto shrink-0 self-center opacity-80" />
+          </div>
         </div>
 
         {/* Content */}

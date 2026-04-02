@@ -45,6 +45,7 @@ export type Database = {
           created_at: string
           id: string
           session_id: string
+          synced_search_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -53,6 +54,7 @@ export type Database = {
           created_at?: string
           id?: string
           session_id?: string
+          synced_search_id?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -61,11 +63,20 @@ export type Database = {
           created_at?: string
           id?: string
           session_id?: string
+          synced_search_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_conversations_synced_search_id_fkey"
+            columns: ["synced_search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_chat_messages: {
         Row: {
@@ -73,7 +84,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
-          metadata: Record<string, unknown> | null
+          metadata: Json | null
           role: string
         }
         Insert: {
@@ -81,7 +92,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
-          metadata?: Record<string, unknown> | null
+          metadata?: Json | null
           role: string
         }
         Update: {
@@ -89,7 +100,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
-          metadata?: Record<string, unknown> | null
+          metadata?: Json | null
           role?: string
         }
         Relationships: [
@@ -136,6 +147,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bulk_search_drafts: {
+        Row: {
+          created_at: string
+          grid_data: Json
+          id: string
+          name: string
+          row_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       credit_usage: {
         Row: {
@@ -371,39 +412,6 @@ export type Database = {
           },
         ]
       }
-      workspaces: {
-        Row: {
-          id: string
-          company_name: string
-          company_address: string | null
-          primary_contact_name: string
-          primary_contact_email: string | null
-          primary_contact_phone: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          company_name: string
-          company_address?: string | null
-          primary_contact_name: string
-          primary_contact_email?: string | null
-          primary_contact_phone?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          company_name?: string
-          company_address?: string | null
-          primary_contact_name?: string
-          primary_contact_email?: string | null
-          primary_contact_phone?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       request_queue: {
         Row: {
           created_at: string | null
@@ -489,6 +497,7 @@ export type Database = {
           excel_file_name: string | null
           functions: string[] | null
           geography: string | null
+          grid_data: Json | null
           id: string
           result_url: string | null
           results_per_function: number | null
@@ -506,6 +515,7 @@ export type Database = {
           excel_file_name?: string | null
           functions?: string[] | null
           geography?: string | null
+          grid_data?: Json | null
           id?: string
           result_url?: string | null
           results_per_function?: number | null
@@ -523,6 +533,7 @@ export type Database = {
           excel_file_name?: string | null
           functions?: string[] | null
           geography?: string | null
+          grid_data?: Json | null
           id?: string
           result_url?: string | null
           results_per_function?: number | null
@@ -576,6 +587,39 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           webhook_url?: string
+        }
+        Relationships: []
+      }
+      workspaces: {
+        Row: {
+          company_address: string | null
+          company_name: string
+          created_at: string
+          id: string
+          primary_contact_email: string | null
+          primary_contact_name: string
+          primary_contact_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_address?: string | null
+          company_name: string
+          created_at?: string
+          id?: string
+          primary_contact_email?: string | null
+          primary_contact_name: string
+          primary_contact_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_address?: string | null
+          company_name?: string
+          created_at?: string
+          id?: string
+          primary_contact_email?: string | null
+          primary_contact_name?: string
+          primary_contact_phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -758,3 +802,5 @@ export const Constants = {
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.84.2 (currently installed v2.75.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
