@@ -803,12 +803,12 @@ const DevTools = () => {
                 <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
                   Queue ({filteredQueued.length})
                 </h2>
-                <div className="rounded-xl border border-border/30 overflow-hidden" style={{ background: "#0c1d1d" }}>
-                  <table className="w-full">
+                <div className="rounded-xl border border-border/30 overflow-x-auto" style={{ background: "#0c1d1d" }}>
+                  <table className="w-full min-w-[600px]">
                     <thead>
                       <tr className="border-b border-border/30">
                         {["#", "Search ID", "User", "Type / Method", "Submitted", ""].map((h, i) => (
-                          <th key={i} className={cn("text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider", i === 0 && "w-10")}>
+                          <th key={i} className={cn("text-left px-3 md:px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider", i === 0 && "w-10")}>
                             {h}
                           </th>
                         ))}
@@ -817,25 +817,25 @@ const DevTools = () => {
                     <tbody>
                       {filteredQueued.map((item, idx) => (
                         <tr key={item.id} className={cn("hover:bg-white/[0.02] transition-colors", idx > 0 && "border-t border-border/10")}>
-                          <td className="px-4 py-3 text-xs font-mono text-muted-foreground">#{idx + 1}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3 text-xs font-mono text-muted-foreground">#{idx + 1}</td>
+                          <td className="px-3 md:px-4 py-3">
                             <button onClick={() => copyId(item.search_id)} className="group flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-primary transition-colors" title={item.search_id}>
                               {item.search_id.slice(0, 8)}
                               {copiedId === item.search_id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />}
                             </button>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <div className="flex flex-col">
                               <span className="text-sm font-medium text-foreground">{item.user_email || "—"}</span>
                               {item.full_name && <span className="text-xs text-muted-foreground">{item.full_name}</span>}
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3">
                             <span className="text-sm text-foreground/80">{item.type_label}</span>
                             <span className="text-xs text-muted-foreground ml-2">{item.entry_method}</span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{formatDateTime(item.created_at)}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">{formatDateTime(item.created_at)}</td>
+                          <td className="px-3 md:px-4 py-3">
                             <button
                               onClick={() => setDeleteTarget({ queueItemId: item.id, searchId: item.search_id, label: item.user_email || item.search_id.slice(0, 8) })}
                               className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
@@ -860,18 +860,19 @@ const DevTools = () => {
                 </h2>
 
                 {filteredSearches.length > 0 ? (
-                  <div className="rounded-xl border border-border/30 overflow-hidden" style={{ background: "#0c1d1d" }}>
-                    <table className="w-full">
+                  <div className="rounded-xl border border-border/30 overflow-x-auto" style={{ background: "#0c1d1d" }}>
+                    <table className="w-full min-w-[700px]">
                       <thead>
                         <tr className="border-b border-border/30">
                           {["#", "Search ID", "User", "Type / Method", "Results", "Date / Time", "Status", ""].map((h, i) => (
                             <th
                               key={i}
                               className={cn(
-                                "text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider",
+                                "text-left px-3 md:px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider",
                                 i === 0 && "w-10",
                                 i === 4 && "w-20",
-                                i === 5 && "cursor-pointer hover:text-foreground select-none"
+                                i === 5 && "cursor-pointer hover:text-foreground select-none hidden md:table-cell",
+                                i === 1 && "hidden md:table-cell"
                               )}
                               onClick={i === 5 ? () => setSortDir(d => d === "desc" ? "asc" : "desc") : undefined}
                             >
@@ -897,9 +898,9 @@ const DevTools = () => {
                                   item.is_flag_locked && "bg-amber-500/[0.03]"
                                 )}
                               >
-                                <td className="px-4 py-3 text-xs font-mono text-muted-foreground">#{idx + 1}</td>
+                                <td className="px-3 md:px-4 py-3 text-xs font-mono text-muted-foreground">#{idx + 1}</td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-3 md:px-4 py-3 hidden md:table-cell">
                                   <button
                                     onClick={() => copyId(item.search_id)}
                                     className="group flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-primary transition-colors"
@@ -912,14 +913,14 @@ const DevTools = () => {
                                   </button>
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-3 md:px-4 py-3">
                                   <div className="flex flex-col min-w-0">
                                     <span className="text-sm font-medium text-foreground truncate max-w-[200px]">{item.user_email || "—"}</span>
                                     {item.full_name && <span className="text-xs text-muted-foreground truncate">{item.full_name}</span>}
                                   </div>
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-3 md:px-4 py-3">
                                   <div className="flex flex-col">
                                     <span className="text-sm text-foreground/80">{item.type_label || "—"}</span>
                                     <span className="text-xs text-muted-foreground">{item.entry_method}</span>
@@ -931,7 +932,7 @@ const DevTools = () => {
                                   </div>
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-3 md:px-4 py-3">
                                   {item.result_count > 0 ? (
                                     <span className="text-sm font-medium text-emerald-400">{item.result_count}</span>
                                   ) : (
@@ -939,17 +940,17 @@ const DevTools = () => {
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-3 md:px-4 py-3 hidden md:table-cell">
                                   <span className="text-sm text-foreground/80 whitespace-nowrap">
                                     {formatDateTime(item.updated_at ?? item.created_at)}
                                   </span>
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-3 md:px-4 py-3">
                                   <StatusBadge status={ds} item={item} onToggleError={() => setExpandedError(isExpanded ? null : item.search_id)} />
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-3 md:px-4 py-3">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">

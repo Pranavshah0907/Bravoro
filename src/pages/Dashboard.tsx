@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
@@ -22,14 +22,28 @@ import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 type EnrichmentType = "manual" | "bulk" | "people_enrichment" | "ai_staffing" | "recruiting_chat" | null;
 
+const VALID_TABS: EnrichmentType[] = ["manual", "bulk", "people_enrichment", "ai_staffing", "recruiting_chat"];
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [requiresPasswordReset, setRequiresPasswordReset] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [selectedType, setSelectedType] = useState<EnrichmentType>(null);
+
+  // Derive selectedType from URL ?tab= param
+  const tabParam = searchParams.get("tab") as EnrichmentType;
+  const selectedType: EnrichmentType = VALID_TABS.includes(tabParam) ? tabParam : null;
+
+  const setSelectedType = (type: EnrichmentType) => {
+    if (type) {
+      setSearchParams({ tab: type }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   // AI Staffing state lifted to Dashboard for sidebar
   const [aiConvs, setAiConvs] = useState<ConversationMeta[]>([]);
