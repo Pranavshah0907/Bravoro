@@ -29,6 +29,9 @@ export interface ContactData {
   country: string;
   source: string;
   previewOnly: boolean;
+  skills?: string[];
+  experienceSummary?: string;
+  headline?: string;
 }
 
 export interface StructuredData {
@@ -46,7 +49,8 @@ export interface Credits {
   lusha: number;
   aleads: number;
   total: number;
-  [key: string]: number;
+  brave_searches?: number;
+  [key: string]: number | undefined;
 }
 
 export interface MessageMetadata {

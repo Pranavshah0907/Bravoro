@@ -6,15 +6,18 @@ import { useToast } from "@/hooks/use-toast";
 import { ManualForm } from "@/components/ManualForm";
 import { ExcelUpload } from "@/components/ExcelUpload";
 import { BulkPeopleEnrichment } from "@/components/BulkPeopleEnrichment";
-import { AIChatInterface, ConversationMeta, AIChatHandle } from "@/components/AIChatInterface";
+import { AIChatWrapper } from "@/components/chat/AIChatWrapper";
+import { RecruitingChatWrapper } from "@/components/chat/RecruitingChatWrapper";
+import type { ChatHandle, ConversationMeta } from "@/components/chat/chatTypes";
+import type { ChatHandle as RecruitingChatHandle } from "@/components/chat/chatTypes";
 import { PasswordReset } from "@/components/PasswordReset";
 import { AppSidebar } from "@/components/AppSidebar";
 import { EnrichmentCard } from "@/components/EnrichmentCard";
-import { Search, Upload, Users, Bot } from "lucide-react";
+import { Search, Upload, Users, Bot, UserSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 
-type EnrichmentType = "manual" | "bulk" | "people_enrichment" | "ai_staffing" | null;
+type EnrichmentType = "manual" | "bulk" | "people_enrichment" | "ai_staffing" | "recruiting_chat" | null;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -28,7 +31,13 @@ const Dashboard = () => {
   // AI Staffing state lifted to Dashboard for sidebar
   const [aiConvs, setAiConvs] = useState<ConversationMeta[]>([]);
   const [aiActiveId, setAiActiveId] = useState<string>("");
-  const aiChatRef = useRef<AIChatHandle>(null);
+  const aiChatRef = useRef<ChatHandle>(null);
+
+  // Recruiting chat state
+  const [recruitConvs, setRecruitConvs] = useState<ConversationMeta[]>([]);
+  const [recruitActiveId, setRecruitActiveId] = useState<string>("");
+  const recruitChatRef = useRef<RecruitingChatHandle>(null);
+
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
 
   const enrichmentOptions = [
@@ -59,6 +68,13 @@ const Dashboard = () => {
       description: "Chat with AI to find and shortlist candidates for your roles",
       icon: Bot,
       gradient: "from-caretta/25 via-primary/15 to-caretta/8",
+    },
+    {
+      type: "recruiting_chat" as const,
+      title: "Recruiting Search",
+      description: "Find candidates by role, skills & location using AI",
+      icon: UserSearch,
+      gradient: "from-violet-500/20 via-purple-500/15 to-violet-500/8",
     },
   ];
 
@@ -152,6 +168,16 @@ const Dashboard = () => {
     aiChatRef.current?.deleteConv(id);
   };
 
+  // Recruiting handlers
+  const handleRecruitConvsChange = (convs: ConversationMeta[], id: string) => {
+    setRecruitConvs(convs);
+    setRecruitActiveId(id);
+  };
+  const handleSelectRecruitConv = (id: string) => setRecruitActiveId(id);
+  const handleNewRecruitChat = () => recruitChatRef.current?.newChat();
+  const handleRenameRecruitConv = (id: string, t: string) => recruitChatRef.current?.renameConv(id, t);
+  const handleDeleteRecruitConv = (id: string) => recruitChatRef.current?.deleteConv(id);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -208,6 +234,12 @@ const Dashboard = () => {
         onDeleteAiConv={handleDeleteAiConv}
         onPinChange={handlePinChange}
         onSelectEnrichment={(type) => setSelectedType(type as EnrichmentType)}
+        recruitConversations={recruitConvs}
+        recruitActiveId={recruitActiveId}
+        onSelectRecruitConv={handleSelectRecruitConv}
+        onNewRecruitChat={handleNewRecruitChat}
+        onRenameRecruitConv={handleRenameRecruitConv}
+        onDeleteRecruitConv={handleDeleteRecruitConv}
       />
 
       {/* Main Content */}
@@ -237,7 +269,7 @@ const Dashboard = () => {
         {/* Content */}
         <div className="relative z-10">
           {/* Logo in top right — hidden when AI staffing active (shown in chat header instead) */}
-          {selectedType !== "ai_staffing" && (
+          {selectedType !== "ai_staffing" && selectedType !== "recruiting_chat" && (
             <div className="fixed top-6 right-6 md:top-8 md:right-8 z-40 pointer-events-none">
               <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
             </div>
@@ -246,12 +278,22 @@ const Dashboard = () => {
           {selectedType === "ai_staffing" ? (
             /* AI Staffing — full height */
             <div className="p-4 lg:p-6" style={{ paddingTop: "1.5rem", height: "100vh" }}>
-              <AIChatInterface
+              <AIChatWrapper
                 ref={aiChatRef}
                 userId={user?.id || ""}
                 isAdmin={isAdmin}
                 externalActiveId={aiActiveId}
                 onConvsChange={handleConvsChange}
+              />
+            </div>
+          ) : selectedType === "recruiting_chat" ? (
+            <div className="p-4 lg:p-6" style={{ paddingTop: "1.5rem", height: "100vh" }}>
+              <RecruitingChatWrapper
+                ref={recruitChatRef}
+                userId={user?.id || ""}
+                isAdmin={isAdmin}
+                externalActiveId={recruitActiveId}
+                onConvsChange={handleRecruitConvsChange}
               />
             </div>
           ) : !selectedType ? (
@@ -274,7 +316,7 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl w-full items-stretch">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 max-w-6xl w-full items-stretch">
                 {enrichmentOptions.map((option, index) => (
                   <div
                     key={option.type}

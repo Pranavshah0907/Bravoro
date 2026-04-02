@@ -19,6 +19,7 @@ import {
   Users,
   Bot,
   Terminal,
+  UserSearch,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -51,6 +52,12 @@ interface AppSidebarProps {
   onDeleteAiConv?: (id: string) => void;
   onPinChange?: (pinned: boolean) => void;
   onSelectEnrichment?: (type: string) => void;
+  recruitConversations?: AiConv[];
+  recruitActiveId?: string;
+  onSelectRecruitConv?: (id: string) => void;
+  onNewRecruitChat?: () => void;
+  onRenameRecruitConv?: (id: string, newTitle: string) => void;
+  onDeleteRecruitConv?: (id: string) => void;
 }
 
 interface NavItem {
@@ -76,6 +83,12 @@ export const AppSidebar = ({
   onDeleteAiConv,
   onPinChange,
   onSelectEnrichment,
+  recruitConversations = [],
+  recruitActiveId,
+  onSelectRecruitConv,
+  onNewRecruitChat,
+  onRenameRecruitConv,
+  onDeleteRecruitConv,
 }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -89,7 +102,8 @@ export const AppSidebar = ({
   // Keep sidebar expanded while any dropdown is open — prevents mouseLeave collapse
   const isExpanded = isHovered || isPinned || anyDropdownOpen;
   const isAiStaffingActive = selectedType === "ai_staffing";
-  const showYourChats = isAiStaffingActive && isExpanded;
+  const isRecruitingActive = selectedType === "recruiting_chat";
+  const showYourChats = (isAiStaffingActive || isRecruitingActive) && isExpanded;
 
   const navItems: NavItem[] = [
     {
@@ -119,7 +133,13 @@ export const AppSidebar = ({
   const handleRenameCommit = (id: string) => {
     const trimmed = renameValue.trim();
     setRenamingId(null);
-    if (trimmed) onRenameAiConv?.(id, trimmed);
+    if (trimmed) {
+      if (selectedType === "recruiting_chat") {
+        onRenameRecruitConv?.(id, trimmed);
+      } else {
+        onRenameAiConv?.(id, trimmed);
+      }
+    }
   };
 
   const handleRenameKeyDown = (
@@ -265,6 +285,7 @@ export const AppSidebar = ({
               { type: "bulk", label: "Bulk Search", icon: Upload },
               { type: "people_enrichment", label: "Bulk People Enr.", icon: Users },
               { type: "ai_staffing", label: "AI Staffing", icon: Bot },
+              { type: "recruiting_chat", label: "Recruiting", icon: UserSearch },
             ].map(({ type, label, icon: Icon }) => {
               const isActive = selectedType === type;
               return (
@@ -315,14 +336,23 @@ export const AppSidebar = ({
         )}
 
         {/* Your Chats section */}
-        {showYourChats && (
+        {showYourChats && (() => {
+          const isRecruiting = selectedType === "recruiting_chat";
+          const activeConvs = isRecruiting ? recruitConversations : aiConversations;
+          const currentActiveId = isRecruiting ? recruitActiveId : aiActiveId;
+          const handleSelectConv = isRecruiting ? onSelectRecruitConv : onSelectAiConv;
+          const handleNewChat = isRecruiting ? onNewRecruitChat : onNewAiChat;
+          const handleRenameConvFn = isRecruiting ? onRenameRecruitConv : onRenameAiConv;
+          const handleDeleteConvFn = isRecruiting ? onDeleteRecruitConv : onDeleteAiConv;
+
+          return (
           <div className="flex flex-col gap-0.5 min-h-0 animate-fade-in overflow-hidden">
             <div className="flex items-center justify-between px-3 py-1.5 shrink-0">
               <span className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
                 Your Chats
               </span>
               <button
-                onClick={onNewAiChat}
+                onClick={handleNewChat}
                 className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 duration-150"
                 title="New chat"
               >
@@ -331,12 +361,12 @@ export const AppSidebar = ({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-0.5 pr-0.5">
-              {aiConversations.map((conv) => (
+              {activeConvs.map((conv) => (
                 <div
                   key={conv.id}
                   className={cn(
                     "group relative flex items-center rounded-lg duration-150",
-                    conv.id === aiActiveId
+                    conv.id === currentActiveId
                       ? "bg-primary/15 border border-primary/20"
                       : "border border-transparent hover:bg-muted/50"
                   )}
@@ -352,19 +382,19 @@ export const AppSidebar = ({
                     />
                   ) : (
                     <button
-                      onClick={() => onSelectAiConv?.(conv.id)}
+                      onClick={() => handleSelectConv?.(conv.id)}
                       className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 text-left"
                     >
                       <MessageSquare
                         className={cn(
                           "h-3 w-3 shrink-0",
-                          conv.id === aiActiveId ? "text-primary" : "text-muted-foreground"
+                          conv.id === currentActiveId ? "text-primary" : "text-muted-foreground"
                         )}
                       />
                       <span
                         className={cn(
                           "truncate text-xs",
-                          conv.id === aiActiveId
+                          conv.id === currentActiveId
                             ? "text-primary"
                             : "text-muted-foreground group-hover:text-foreground"
                         )}
@@ -386,7 +416,7 @@ export const AppSidebar = ({
                             "shrink-0 p-1 mr-1 rounded-md duration-150",
                             "text-muted-foreground hover:text-foreground hover:bg-muted/80",
                             "opacity-0 group-hover:opacity-100 focus:opacity-100",
-                            conv.id === aiActiveId && "opacity-100"
+                            conv.id === currentActiveId && "opacity-100"
                           )}
                         >
                           <MoreHorizontal className="h-3 w-3" />
@@ -406,7 +436,7 @@ export const AppSidebar = ({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="gap-2 cursor-pointer text-xs text-destructive focus:text-destructive"
-                          onSelect={() => onDeleteAiConv?.(conv.id)}
+                          onSelect={() => handleDeleteConvFn?.(conv.id)}
                         >
                           <Trash2 className="h-3 w-3" />
                           Delete
@@ -418,7 +448,8 @@ export const AppSidebar = ({
               ))}
             </div>
           </div>
-        )}
+          );
+        })()}
       </nav>
 
       {/* Bottom — User Avatar Menu */}
