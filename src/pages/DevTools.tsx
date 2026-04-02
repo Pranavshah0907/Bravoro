@@ -675,41 +675,41 @@ const DevTools = () => {
       <div className="flex-1 ml-0 md:ml-16 flex flex-col h-screen overflow-hidden pt-14 pb-20 md:pt-0 md:pb-0">
 
         {/* Header */}
-        <header className="shrink-0 flex items-center justify-between px-8 py-4 border-b border-border/30" style={{ background: "#060f10" }}>
+        <header className="shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 px-4 md:px-8 py-3 md:py-4 border-b border-border/30" style={{ background: "#060f10" }}>
           <div className="flex items-center gap-3">
             <Terminal className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-foreground tracking-tight">Developer Tools</span>
-            <img src={bravoroLogo} alt="Bravoro" className="ml-2 h-4 w-auto opacity-30" />
+            <img src={bravoroLogo} alt="Bravoro" className="ml-2 h-4 w-auto opacity-30 hidden md:block" />
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-none">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
               <Input
                 value={textFilter}
                 onChange={(e) => setTextFilter(e.target.value)}
-                placeholder="Filter by name or email..."
-                className="h-8 w-56 pl-8 text-xs bg-transparent border-border/40 focus:border-primary/50 placeholder:text-muted-foreground/50"
+                placeholder="Filter..."
+                className="h-8 w-full md:w-56 pl-8 text-xs bg-transparent border-border/40 focus:border-primary/50 placeholder:text-muted-foreground/50"
               />
             </div>
             {lastRefreshed && (
-              <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="hidden md:flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 {format(lastRefreshed, "hh:mm:ss a")}
               </span>
             )}
             <Button
               size="sm" variant="outline" onClick={fetchData} disabled={fetching}
-              className="h-8 text-xs border-border/40 hover:border-primary/40 hover:text-primary transition-colors"
+              className="h-8 text-xs border-border/40 hover:border-primary/40 hover:text-primary transition-colors shrink-0"
             >
               <RefreshCw className={cn("h-3 w-3 mr-1.5", fetching && "animate-spin")} />
-              Refresh
+              <span className="hidden md:inline">Refresh</span>
             </Button>
           </div>
         </header>
 
         {/* Main */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-[1200px] mx-auto space-y-6">
 
             {/* Status filter chips (horizontal) */}

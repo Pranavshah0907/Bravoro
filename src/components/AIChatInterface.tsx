@@ -516,7 +516,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
     return (
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border/30 shrink-0 bg-card/30 backdrop-blur-sm">
+        <div className="flex items-center justify-between gap-2 md:gap-3 px-3 md:px-5 py-3 md:py-4 border-b border-border/30 shrink-0 bg-card/30 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <img src={bravoroIcon} alt="Bravoro" className="h-9 w-9 object-contain shrink-0 self-center" />
             <div>
@@ -552,7 +552,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
                 ) : (
                   <ArrowUpFromLine className="h-3.5 w-3.5" />
                 )}
-                {syncing ? "Syncing..." : activeConv?.synced_search_id ? "Synced" : "Sync to Results"}
+                <span className="hidden md:inline">{syncing ? "Syncing..." : activeConv?.synced_search_id ? "Synced" : "Sync to Results"}</span>
               </Button>
             )}
             <img src={bravoroLogo} alt="Bravoro" className="h-5 w-auto shrink-0 self-center opacity-80" />
@@ -652,7 +652,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
 
             {/* Bottom input */}
             <div className="shrink-0 py-4 border-t border-border/30 bg-card/30 backdrop-blur-sm">
-              <div className="max-w-4xl mx-auto px-5">
+              <div className="max-w-4xl mx-auto px-3 md:px-5">
               {/* Selected contacts badge */}
               {selectedContacts.size > 0 && (
                 <div className="flex items-center gap-2 mb-2 px-1">

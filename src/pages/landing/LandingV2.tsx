@@ -71,14 +71,14 @@ const LandingV2 = () => {
       }}
     >
       {/* ── Navbar ── */}
-      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 40px", position: "relative", zIndex: 20 }}>
+      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "clamp(12px, 2vw, 20px) clamp(16px, 4vw, 40px)", position: "relative", zIndex: 20, flexWrap: "wrap", gap: "8px" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <span style={{ color: "#58dddd", fontSize: "22px", marginRight: "2px" }}>•</span>
           <img src={bravoroLogo} alt="Bravoro" style={{ height: "22px", width: "auto", filter: "brightness(1.05)" }} />
           <span style={{ color: "#58dddd", fontSize: "22px", marginLeft: "2px" }}>•</span>
         </div>
 
-        <ul className="landing-nav-pills" style={{ display: "flex", gap: "4px", listStyle: "none", margin: 0, padding: "4px 10px", background: "rgba(0,157,165,0.08)", border: "1px solid rgba(88,221,221,0.12)", borderRadius: "999px" }}>
+        <ul className="landing-nav-pills hidden md:flex" style={{ gap: "4px", listStyle: "none", margin: 0, padding: "4px 10px", background: "rgba(0,157,165,0.08)", border: "1px solid rgba(88,221,221,0.12)", borderRadius: "999px" }}>
           {NAV_LINKS.map((link) => (
             <li key={link.label}>
               <a href={link.href} className="landing-nav-link" style={{ display: "block", padding: "6px 14px", borderRadius: "999px", fontSize: "13px", fontWeight: 400, color: "rgba(197,216,215,0.75)", textDecoration: "none", letterSpacing: "0.01em" }}>
@@ -91,7 +91,7 @@ const LandingV2 = () => {
         <button
           onClick={() => setShowLogin(true)}
           className="landing-cta-nav"
-          style={{ background: "#009da5", color: "#fff", border: "none", borderRadius: "10px", padding: "9px 20px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 4px 20px rgba(0,157,165,0.35)", letterSpacing: "0.01em" }}
+          style={{ background: "#009da5", color: "#fff", border: "none", borderRadius: "10px", padding: "9px 20px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 4px 20px rgba(0,157,165,0.35)", letterSpacing: "0.01em", minHeight: "44px" }}
         >
           <LogIn size={13} />
           Login to Platform

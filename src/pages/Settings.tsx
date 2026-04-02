@@ -225,7 +225,7 @@ const Settings = () => {
             <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
           </div>
 
-          <div className="p-8 md:p-12 max-w-3xl mx-auto w-full">
+          <div className="p-4 md:p-12 max-w-3xl mx-auto w-full">
             <h1 className="text-2xl font-bold text-foreground tracking-tight mb-6">
               Settings
             </h1>
