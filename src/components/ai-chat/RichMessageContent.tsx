@@ -12,6 +12,8 @@ import {
   Calendar,
   Factory,
   ChevronDown,
+  Mail,
+  Phone,
 } from "lucide-react";
 import type {
   CompanyData,
@@ -294,6 +296,106 @@ function ContactGroup({
   );
 }
 
+/* ──────────────────────────────────────────────────────────────── */
+/*  Enriched Contact Card — full details for unlocked contacts      */
+/* ──────────────────────────────────────────────────────────────── */
+
+function EnrichedContactCard({ contact }: { contact: ContactData }) {
+  return (
+    <div className="px-3.5 py-3">
+      {/* Name + title row */}
+      <div className="flex items-start gap-2.5">
+        <div className="shrink-0 w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mt-0.5">
+          <User className="h-4 w-4 text-emerald-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-[13px] text-foreground">
+            {contact.fullName}
+          </div>
+          <div className="text-[11px] text-muted-foreground/70">
+            {contact.jobTitle}
+            {contact.companyName && (
+              <span className="text-muted-foreground/50"> · {contact.companyName}</span>
+            )}
+          </div>
+        </div>
+        {contact.source && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400/70 font-medium shrink-0">
+            {contact.source}
+          </span>
+        )}
+      </div>
+
+      {/* Contact details grid */}
+      <div className="mt-2 ml-[42px] space-y-1">
+        {contact.email && (
+          <a
+            href={`mailto:${contact.email}`}
+            className="flex items-center gap-2 text-[12px] text-foreground/80 hover:text-emerald-400 transition-colors group"
+          >
+            <Mail className="h-3 w-3 text-muted-foreground/50 group-hover:text-emerald-400 shrink-0" />
+            <span>{contact.email}</span>
+          </a>
+        )}
+        {contact.phone && contact.phone !== "Locked" && (
+          <a
+            href={`tel:${contact.phone}`}
+            className="flex items-center gap-2 text-[12px] text-foreground/80 hover:text-emerald-400 transition-colors group"
+          >
+            <Phone className="h-3 w-3 text-muted-foreground/50 group-hover:text-emerald-400 shrink-0" />
+            <span>{contact.phone}</span>
+          </a>
+        )}
+        {contact.linkedinUrl && (
+          <a
+            href={contact.linkedinUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-[12px] text-foreground/80 hover:text-[#0A66C2] transition-colors group"
+          >
+            <Linkedin className="h-3 w-3 text-muted-foreground/50 group-hover:text-[#0A66C2] shrink-0" />
+            <span className="truncate">{contact.linkedinUrl.replace(/^https?:\/\/(www\.)?/, "")}</span>
+          </a>
+        )}
+        {(contact.city || contact.country) && (
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground/60">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span>{[contact.city, contact.country].filter(Boolean).join(", ")}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EnrichedContactsPanel({ contacts }: { contacts: ContactData[] }) {
+  // Group by company
+  const byCompany = new Map<string, ContactData[]>();
+  for (const c of contacts) {
+    const key = c.companyName || c.companyDomain || "Other";
+    if (!byCompany.has(key)) byCompany.set(key, []);
+    byCompany.get(key)!.push(c);
+  }
+
+  return (
+    <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden divide-y divide-border/30">
+      {Array.from(byCompany.entries()).map(([company, groupContacts]) => (
+        <div key={company}>
+          <div className="px-3.5 py-2 bg-muted/20 flex items-center gap-2">
+            <Building2 className="h-3 w-3 text-emerald-400" />
+            <span className="text-[12px] font-semibold text-foreground/80">{company}</span>
+          </div>
+          <div className="divide-y divide-border/20">
+            {groupContacts.map((contact, i) => (
+              <EnrichedContactCard key={i} contact={contact} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Stable key for a contact (name + title + company) */
 export function contactKey(c: ContactData): string {
   return `${c.fullName}||${c.jobTitle}||${c.companyName || c.companyDomain}`;
@@ -328,16 +430,16 @@ export function RichMessageContent({
 
   const { intro, outro } = extractConversationalParts(content, true);
 
-  // Group contacts by company
-  const contactsByCompany = new Map<string, ContactData[]>();
-  if (hasContacts) {
-    for (const contact of data!.contacts) {
-      const key = contact.companyName || contact.companyDomain || "Other";
-      if (!contactsByCompany.has(key)) {
-        contactsByCompany.set(key, []);
-      }
-      contactsByCompany.get(key)!.push(contact);
-    }
+  // Split contacts into preview (locked) vs enriched (unlocked)
+  const previewContacts = data?.contacts?.filter((c) => c.previewOnly) ?? [];
+  const enrichedContacts = data?.contacts?.filter((c) => !c.previewOnly) ?? [];
+
+  // Group preview contacts by company for checkbox selection
+  const previewByCompany = new Map<string, ContactData[]>();
+  for (const contact of previewContacts) {
+    const key = contact.companyName || contact.companyDomain || "Other";
+    if (!previewByCompany.has(key)) previewByCompany.set(key, []);
+    previewByCompany.get(key)!.push(contact);
   }
 
   return (
@@ -350,13 +452,23 @@ export function RichMessageContent({
       {/* Companies — single tile with line separators */}
       {hasCompanies && <CompaniesPanel companies={data!.companies} />}
 
-      {/* Contact cards */}
-      {hasContacts && (
+      {/* Enriched (unlocked) contacts — full detail cards, no checkboxes */}
+      {enrichedContacts.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wider text-emerald-400/60 font-medium mt-1">
+            Unlocked Contacts
+          </div>
+          <EnrichedContactsPanel contacts={enrichedContacts} />
+        </div>
+      )}
+
+      {/* Preview contacts — with checkboxes for selection */}
+      {previewContacts.length > 0 && (
         <div className="space-y-2">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium mt-1">
             Contact Previews
           </div>
-          {Array.from(contactsByCompany.entries()).map(
+          {Array.from(previewByCompany.entries()).map(
             ([companyName, contacts]) => (
               <ContactGroup
                 key={companyName}
