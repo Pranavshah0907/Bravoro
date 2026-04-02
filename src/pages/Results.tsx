@@ -137,7 +137,10 @@ interface Contact {
   job_search_result?: JobSearchResultData;
   Provider?: string;
   People_Search_By?: string;
-  Credits_Used?: number;
+  CognismCreditsUsed?: number;
+  lushaCreditsUsed?: number;
+  aLeadscreditsUsed?: number;
+  apolloCreditsUsed?: number;
 }
 
 interface SearchResult {
@@ -788,24 +791,49 @@ const Results = () => {
     sectionHeading("Contact Details", cursorY);
     cursorY += 5;
 
+    // Cost-per-credit rates for per-contact cost calculation
+    const CONTACT_COST_RATES: Record<string, number> = {
+      cognism: 0.76,
+      apollo:  0.01975,
+      aleads:  0.00683,
+      lusha:   0.087416,
+    };
+
     const contactRows = allContacts.map(c => {
       const name = [c.First_Name, c.Last_Name].filter(Boolean).join(" ") || "—";
       const phones = [c.Phone_Number_1, c.Phone_Number_2].filter(p => p && String(p).trim());
-      const provider = (c.Provider || "").trim();
-      const phoneStr = phones.length
-        ? (provider ? `[${provider}]  ${phones.join("  ·  ")}` : phones.join("  ·  "))
-        : "—";
-      return [name, c.Organization || "—", c.Title || "—", phoneStr];
+      const phoneStr = phones.length ? phones.join("  ·  ") : "—";
+
+      // Build per-contact cost cell
+      const cognismCr = Number(c.CognismCreditsUsed) || 0;
+      const lushaCr   = Number(c.lushaCreditsUsed) || 0;
+      const aleadsCr  = Number(c.aLeadscreditsUsed) || 0;
+      const apolloCr  = Number(c.apolloCreditsUsed) || 0;
+      const contactCost =
+        cognismCr * CONTACT_COST_RATES.cognism +
+        lushaCr   * CONTACT_COST_RATES.lusha +
+        aleadsCr  * CONTACT_COST_RATES.aleads +
+        apolloCr  * CONTACT_COST_RATES.apollo;
+
+      const searchBy = (c.People_Search_By || "—").trim();
+      const enrichBy = (c.Provider || "—").trim();
+      const costLines = [
+        `Search: ${searchBy}`,
+        `Enrich: ${enrichBy}`,
+        `Cost: € ${contactCost.toFixed(2)}`,
+      ].join("\n");
+
+      return [name, c.Organization || "—", c.Title || "—", phoneStr, costLines];
     });
 
     autoTable(doc, {
       startY: cursorY,
-      head: [["Name", "Organisation", "Title", "Phone (Provider)"]],
+      head: [["Name", "Organisation", "Title", "Phone", "Cost"]],
       body: contactRows,
       margin: { left: ML, right: MR },
       styles: {
-        fontSize: 8,
-        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+        fontSize: 7.5,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
         textColor: C.text,
         lineColor: C.border,
         lineWidth: 0.15,
@@ -817,15 +845,16 @@ const Results = () => {
         fillColor: C.headerBg,
         textColor: [200, 230, 226] as [number,number,number],
         fontStyle: "bold",
-        fontSize: 8,
+        fontSize: 7.5,
         lineWidth: 0,
       },
       alternateRowStyles: { fillColor: C.rowAlt },
       columnStyles: {
-        0: { cellWidth: 38 },
-        1: { cellWidth: 42 },
-        2: { cellWidth: 52 },
-        3: { cellWidth: "auto" },
+        0: { cellWidth: 30 },
+        1: { cellWidth: 32 },
+        2: { cellWidth: 42 },
+        3: { cellWidth: 38 },
+        4: { cellWidth: 38 },
       },
     });
 

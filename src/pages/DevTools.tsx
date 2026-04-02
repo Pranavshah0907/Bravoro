@@ -280,7 +280,10 @@ const DevTools = () => {
     job_search_result?: { job_search_status: string; results: any[] };
     Provider?: string;
     People_Search_By?: string;
-    Credits_Used?: number;
+    CognismCreditsUsed?: number;
+    lushaCreditsUsed?: number;
+    aLeadscreditsUsed?: number;
+    apolloCreditsUsed?: number;
   }
 
   interface ResultRow {

@@ -18,10 +18,14 @@ interface Contact {
   LinkedIn: string;
   Phone_Number_1: string;
   Phone_Number_2: string;
-  // New fields from updated people enrichment platform
-  Provider?: string;
-  People_Search_By?: string;
-  Credits_Used?: number;
+  // Enrichment metadata
+  Provider?: string;           // Platform that enriched the contact
+  People_Search_By?: string;   // Platform that searched/found the contact
+  // Per-contact credit usage by platform
+  CognismCreditsUsed?: number;
+  lushaCreditsUsed?: number;
+  aLeadscreditsUsed?: number;
+  apolloCreditsUsed?: number;
 }
 
 interface Company {
@@ -33,13 +37,6 @@ interface Company {
 interface CreditCounter {
   contacts_count?: number;
   enriched_contacts_count?: number;
-  apollo_email_credits?: number;
-  apollo_phone_credits?: number;
-  apollo_total_credits?: number;
-  aleads_total_credits?: number;
-  lusha_total_credits?: number;
-  grand_total_credits?: number;
-  // New people enrichment flat format fields
   unique_contacts_count?: number;
   companies_count?: number;
   contacts_with_email?: number;
@@ -47,40 +44,35 @@ interface CreditCounter {
   contacts_with_direct_phone?: number;
   contacts_with_any_phone?: number;
   contacts_with_linkedin?: number;
+  // Per-platform contact counts
   cognism_contacts_count?: number;
   lusha_contacts_count?: number;
   aleads_contacts_count?: number;
+  apollo_contacts_count?: number;
   searched_by_cognism_count?: number;
   searched_by_apollo_count?: number;
+  // Per-platform total credits
   cognism_total_credits?: number;
-  // Old nested credits format (kept for backward compat with company enrichment)
-  credits?: {
-    cognism?: number;
-    lusha?: number;
-    aleads?: number;
-    apolloEmail?: number;
-    apolloPhone?: number;
-    theirstack?: number;
-    total?: number;
-  };
+  lusha_total_credits?: number;
+  aleads_total_credits?: number;
+  apollo_total_credits?: number;
+  theirstack_total_credits?: number;
+  grand_total_credits?: number;
 }
 
 // Missing company structure for bulk search (companies not found)
 interface MissingCompany {
-  organization_name: string;
-  domain: string | null;
+  sr_no?: number;
+  companyName: string;
+  companyDomain: string | null;
 }
 
 interface RequestBody {
   search_id: string;
   companies?: Company[];
-  missing_companies?: MissingCompany[]; // NEW: companies not found during bulk search
+  missing_companies?: MissingCompany[];
+  missing_companies_count?: number;
   credit_counter?: CreditCounter;
-  // Legacy fields (for backward compatibility)
-  apollo_credits?: number | string | null;
-  aleads_credits?: number | string | null;
-  lusha_credits?: number | string | null;
-  enriched_contacts?: number | string | null;
   // Fields for people enrichment
   missing_contacts?: Contact[];
   missing_contacts_count?: number;
@@ -106,15 +98,6 @@ function toInt(value: unknown): number {
     return Number.isFinite(n) ? Math.trunc(n) : 0;
   }
   return 0;
-}
-
-function pickFirst(obj: Record<string, unknown> | undefined, keys: string[]): unknown {
-  if (!obj) return undefined;
-  for (const k of keys) {
-    const v = obj[k];
-    if (v !== undefined && v !== null && v !== '') return v;
-  }
-  return undefined;
 }
 
 // Helper function to upsert contacts to master_contacts table
@@ -436,98 +419,20 @@ serve(async (req: Request) => {
     let theirstackCredits = 0;
     let enrichedContactsCount = 0;
     let contactsCount = 0;
-    let apolloEmailCredits = 0;
-    let apolloPhoneCredits = 0;
     let grandTotalCredits = 0;
 
     if (creditCounter) {
-      if (creditCounter.credits) {
-        // Nested format: credit_counter.credits.{ cognism, lusha, aleads, apolloEmail, apolloPhone, theirstack, total }
-        const c = creditCounter.credits;
-        apolloEmailCredits = toInt(c.apolloEmail);
-        apolloPhoneCredits = toInt(c.apolloPhone);
-        apolloCredits = apolloEmailCredits + apolloPhoneCredits;
-        aleadsCredits = toInt(c.aleads);
-        lushaCredits = toInt(c.lusha);
-        cognismCredits = toInt(c.cognism);
-        theirstackCredits = toInt(c.theirstack);
-        grandTotalCredits = toInt(c.total);
-        enrichedContactsCount = toInt(creditCounter.enriched_contacts_count);
-        contactsCount = toInt(creditCounter.contacts_count);
-        console.log(`[${requestId}] Using nested credit_counter.credits format`);
-      } else if ('cognism_total_credits' in creditCounter) {
-        // New people enrichment flat format: cognism_total_credits, lusha_total_credits, etc.
-        cognismCredits = toInt(creditCounter.cognism_total_credits);
-        lushaCredits = toInt(creditCounter.lusha_total_credits);
-        aleadsCredits = toInt(creditCounter.aleads_total_credits);
-        grandTotalCredits = toInt(creditCounter.grand_total_credits);
-        enrichedContactsCount = toInt(creditCounter.enriched_contacts_count);
-        contactsCount = toInt(creditCounter.contacts_count);
-        // apollo credits not tracked separately in this format
-        apolloCredits = 0;
-        apolloEmailCredits = 0;
-        apolloPhoneCredits = 0;
-        console.log(`[${requestId}] Using new people enrichment flat credit_counter format`);
-      } else {
-        // Legacy flat format: apollo_total_credits, aleads_total_credits, etc.
-        apolloCredits = toInt(creditCounter.apollo_total_credits);
-        aleadsCredits = toInt(creditCounter.aleads_total_credits);
-        lushaCredits = toInt(creditCounter.lusha_total_credits);
-        enrichedContactsCount = toInt(creditCounter.enriched_contacts_count);
-        contactsCount = toInt(creditCounter.contacts_count);
-        apolloEmailCredits = toInt(creditCounter.apollo_email_credits);
-        apolloPhoneCredits = toInt(creditCounter.apollo_phone_credits);
-        grandTotalCredits = toInt(creditCounter.grand_total_credits);
-        console.log(`[${requestId}] Using legacy flat credit_counter format`);
-      }
-
-      console.log(`[${requestId}] Using credit_counter format`);
+      cognismCredits = toInt(creditCounter.cognism_total_credits);
+      lushaCredits = toInt(creditCounter.lusha_total_credits);
+      aleadsCredits = toInt(creditCounter.aleads_total_credits);
+      apolloCredits = toInt(creditCounter.apollo_total_credits);
+      theirstackCredits = toInt(creditCounter.theirstack_total_credits);
+      grandTotalCredits = toInt(creditCounter.grand_total_credits);
+      enrichedContactsCount = toInt(creditCounter.enriched_contacts_count);
+      contactsCount = toInt(creditCounter.contacts_count);
+      console.log(`[${requestId}] Parsed credit_counter — cognism: ${cognismCredits}, lusha: ${lushaCredits}, aleads: ${aleadsCredits}, apollo: ${apolloCredits}, theirstack: ${theirstackCredits}, grand: ${grandTotalCredits}`);
     } else {
-      // Legacy format: individual fields at root level or nested in credits object
-      const creditsObj = (bodyAny?.credits && typeof bodyAny.credits === 'object')
-        ? (bodyAny.credits as Record<string, unknown>)
-        : undefined;
-
-      const apolloRaw = pickFirst(bodyAny, [
-        'apollo_credits',
-        'apolloCredits',
-        'apollo',
-        'credits[apollo_credits]',
-        'credits[apolloCredits]',
-        'credits[apollo]',
-      ]) ?? pickFirst(creditsObj, ['apollo_credits', 'apolloCredits', 'apollo']);
-
-      const aleadsRaw = pickFirst(bodyAny, [
-        'aleads_credits',
-        'aleadsCredits',
-        'aleads',
-        'credits[aleads_credits]',
-        'credits[aleadsCredits]',
-        'credits[aleads]',
-      ]) ?? pickFirst(creditsObj, ['aleads_credits', 'aleadsCredits', 'aleads']);
-
-      const lushaRaw = pickFirst(bodyAny, [
-        'lusha_credits',
-        'lushaCredits',
-        'lusha',
-        'credits[lusha_credits]',
-        'credits[lushaCredits]',
-        'credits[lusha]',
-      ]) ?? pickFirst(creditsObj, ['lusha_credits', 'lushaCredits', 'lusha']);
-
-      const enrichedContactsRaw = pickFirst(bodyAny, [
-        'enriched_contacts',
-        'enrichedContacts',
-        'enriched_count',
-        'enrichedCount',
-      ]);
-
-      apolloCredits = toInt(apolloRaw);
-      aleadsCredits = toInt(aleadsRaw);
-      lushaCredits = toInt(lushaRaw);
-      enrichedContactsCount = toInt(enrichedContactsRaw);
-      
-      console.log(`[${requestId}] Using legacy credit format`);
+      console.log(`[${requestId}] No credit_counter in payload`);
     }
 
     console.log(`[${requestId}] Received request for search_id:`, search_id);
@@ -536,9 +441,7 @@ serve(async (req: Request) => {
     console.log(`[${requestId}] Missing contacts data count:`, missingContactsData.length);
     console.log(`[${requestId}] Body keys:`, Object.keys(bodyAny));
     console.log(`[${requestId}] Credits - Apollo: ${apolloCredits}, A-Leads: ${aleadsCredits}, Lusha: ${lushaCredits}, Cognism: ${cognismCredits}, Theirstack: ${theirstackCredits}`);
-    console.log(`[${requestId}] Additional fields - contacts_count: ${contactsCount}, enriched_contacts_count: ${enrichedContactsCount}`);
-    console.log(`[${requestId}] Apollo breakdown - email: ${apolloEmailCredits}, phone: ${apolloPhoneCredits}`);
-    console.log(`[${requestId}] Grand total credits: ${grandTotalCredits}`);
+    console.log(`[${requestId}] contacts_count: ${contactsCount}, enriched_contacts_count: ${enrichedContactsCount}, grand_total: ${grandTotalCredits}`);
 
     // Validate required fields
     if (!search_id) {
@@ -759,8 +662,8 @@ serve(async (req: Request) => {
             .from('search_results')
             .insert({
               search_id,
-              company_name: mc.organization_name || 'Unknown',
-              domain: mc.domain || null,
+              company_name: mc.companyName || 'Unknown',
+              domain: mc.companyDomain || null,
               contact_data: [],
               result_type: 'missing_company'
             });
@@ -867,7 +770,7 @@ serve(async (req: Request) => {
 
       const { data: existingCredit, error: existingError } = await supabase
         .from('credit_usage')
-        .select('id, apollo_credits, aleads_credits, lusha_credits, cognism_credits, theirstack_credits, contacts_count, enriched_contacts_count, apollo_email_credits, apollo_phone_credits, grand_total_credits')
+        .select('id, apollo_credits, aleads_credits, lusha_credits, cognism_credits, theirstack_credits, contacts_count, enriched_contacts_count, grand_total_credits')
         .eq('user_id', searchData.user_id)
         .eq('search_id', search_id)
         .order('created_at', { ascending: false })
@@ -886,8 +789,6 @@ serve(async (req: Request) => {
       const nextTheirstack = Math.max(existingCredit?.theirstack_credits ?? 0, theirstackCredits);
       const nextContactsCount = Math.max(existingCredit?.contacts_count ?? 0, contactsCount);
       const nextEnrichedContactsCount = Math.max(existingCredit?.enriched_contacts_count ?? 0, enrichedContactsCount);
-      const nextApolloEmailCredits = Math.max(existingCredit?.apollo_email_credits ?? 0, apolloEmailCredits);
-      const nextApolloPhoneCredits = Math.max(existingCredit?.apollo_phone_credits ?? 0, apolloPhoneCredits);
       const nextGrandTotalCredits = Math.max(existingCredit?.grand_total_credits ?? 0, grandTotalCredits);
 
       if (existingCredit?.id) {
@@ -901,8 +802,6 @@ serve(async (req: Request) => {
             theirstack_credits: nextTheirstack,
             contacts_count: nextContactsCount,
             enriched_contacts_count: nextEnrichedContactsCount,
-            apollo_email_credits: nextApolloEmailCredits,
-            apollo_phone_credits: nextApolloPhoneCredits,
             grand_total_credits: nextGrandTotalCredits,
             updated_at: new Date().toISOString(),
           })
@@ -926,8 +825,6 @@ serve(async (req: Request) => {
             theirstack_credits: nextTheirstack,
             contacts_count: nextContactsCount,
             enriched_contacts_count: nextEnrichedContactsCount,
-            apollo_email_credits: nextApolloEmailCredits,
-            apollo_phone_credits: nextApolloPhoneCredits,
             grand_total_credits: nextGrandTotalCredits,
           });
 
