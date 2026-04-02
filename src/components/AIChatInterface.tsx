@@ -354,6 +354,24 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
           if (hasRealCredits) replyMetadata.credits = parsed.credits!;
         }
 
+        // Track credits in analytics (fire-and-forget — don't block chat)
+        if (hasRealCredits) {
+          supabase
+            .from("credit_usage")
+            .insert({
+              user_id: userId,
+              cognism_credits: parsed.credits!.cognism ?? 0,
+              apollo_credits: parsed.credits!.apollo ?? 0,
+              aleads_credits: parsed.credits!.aleads ?? 0,
+              lusha_credits: parsed.credits!.lusha ?? 0,
+              theirstack_credits: parsed.credits!.theirstack ?? 0,
+              grand_total_credits: parsed.credits!.total ?? 0,
+            })
+            .then(({ error }) => {
+              if (error) console.error("[AIChatInterface] credit_usage insert failed:", error);
+            });
+        }
+
         // Auto-rename conversation from chatName
         if (parsed.chatName) {
           await handleRenameConv(activeId, parsed.chatName);
