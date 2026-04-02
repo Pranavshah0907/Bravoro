@@ -46,6 +46,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 interface MasterContact {
@@ -362,8 +364,10 @@ const UserDatabase = () => {
         onSignOut={handleSignOut}
         onHomeClick={handleHomeClick}
       />
+      <MobileHeader />
+      <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} />
 
-      <main className="flex-1 p-6 ml-16 relative z-10">
+      <main className="flex-1 p-6 ml-0 md:ml-16 relative z-10 pt-14 pb-20 md:pt-0 md:pb-0">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>

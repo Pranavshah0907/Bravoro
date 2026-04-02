@@ -23,6 +23,8 @@ import {
 import MasterDatabaseTab from "@/components/MasterDatabaseTab";
 import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, endOfDay, startOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
@@ -561,26 +563,25 @@ const Admin = () => {
         },
       });
 
-      if (createError) throw new Error(createError.message || "Failed to create user");
+      // supabase.functions.invoke sets createError for non-2xx but data still has response body
+      const errorMsg = data?.error || (createError?.message !== "Edge Function returned a non-2xx status code" ? createError?.message : null);
 
-      if (!data?.success) {
-        if (data?.error) {
-          if (data.error.includes("already been registered")) {
+      if (createError || !data?.success) {
+        if (errorMsg) {
+          if (errorMsg.includes("already been registered")) {
             throw new Error("This email address is already registered. Please use a different email or contact support if you believe this is an error.");
-          } else if (data.error.includes("welcome email")) {
-            toast({ title: "User Created with Warning", description: `User ${newUserEmail} was created but the welcome email failed to send.`, variant: "default" });
-            setNewUserEmail(""); setNewUserFullName(""); setNewUserTempPassword("");
-            setNewUserRole("user"); setNewUserEnrichmentLimit(0); setNewUserWorkspaceId(INDEPENDENT_USER_VALUE);
-            setCreateUserDialogOpen(false);
-            loadUsers();
-            return;
           }
-          throw new Error(data.error);
+          throw new Error(errorMsg);
         }
         throw new Error("Failed to create user");
       }
 
-      toast({ title: "User Created Successfully", description: data.message || `User ${newUserEmail} has been created and welcome email sent` });
+      // User created — check if email had issues
+      if (data.emailError) {
+        toast({ title: "User Created with Warning", description: `User ${newUserEmail} was created but the welcome email failed to send. Please share credentials manually.`, variant: "default" });
+      } else {
+        toast({ title: "User Created Successfully", description: data.message || `User ${newUserEmail} has been created and welcome email sent` });
+      }
       setNewUserEmail(""); setNewUserFullName(""); setNewUserTempPassword("");
       setNewUserRole("user"); setNewUserEnrichmentLimit(0); setNewUserWorkspaceId(INDEPENDENT_USER_VALUE);
       setCreateUserDialogOpen(false);
@@ -714,9 +715,11 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background flex overflow-hidden">
       <AppSidebar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} onSignOut={handleSignOut} />
+      <MobileHeader />
+      <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} />
 
       {/* ── Two-pane layout ── */}
-      <div className="flex-1 ml-16 flex h-screen overflow-hidden">
+      <div className="flex-1 ml-0 md:ml-16 flex h-screen overflow-hidden pt-14 pb-20 md:pt-0 md:pb-0">
 
         {/* ────────────────── LEFT TREE PANE ────────────────── */}
         <aside

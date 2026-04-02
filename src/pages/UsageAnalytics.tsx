@@ -11,6 +11,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis
 import { toast } from "sonner";
 import { format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from "date-fns";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 
@@ -397,10 +399,12 @@ const UsageAnalytics = () => {
   return (
     <div className="min-h-screen bg-background flex">
       <AppSidebar isAdmin={isAdmin} isDeveloper={isDeveloper} onSignOut={handleSignOut} />
+      <MobileHeader />
+      <MobileTabBar isAdmin={isAdmin} isDeveloper={isDeveloper} />
 
-      <main className="flex-1 ml-16 min-h-screen">
+      <main className="flex-1 ml-0 md:ml-16 min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
         {/* Background Effects — same as Dashboard */}
-        <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
+        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
           <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-25" style={{
             background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
             filter: "blur(60px)",

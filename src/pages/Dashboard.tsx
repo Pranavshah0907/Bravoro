@@ -12,6 +12,8 @@ import type { ChatHandle, ConversationMeta } from "@/components/chat/chatTypes";
 import type { ChatHandle as RecruitingChatHandle } from "@/components/chat/chatTypes";
 import { PasswordReset } from "@/components/PasswordReset";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { EnrichmentCard } from "@/components/EnrichmentCard";
 import { Search, Upload, Users, Bot, UserSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -242,15 +244,24 @@ const Dashboard = () => {
         onDeleteRecruitConv={handleDeleteRecruitConv}
       />
 
+      {/* Mobile navigation */}
+      <MobileHeader />
+      <MobileTabBar
+        isAdmin={isAdmin}
+        isDeveloper={user?.email === "pranavshah0907@gmail.com"}
+      />
+
       {/* Main Content */}
       <main className={cn(
         "flex-1 min-w-0 min-h-screen duration-300 ease-out",
-        isSidebarPinned ? "ml-56" : "ml-16"
+        "ml-0 pt-14 pb-20 md:pt-0 md:pb-0 md:ml-16",
+        isSidebarPinned && "md:ml-56"
       )}>
         {/* Background Effects — atmospheric black + teal */}
         <div className={cn(
           "fixed inset-0 pointer-events-none overflow-hidden duration-300 ease-out",
-          isSidebarPinned ? "ml-56" : "ml-16"
+          "ml-0 md:ml-16",
+          isSidebarPinned && "md:ml-56"
         )}>
           {/* Top-center teal corona */}
           <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-30" style={{

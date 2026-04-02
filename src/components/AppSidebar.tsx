@@ -208,7 +208,7 @@ export const AppSidebar = ({
         "fixed left-0 top-0 h-screen z-50",
         "bg-sidebar-background/95 backdrop-blur-xl",
         "border-r border-sidebar-border/50",
-        "flex flex-col",
+        "hidden md:flex flex-col",
         "duration-300 ease-out",
         isExpanded ? "w-56" : "w-16"
       )}

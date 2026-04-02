@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User as UserIcon, Lock, BarChart3, Loader2 } from "lucide-react";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 const DEVELOPER_EMAIL = "pranavshah0907@gmail.com";
@@ -196,10 +198,12 @@ const Settings = () => {
         isDeveloper={user?.email === DEVELOPER_EMAIL}
         onSignOut={handleSignOut}
       />
+      <MobileHeader />
+      <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === DEVELOPER_EMAIL} />
 
-      <div className="flex-1 ml-16 overflow-y-auto min-h-screen">
+      <div className="flex-1 ml-0 md:ml-16 overflow-y-auto min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
         {/* Background Effects — same as Dashboard */}
-        <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
+        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
           {/* Top-center teal corona */}
           <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-25" style={{
             background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",

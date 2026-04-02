@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -667,8 +669,10 @@ const DevTools = () => {
   return (
     <div className="min-h-screen bg-background flex overflow-hidden">
       <AppSidebar isAdmin={isAdmin} isDeveloper onSignOut={handleSignOut} />
+      <MobileHeader />
+      <MobileTabBar isAdmin={isAdmin} isDeveloper />
 
-      <div className="flex-1 ml-16 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 ml-0 md:ml-16 flex flex-col h-screen overflow-hidden pt-14 pb-20 md:pt-0 md:pb-0">
 
         {/* Header */}
         <header className="shrink-0 flex items-center justify-between px-8 py-4 border-b border-border/30" style={{ background: "#060f10" }}>

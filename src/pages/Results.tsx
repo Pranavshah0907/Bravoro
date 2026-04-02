@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
@@ -1886,10 +1888,12 @@ const Results = () => {
   return (
     <div className="min-h-screen bg-background flex">
       <AppSidebar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} onSignOut={handleSignOut} />
+      <MobileHeader />
+      <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} />
 
-      <main className="flex-1 ml-16 min-h-screen">
+      <main className="flex-1 ml-0 md:ml-16 min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
         {/* Background Effects */}
-        <div className="fixed inset-0 ml-16 pointer-events-none overflow-hidden">
+        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
           <div 
             className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
             style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)" }}
