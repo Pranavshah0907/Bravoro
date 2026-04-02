@@ -403,6 +403,93 @@ export function contactKey(c: ContactData): string {
 }
 
 /* ──────────────────────────────────────────────────────────────── */
+/*  Collapsible Section Header                                       */
+/* ──────────────────────────────────────────────────────────────── */
+
+function CollapsibleSection({
+  title,
+  trailing,
+  children,
+}: {
+  title: string;
+  trailing?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 w-full text-left group mt-1"
+      >
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-muted-foreground/60 transition-transform duration-200 ${
+            open ? "rotate-0" : "-rotate-90"
+          }`}
+        />
+        <span className="text-sm font-semibold text-foreground">
+          {title}
+        </span>
+        {trailing && (
+          <span className="ml-auto" onClick={(e) => e.stopPropagation()}>
+            {trailing}
+          </span>
+        )}
+      </button>
+      {open && <div className="space-y-2">{children}</div>}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  Select All Button (for Contact Previews header)                  */
+/* ──────────────────────────────────────────────────────────────── */
+
+function SelectAllButton({
+  contacts,
+  selectedKeys,
+  onToggle,
+}: {
+  contacts: ContactData[];
+  selectedKeys?: Set<string>;
+  onToggle: (contact: ContactData, key: string) => void;
+}) {
+  const allKeys = contacts.map((c) => contactKey(c));
+  const allSelected = selectedKeys ? allKeys.every((k) => selectedKeys.has(k)) : false;
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        contacts.forEach((c) => {
+          const k = contactKey(c);
+          // If all selected → deselect all; otherwise → select unselected
+          if (allSelected || !selectedKeys?.has(k)) onToggle(c, k);
+        });
+      }}
+      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <span
+        className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${
+          allSelected
+            ? "bg-emerald-500 border-emerald-500"
+            : "border-border/60 hover:border-emerald-400/60"
+        }`}
+      >
+        {allSelected && (
+          <svg className="w-2 h-2 text-white" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+      Select All
+    </button>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────── */
 /*  Main Rich Message Content                                       */
 /* ──────────────────────────────────────────────────────────────── */
 
@@ -455,20 +542,25 @@ export function RichMessageContent({
 
       {/* Enriched (unlocked) contacts — full detail cards, no checkboxes */}
       {enrichedContacts.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-emerald-400/60 font-medium mt-1">
-            Unlocked Contacts
-          </div>
+        <CollapsibleSection title={`Unlocked Contacts (${enrichedContacts.length})`}>
           <EnrichedContactsPanel contacts={enrichedContacts} />
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Preview contacts — with checkboxes for selection */}
       {previewContacts.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium mt-1">
-            Contact Previews
-          </div>
+        <CollapsibleSection
+          title={`Contact Previews (${previewContacts.length})`}
+          trailing={
+            onToggleContact ? (
+              <SelectAllButton
+                contacts={previewContacts}
+                selectedKeys={selectedContactKeys}
+                onToggle={onToggleContact}
+              />
+            ) : undefined
+          }
+        >
           {Array.from(previewByCompany.entries()).map(
             ([companyName, contacts]) => (
               <ContactGroup
@@ -480,7 +572,7 @@ export function RichMessageContent({
               />
             )
           )}
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Outro text */}

@@ -105,9 +105,9 @@ export function extractConversationalParts(
   }
 
   // Find where structured listing begins
-  // Patterns: "\n\n1. ", "\nCompanies\n", "Contact previews\n"
+  // Patterns: "\n\n1. ", "\nCompanies\n", "Contact previews\n", "\n- Name," (bullet contact lists)
   const structuredStartIdx = text.search(
-    /\n(?:\d+\.\s|Companies\s*\n|Contact previews\s*\n)/
+    /\n(?:\d+\.\s|- \S|Companies\s*\n|Contact previews\s*\n)/
   );
 
   const intro =
