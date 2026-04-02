@@ -342,11 +342,16 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
         const parsed = parseN8nResponse(item);
         replyContent = parsed.cleanText || replyContent;
 
-        // Build metadata if we have structured data or credits
-        if (parsed.structuredData || parsed.credits) {
+        // Build metadata if we have meaningful structured data or non-zero credits
+        const hasRealData = parsed.structuredData &&
+          ((parsed.structuredData.companies?.length ?? 0) > 0 ||
+           (parsed.structuredData.contacts?.length ?? 0) > 0);
+        const hasRealCredits = parsed.credits && (parsed.credits.total ?? 0) > 0;
+
+        if (hasRealData || hasRealCredits) {
           replyMetadata = {};
-          if (parsed.structuredData) replyMetadata.data = parsed.structuredData;
-          if (parsed.credits) replyMetadata.credits = parsed.credits;
+          if (hasRealData) replyMetadata.data = parsed.structuredData!;
+          if (hasRealCredits) replyMetadata.credits = parsed.credits!;
         }
 
         // Auto-rename conversation from chatName
@@ -475,7 +480,8 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
               ) : (
                 activeMessages.map((msg) => {
                   const msgMeta = msg.metadata as MessageMetadata | null | undefined;
-                  const hasRichContent = msg.role === "assistant" && msgMeta?.data;
+                  const hasRichContent = msg.role === "assistant" && msgMeta?.data &&
+                    ((msgMeta.data.companies?.length ?? 0) > 0 || (msgMeta.data.contacts?.length ?? 0) > 0);
 
                   return (
                     <div key={msg.id} className="animate-fade-in">

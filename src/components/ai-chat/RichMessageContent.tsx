@@ -23,6 +23,7 @@ import type {
   MessageMetadata,
 } from "./types";
 import { extractConversationalParts } from "./parseMessage";
+import { FormattedText } from "./FormattedText";
 
 /* ──────────────────────────────────────────────────────────────── */
 /*  Credits Line (admin-only, outside the bubble)                  */
@@ -423,9 +424,9 @@ export function RichMessageContent({
   const hasContacts = (data?.contacts?.length ?? 0) > 0;
   const hasStructuredData = hasCompanies || hasContacts;
 
-  // If no structured data, fall through to FormattedText (handled by caller)
+  // If no structured data, use FormattedText for smart text formatting
   if (!hasStructuredData) {
-    return <span className="whitespace-pre-wrap">{content}</span>;
+    return <FormattedText text={content} />;
   }
 
   const { intro, outro } = extractConversationalParts(content, true);
