@@ -115,10 +115,10 @@ export function extractConversationalParts(
       ? text.slice(0, structuredStartIdx).trim()
       : text.trim();
 
-  // Find outro — the last paragraph(s) after structured content
-  // that starts with a conversational pattern
+  // Find outro — text after the last structured block (bullets/numbered items).
+  // Look for a blank line after the last bullet/numbered line, then grab everything after it.
   const outroMatch = text.match(
-    /\n\n((?:If you|Pick |Would you|Say |I also|Do you|Let me know|I couldn't|No |Unfortunately|I checked|Note:)[\s\S]*?)$/i
+    /(?:^|\n)(?:- .+|\d+\..+)\n\n((?!- |\d+\.)[\s\S]+?)$/
   );
   const outro = outroMatch ? outroMatch[1].trim() : "";
 
