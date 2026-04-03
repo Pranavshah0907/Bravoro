@@ -251,8 +251,8 @@ export const AppSidebar = ({
         </button>
       </div>
 
-      {/* Navigation — top section (non-scrollable) */}
-      <div className="shrink-0 flex flex-col p-2 pt-2 gap-1">
+      {/* Scrollable middle section — nav + tools + chats all scroll together */}
+      <nav className="flex-1 flex flex-col p-2 pt-2 gap-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
         {navItems.map((item, index) => renderNavItem(item, index))}
 
         {/* Divider */}
@@ -321,38 +321,38 @@ export const AppSidebar = ({
           </div>
         )}
 
-      </div>
+        {/* Divider before chats */}
+        {onSelectEnrichment && showYourChats && (
+          <div className={cn("my-1 border-t border-sidebar-border/40", isExpanded ? "mx-2" : "mx-1")} />
+        )}
 
-      {/* Your Chats section — scrollable, takes remaining space */}
-      {showYourChats && (() => {
-        const isRecruiting = selectedType === "recruiting_chat";
-        const activeConvs = isRecruiting ? recruitConversations : aiConversations;
-        const currentActiveId = isRecruiting ? recruitActiveId : aiActiveId;
-        const handleSelectConv = isRecruiting ? onSelectRecruitConv : onSelectAiConv;
-        const handleNewChat = isRecruiting ? onNewRecruitChat : onNewAiChat;
-        const handleRenameConvFn = isRecruiting ? onRenameRecruitConv : onRenameAiConv;
-        const handleDeleteConvFn = isRecruiting ? onDeleteRecruitConv : onDeleteAiConv;
+        {/* Your Chats section */}
+        {showYourChats && (() => {
+          const isRecruiting = selectedType === "recruiting_chat";
+          const activeConvs = isRecruiting ? recruitConversations : aiConversations;
+          const currentActiveId = isRecruiting ? recruitActiveId : aiActiveId;
+          const handleSelectConv = isRecruiting ? onSelectRecruitConv : onSelectAiConv;
+          const handleNewChat = isRecruiting ? onNewRecruitChat : onNewAiChat;
+          const handleRenameConvFn = isRecruiting ? onRenameRecruitConv : onRenameAiConv;
+          const handleDeleteConvFn = isRecruiting ? onDeleteRecruitConv : onDeleteAiConv;
 
-        return (
-          <div className="flex-1 flex flex-col min-h-0 px-2 animate-fade-in">
-            {/* Divider */}
-            <div className={cn("mb-1 border-t border-sidebar-border/40", isExpanded ? "mx-2" : "mx-1")} />
+          return (
+            <div className="flex flex-col gap-0.5 animate-fade-in">
+              <div className="flex items-center justify-between px-3 py-1.5 shrink-0">
+                <span className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
+                  Your Chats
+                </span>
+                <button
+                  onClick={handleNewChat}
+                  className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 duration-150"
+                  title="New chat"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
 
-            <div className="flex items-center justify-between px-3 py-1.5 shrink-0">
-              <span className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
-                Your Chats
-              </span>
-              <button
-                onClick={handleNewChat}
-                className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 duration-150"
-                title="New chat"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-0.5 pr-0.5" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
-              {activeConvs.map((conv) => (
+              <div className="space-y-0.5">
+                {activeConvs.map((conv) => (
                 <div
                   key={conv.id}
                   className={cn(
@@ -437,10 +437,11 @@ export const AppSidebar = ({
                   )}
                 </div>
               ))}
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
+      </nav>
 
       {/* Bottom — User Avatar Menu */}
       <div className="p-2 border-t border-sidebar-border/50">
