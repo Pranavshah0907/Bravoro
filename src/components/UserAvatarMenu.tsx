@@ -7,12 +7,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, Settings, ChevronUp } from "lucide-react";
+import { LogOut, Settings, Shield, Terminal, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UserAvatarMenuProps {
   isExpanded: boolean;
   onSignOut: () => void;
+  isAdmin?: boolean;
+  isDeveloper?: boolean;
 }
 
 interface UserProfile {
@@ -47,7 +49,7 @@ function getDisplayName(profile: UserProfile): string {
   return email;
 }
 
-export function UserAvatarMenu({ isExpanded, onSignOut }: UserAvatarMenuProps) {
+export function UserAvatarMenu({ isExpanded, onSignOut, isAdmin = false, isDeveloper = false }: UserAvatarMenuProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
@@ -157,6 +159,30 @@ export function UserAvatarMenu({ isExpanded, onSignOut }: UserAvatarMenuProps) {
 
         {/* Menu items */}
         <div className="p-1.5">
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/admin");
+              }}
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+            >
+              <Shield className="h-4 w-4 text-sidebar-foreground/60" />
+              Admin
+            </button>
+          )}
+          {isDeveloper && (
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/dev-tools");
+              }}
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+            >
+              <Terminal className="h-4 w-4 text-sidebar-foreground/60" />
+              Dev Tools
+            </button>
+          )}
           <button
             onClick={() => {
               setOpen(false);

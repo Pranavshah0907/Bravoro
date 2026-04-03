@@ -4,7 +4,6 @@ import {
   Home,
   BarChart3,
   FileText,
-  Shield,
   ChevronRight,
   Database,
   Plus,
@@ -18,7 +17,6 @@ import {
   Upload,
   Users,
   Bot,
-  Terminal,
   UserSearch,
 } from "lucide-react";
 import {
@@ -65,8 +63,6 @@ interface NavItem {
   label: string;
   path?: string;
   onClick?: () => void;
-  adminOnly?: boolean;
-  developerOnly?: boolean;
 }
 
 export const AppSidebar = ({
@@ -114,8 +110,6 @@ export const AppSidebar = ({
     { icon: BarChart3, label: "Analytics", path: "/analytics" },
     { icon: FileText, label: "Results", path: "/results" },
     { icon: Database, label: "Database", path: "/database" },
-    { icon: Shield, label: "Admin", path: "/admin", adminOnly: true },
-    { icon: Terminal, label: "Dev Tools", path: "/dev-tools", developerOnly: true },
   ];
 
   const togglePin = () => {
@@ -151,9 +145,6 @@ export const AppSidebar = ({
   };
 
   const renderNavItem = (item: NavItem, index: number) => {
-    if (item.adminOnly && !isAdmin) return null;
-    if (item.developerOnly && !isDeveloper) return null;
-
     const isActive = item.path ? location.pathname === item.path : false;
     const Icon = item.icon;
 
@@ -260,8 +251,8 @@ export const AppSidebar = ({
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 flex flex-col p-2 pt-2 gap-1 min-h-0 overflow-hidden">
+      {/* Navigation — scrollable so chats don't push content below viewport */}
+      <nav className="flex-1 flex flex-col p-2 pt-2 gap-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
         {navItems.map((item, index) => renderNavItem(item, index))}
 
         {/* Divider */}
@@ -454,7 +445,7 @@ export const AppSidebar = ({
 
       {/* Bottom — User Avatar Menu */}
       <div className="p-2 border-t border-sidebar-border/50">
-        <UserAvatarMenu isExpanded={isExpanded} onSignOut={onSignOut} />
+        <UserAvatarMenu isExpanded={isExpanded} onSignOut={onSignOut} isAdmin={isAdmin} isDeveloper={isDeveloper} />
       </div>
 
       {/* Expand indicator */}
