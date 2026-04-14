@@ -960,24 +960,20 @@ const DevTools = () => {
                                       </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-48" style={{ background: "#0c1d1d", border: "1px solid rgba(255,255,255,0.1)" }}>
-                                      {item.result_count > 0 && (
-                                        <>
-                                          <DropdownMenuItem
-                                            onClick={() => handleExportExcel(item)}
-                                            className="text-xs gap-2 cursor-pointer"
-                                          >
-                                            <Download className="h-3.5 w-3.5" />
-                                            Export Excel
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() => handleExportPDF(item)}
-                                            className="text-xs gap-2 cursor-pointer"
-                                          >
-                                            <FileText className="h-3.5 w-3.5" />
-                                            Download Report
-                                          </DropdownMenuItem>
-                                        </>
-                                      )}
+                                      <DropdownMenuItem
+                                        onClick={() => handleExportExcel(item)}
+                                        className="text-xs gap-2 cursor-pointer"
+                                      >
+                                        <Download className="h-3.5 w-3.5" />
+                                        Export Excel
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleExportPDF(item)}
+                                        className="text-xs gap-2 cursor-pointer"
+                                      >
+                                        <FileText className="h-3.5 w-3.5" />
+                                        Download Report
+                                      </DropdownMenuItem>
                                       {(ds === "processing" || ds === "stuck") && (
                                         <DropdownMenuItem
                                           onClick={() => setStopTarget({ searchId: item.search_id, label: item.user_email || item.search_id.slice(0, 8) })}
