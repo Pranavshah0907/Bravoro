@@ -1,5 +1,17 @@
 import type { StructuredData, Credits } from "./types";
 
+/** Map recruiting agent's "candidates" key → standard "contacts" key */
+function normalizeCandidates(data: StructuredData | null): void {
+  if (!data) return;
+  const raw = data as Record<string, unknown>;
+  if (Array.isArray(raw.candidates) && raw.candidates.length > 0) {
+    if (!Array.isArray(data.contacts) || data.contacts.length === 0) {
+      data.contacts = raw.candidates as StructuredData["contacts"];
+    }
+    delete raw.candidates;
+  }
+}
+
 /**
  * Parse the n8n response item to extract clean text, structured data, credits, and chatName.
  *
@@ -12,6 +24,7 @@ export function parseN8nResponse(item: Record<string, unknown>): {
   structuredData: StructuredData | null;
   credits: Credits | null;
   chatName: string | null;
+  apiCost: number | null;
 } {
   // 1. Get the text to display (prefer `text`, fall back to `output`)
   const hasTextField = typeof item?.text === "string" && item.text.trim() !== "";
@@ -37,6 +50,8 @@ export function parseN8nResponse(item: Record<string, unknown>): {
     if (lastMatch) {
       try {
         structuredData = JSON.parse(lastMatch[1]) as StructuredData;
+        // Normalize: n8n recruiting agent uses "candidates" key → map to "contacts"
+        normalizeCandidates(structuredData);
       } catch {
         // Malformed JSON — ignore
       }
@@ -48,9 +63,11 @@ export function parseN8nResponse(item: Record<string, unknown>): {
     const d = item.data as Record<string, unknown>;
     if (
       (Array.isArray(d.companies) && d.companies.length > 0) ||
-      (Array.isArray(d.contacts) && d.contacts.length > 0)
+      (Array.isArray(d.contacts) && d.contacts.length > 0) ||
+      (Array.isArray(d.candidates) && d.candidates.length > 0)
     ) {
       structuredData = d as unknown as StructuredData;
+      normalizeCandidates(structuredData);
     }
   }
 
@@ -71,6 +88,7 @@ export function parseN8nResponse(item: Record<string, unknown>): {
       if (lastMatch) {
         try {
           const parsed = JSON.parse(lastMatch[1]) as StructuredData;
+          normalizeCandidates(parsed);
           // Guard: only use if it has non-empty companies or contacts
           if (
             (Array.isArray(parsed.companies) && parsed.companies.length > 0) ||
@@ -99,7 +117,10 @@ export function parseN8nResponse(item: Record<string, unknown>): {
   // 5. Credits
   const credits = (item?.credits as Credits) ?? null;
 
-  return { cleanText, structuredData, credits, chatName };
+  // 6. API cost (estimated by n8n Parse Response node)
+  const apiCost = typeof item?.apiCost === "number" && item.apiCost > 0 ? item.apiCost : null;
+
+  return { cleanText, structuredData, credits, chatName, apiCost };
 }
 
 /**
@@ -115,10 +136,11 @@ export function extractConversationalParts(
   }
 
   // Find where structured listing begins
-  // Patterns: "1. ", "- Name", "Companies\n", "Contact previews\n"
-  // Also handles text that starts directly with a bullet or numbered item
+  // Patterns: "1. ", "- Name", "Companies\n", "Contact previews\n",
+  //           "---" (separator), "### " (markdown heading — recruiting format),
+  //           "**1." / "**N." (bold numbered — recruiting format)
   const structuredStartIdx = text.search(
-    /(?:^|\n)(?:\d+\.\s|- \S|Companies\s*\n|Contact previews\s*\n)/
+    /(?:^|\n)(?:\d+\.\s|- \S|Companies\s*\n|Contact previews\s*\n|---\s*\n|#{1,3}\s+\*{0,2}\d+|^\*{2}\d+\.)/m
   );
 
   const intro =
@@ -126,20 +148,34 @@ export function extractConversationalParts(
       ? text.slice(0, structuredStartIdx).trim()
       : text.trim();
 
-  // Find outro — text after the LAST structured block (bullets/numbered items).
-  // Strategy: find the last bullet/numbered line, then check for a blank line + text after it.
-  // We search backwards by finding ALL matches and using the last one.
+  // Find outro — text after the LAST structured block.
+  // Strategy: find the last separator/heading/bullet block, then look for
+  // prose text (not a heading, bullet, or separator) after it.
   let outro = "";
-  const outroRegex = /(?:^|\n)(?:- .+|\d+\..+)\n\n((?!- |\d+\.)[^\n].*)$/gm;
-  let outroMatch: RegExpExecArray | null;
-  while ((outroMatch = outroRegex.exec(text)) !== null) {
-    outro = outroMatch[1].trim();
+
+  // Look for the last "---" separator followed by non-structured text
+  const lastSepIdx = text.lastIndexOf("\n---");
+  if (lastSepIdx >= 0) {
+    // Get text after that last separator
+    const afterSep = text.slice(lastSepIdx).replace(/^[\s-]+/, "").trim();
+    // Check if this text is prose (not another heading/bullet/numbered item)
+    if (afterSep && !/^(?:#{1,3}\s|\d+\.\s|- |\*{2}\d+\.)/.test(afterSep)) {
+      outro = afterSep;
+    }
   }
-  // If the last match captured something, also grab any remaining lines after it
-  if (outro) {
-    const outroIdx = text.lastIndexOf(outro);
-    if (outroIdx >= 0) {
-      outro = text.slice(outroIdx).trim();
+
+  // Fallback: try the old approach for AI Staffing format
+  if (!outro) {
+    const outroRegex = /(?:^|\n)(?:- .+|\d+\..+)\n\n((?!- |\d+\.)[^\n].*)$/gm;
+    let outroMatch: RegExpExecArray | null;
+    while ((outroMatch = outroRegex.exec(text)) !== null) {
+      outro = outroMatch[1].trim();
+    }
+    if (outro) {
+      const outroIdx = text.lastIndexOf(outro);
+      if (outroIdx >= 0) {
+        outro = text.slice(outroIdx).trim();
+      }
     }
   }
 

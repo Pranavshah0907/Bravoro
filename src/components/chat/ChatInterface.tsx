@@ -358,13 +358,17 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
         // Build metadata if we have meaningful structured data or non-zero credits
         const hasRealData = parsed.structuredData &&
           ((parsed.structuredData.companies?.length ?? 0) > 0 ||
-           (parsed.structuredData.contacts?.length ?? 0) > 0);
+           (parsed.structuredData.contacts?.length ?? 0) > 0 ||
+           parsed.structuredData.type === "candidates" ||
+           parsed.structuredData.type === "enriched_contacts");
         const hasRealCredits = parsed.credits && (parsed.credits.total ?? 0) > 0;
+        const hasApiCost = parsed.apiCost != null && parsed.apiCost > 0;
 
-        if (hasRealData || hasRealCredits) {
+        if (hasRealData || hasRealCredits || hasApiCost) {
           replyMetadata = {};
           if (hasRealData) replyMetadata.data = parsed.structuredData!;
           if (hasRealCredits) replyMetadata.credits = parsed.credits!;
+          if (hasApiCost) replyMetadata.apiCost = parsed.apiCost!;
         }
 
         // Track credits in analytics (fire-and-forget — don't block chat)
@@ -537,7 +541,10 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                 activeMessages.map((msg) => {
                   const msgMeta = msg.metadata as MessageMetadata | null | undefined;
                   const hasRichContent = msg.role === "assistant" && msgMeta?.data &&
-                    ((msgMeta.data.companies?.length ?? 0) > 0 || (msgMeta.data.contacts?.length ?? 0) > 0);
+                    ((msgMeta.data.companies?.length ?? 0) > 0 ||
+                     (msgMeta.data.contacts?.length ?? 0) > 0 ||
+                     msgMeta.data.type === "candidates" ||
+                     msgMeta.data.type === "enriched_contacts");
 
                   return (
                     <div key={msg.id} className="animate-fade-in">
@@ -578,9 +585,20 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                           )}
                         </div>
                       </div>
-                      {/* Credits line — admin only, assistant messages only */}
-                      {isAdmin && msg.role === "assistant" && msgMeta?.credits && (
-                        <CreditsLine credits={msgMeta.credits} />
+                      {/* Credits + API cost line — admin only, assistant messages only */}
+                      {isAdmin && msg.role === "assistant" && (msgMeta?.credits || msgMeta?.apiCost) && (
+                        <div className="flex items-center gap-2 mt-1 ml-10 text-[10px] text-muted-foreground/50 select-none">
+                          {msgMeta?.credits && <CreditsLine credits={msgMeta.credits} />}
+                          {msgMeta?.apiCost != null && msgMeta.apiCost > 0 && (
+                            <>
+                              {msgMeta?.credits && <span className="mx-0.5">|</span>}
+                              <span>
+                                <span className="font-medium">API:</span>{" "}
+                                ~${msgMeta.apiCost < 0.01 ? msgMeta.apiCost.toFixed(4) : msgMeta.apiCost.toFixed(3)}
+                              </span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   );

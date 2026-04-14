@@ -56,4 +56,5 @@ export interface Credits {
 export interface MessageMetadata {
   data?: StructuredData;
   credits?: Credits;
+  apiCost?: number;
 }

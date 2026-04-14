@@ -15,32 +15,55 @@ import { Fragment, type ReactNode } from "react";
  *  - Inline URLs → clickable links
  */
 
-/* ── Inline URL linkifier ─────────────────────────────────────── */
-const URL_RE = /(https?:\/\/[^\s),]+)/g;
-const URL_TEST = /^https?:\/\//;
+/* ── Inline markdown + URL formatter ──────────────────────────── */
 
-function linkify(text: string): ReactNode {
-  const parts = text.split(URL_RE);
-  if (parts.length === 1) return text;
-  return (
-    <>
-      {parts.map((part, i) =>
-        URL_TEST.test(part) ? (
-          <a
-            key={i}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all"
-          >
-            {part}
-          </a>
-        ) : (
-          <Fragment key={i}>{part}</Fragment>
-        )
-      )}
-    </>
-  );
+/**
+ * Render inline markdown: **bold**, [text](url), and bare URLs.
+ * Handles nesting (bold inside links, etc).
+ */
+const INLINE_RE = /(\*\*(.+?)\*\*|\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s),]+))/g;
+
+function renderInline(text: string): ReactNode {
+  const parts: ReactNode[] = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+  INLINE_RE.lastIndex = 0;
+
+  while ((match = INLINE_RE.exec(text)) !== null) {
+    // Push text before match
+    if (match.index > lastIdx) {
+      parts.push(text.slice(lastIdx, match.index));
+    }
+
+    if (match[2] !== undefined) {
+      // **bold**
+      parts.push(<strong key={match.index} className="font-semibold">{match[2]}</strong>);
+    } else if (match[3] !== undefined && match[4] !== undefined) {
+      // [text](url)
+      parts.push(
+        <a key={match.index} href={match[4]} target="_blank" rel="noopener noreferrer"
+          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all">
+          {match[3]}
+        </a>
+      );
+    } else if (match[5] !== undefined) {
+      // bare URL
+      parts.push(
+        <a key={match.index} href={match[5]} target="_blank" rel="noopener noreferrer"
+          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all">
+          {match[5]}
+        </a>
+      );
+    }
+
+    lastIdx = match.index + match[0].length;
+  }
+
+  if (lastIdx < text.length) {
+    parts.push(text.slice(lastIdx));
+  }
+
+  return parts.length === 1 && typeof parts[0] === "string" ? parts[0] : <>{parts}</>;
 }
 
 type LineType =
@@ -121,9 +144,9 @@ export function FormattedText({ text }: { text: string }) {
       l.kind === "field"
   );
 
-  // If no structured patterns detected, just render as plain text
+  // If no structured patterns detected, render with inline markdown support
   if (!hasStructuredContent) {
-    return <span className="whitespace-pre-wrap">{text}</span>;
+    return <span className="whitespace-pre-wrap">{renderInline(text)}</span>;
   }
 
   // Track context for grouping
@@ -160,7 +183,7 @@ export function FormattedText({ text }: { text: string }) {
                     {line.number}.
                   </span>
                   <span className="font-semibold text-sm text-foreground">
-                    {linkify(line.name)}
+                    {renderInline(line.name)}
                   </span>
                 </div>
               </Fragment>
@@ -173,7 +196,7 @@ export function FormattedText({ text }: { text: string }) {
                 <span className="text-muted-foreground/70 font-medium">
                   {line.label}:
                 </span>
-                <span className="text-foreground/80">{linkify(line.value)}</span>
+                <span className="text-foreground/80">{renderInline(line.value)}</span>
               </div>
             );
 
@@ -196,12 +219,12 @@ export function FormattedText({ text }: { text: string }) {
                   <span className="text-muted-foreground/50 shrink-0">-</span>
                   <span>
                     <span className="font-medium text-foreground">
-                      {linkify(contactMatch[1])}
+                      {renderInline(contactMatch[1])}
                     </span>
                     <span className="text-muted-foreground/70">
-                      , {linkify(contactMatch[2])},{" "}
+                      , {renderInline(contactMatch[2])},{" "}
                     </span>
-                    <span className="text-foreground/70">{linkify(contactMatch[3])}</span>
+                    <span className="text-foreground/70">{renderInline(contactMatch[3])}</span>
                   </span>
                 </div>
               );
@@ -210,7 +233,7 @@ export function FormattedText({ text }: { text: string }) {
             return (
               <div key={i} className="flex items-baseline gap-2 pl-6 py-0.5 text-sm">
                 <span className="text-muted-foreground/50 shrink-0">-</span>
-                <span className="text-foreground/80">{linkify(line.text)}</span>
+                <span className="text-foreground/80">{renderInline(line.text)}</span>
               </div>
             );
           }
@@ -223,7 +246,7 @@ export function FormattedText({ text }: { text: string }) {
                   insideNumberedBlock ? "pl-6" : ""
                 }`}
               >
-                {linkify(line.text)}
+                {renderInline(line.text)}
               </p>
             );
 

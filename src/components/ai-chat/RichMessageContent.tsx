@@ -46,7 +46,7 @@ export function CreditsLine({ credits }: { credits: Credits }) {
   if (entries.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-1 mt-1 ml-10 text-[10px] text-muted-foreground/50 select-none">
+    <>
       {entries.map((e, i) => (
         <span key={e.label}>
           {i > 0 && <span className="mx-1">|</span>}
@@ -54,7 +54,7 @@ export function CreditsLine({ credits }: { credits: Credits }) {
           <span>{e.value}</span>
         </span>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -643,22 +643,20 @@ export function RichMessageContent({
   return (
     <div className="space-y-3">
       {/* Intro text */}
-      {intro && (
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{intro}</p>
-      )}
+      {intro && <FormattedText text={intro} />}
 
       {/* Companies — single tile with line separators */}
       {hasCompanies && <CompaniesPanel companies={data!.companies} />}
 
-      {/* Enriched (unlocked) contacts — full detail cards, no checkboxes */}
-      {enrichedContacts.length > 0 && (
+      {/* Enriched (unlocked) contacts — full detail cards, no checkboxes (AI Staffing only) */}
+      {!isCandidateType && enrichedContacts.length > 0 && (
         <CollapsibleSection title={`Unlocked Contacts (${enrichedContacts.length})`}>
           <EnrichedContactsPanel contacts={enrichedContacts} />
         </CollapsibleSection>
       )}
 
-      {/* Preview contacts — with checkboxes for selection */}
-      {previewContacts.length > 0 && (
+      {/* Preview contacts — with checkboxes for selection (AI Staffing only) */}
+      {!isCandidateType && previewContacts.length > 0 && (
         <CollapsibleSection
           title={`Contact Previews (${previewContacts.length})`}
           defaultOpen={false}
@@ -734,7 +732,9 @@ export function RichMessageContent({
 
       {/* Outro text */}
       {outro && (
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{outro}</p>
+        <div className="pt-2 border-t border-white/[0.06]">
+          <FormattedText text={outro} />
+        </div>
       )}
     </div>
   );
