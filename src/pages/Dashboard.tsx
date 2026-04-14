@@ -91,7 +91,7 @@ const Dashboard = () => {
       title: "Recruiting Search",
       description: "Find candidates by role, skills & location using AI",
       icon: UserSearch,
-      gradient: "from-violet-500/20 via-purple-500/15 to-violet-500/8",
+      gradient: "from-accent/25 via-primary/15 to-caretta/8",
     },
   ];
 
