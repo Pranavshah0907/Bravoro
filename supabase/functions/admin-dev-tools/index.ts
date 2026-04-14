@@ -118,16 +118,26 @@ serve(async (req) => {
       }
 
       // 3c. Cross-reference: how many results does each search have?
+      // Paginate within each chunk — PostgREST caps responses at 1000 rows.
       const resultCountMap: Record<string, number> = {};
       if (allIds.length > 0) {
+        const PAGE = 1000;
         for (let i = 0; i < allIds.length; i += 100) {
           const chunk = allIds.slice(i, i + 100);
-          const { data: resultRows } = await supabase
-            .from('search_results')
-            .select('search_id')
-            .in('search_id', chunk);
-          for (const r of resultRows ?? []) {
-            resultCountMap[r.search_id] = (resultCountMap[r.search_id] ?? 0) + 1;
+          let from = 0;
+          while (true) {
+            const { data: resultRows, error } = await supabase
+              .from('search_results')
+              .select('search_id')
+              .in('search_id', chunk)
+              .range(from, from + PAGE - 1);
+            if (error) break;
+            const rows = resultRows ?? [];
+            for (const r of rows) {
+              resultCountMap[r.search_id] = (resultCountMap[r.search_id] ?? 0) + 1;
+            }
+            if (rows.length < PAGE) break;
+            from += PAGE;
           }
         }
       }
