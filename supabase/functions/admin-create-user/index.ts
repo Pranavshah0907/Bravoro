@@ -197,32 +197,24 @@ Deno.serve(async (req) => {
         console.log(`[${requestId}] send-email response:`, emailResult);
 
         if (!emailResponse.ok || !emailResult.success) {
-          console.error(`[${requestId}] send-email failed, rolling back user creation`);
-
-          // Roll back created user so the email can be reused on retry
-          if (authData.user) {
-            await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-            await supabaseAdmin.from('profiles').delete().eq('id', authData.user.id);
-          }
-
+          console.error(`[${requestId}] send-email failed:`, emailResult.error);
+          // User is created — don't roll back. Return success with warning.
           return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: emailResult.error || 'Failed to send welcome email',
-              userCreated: false,
+            JSON.stringify({
+              success: true,
+              user: authData.user,
+              message: 'User created but welcome email failed to send',
+              emailError: emailResult.error || 'Failed to send welcome email',
               request_id: requestId,
             }),
-            { 
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
         // Both user creation and email sending succeeded
         return new Response(
-          JSON.stringify({ 
-            success: true, 
+          JSON.stringify({
+            success: true,
             user: authData.user,
             message: 'User created and welcome email sent successfully',
             request_id: requestId,
@@ -230,25 +222,17 @@ Deno.serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (emailError) {
-        console.error(`[${requestId}] Error calling send-email, rolling back user creation:`, emailError);
-
-        // Roll back created user on any unexpected error so email can be retried cleanly
-        if (authData.user) {
-          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-          await supabaseAdmin.from('profiles').delete().eq('id', authData.user.id);
-        }
-
+        console.error(`[${requestId}] Error calling send-email:`, emailError);
+        // User is created — don't roll back. Return success with warning.
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Failed to send welcome email',
-            userCreated: false,
+          JSON.stringify({
+            success: true,
+            user: authData.user,
+            message: 'User created but welcome email failed to send',
+            emailError: 'Failed to send welcome email',
             request_id: requestId,
           }),
-          { 
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
