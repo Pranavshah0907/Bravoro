@@ -86,15 +86,29 @@ const MasterDatabaseTab = () => {
   const loadCompanies = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { count, error: countError } = await supabase
         .from("master_contacts")
-        .select("organization")
-        .order("organization");
+        .select("*", { count: "exact", head: true });
 
-      if (error) throw error;
+      if (countError) throw countError;
+      const total = count || 0;
+      setTotalContacts(total);
+
+      const allRows: { organization: string | null }[] = [];
+      const PAGE_SIZE = 5000;
+      for (let offset = 0; offset < total; offset += PAGE_SIZE) {
+        const { data, error } = await supabase
+          .from("master_contacts")
+          .select("organization")
+          .order("organization")
+          .range(offset, offset + PAGE_SIZE - 1);
+
+        if (error) throw error;
+        if (data) allRows.push(...data);
+      }
 
       const orgCounts: Record<string, number> = {};
-      (data || []).forEach((item) => {
+      allRows.forEach((item) => {
         const org = item.organization || "Unknown";
         orgCounts[org] = (orgCounts[org] || 0) + 1;
       });
@@ -104,7 +118,6 @@ const MasterDatabaseTab = () => {
         .sort((a, b) => a.organization.localeCompare(b.organization));
 
       setCompanies(companySummaries);
-      setTotalContacts(data?.length || 0);
     } catch (error) {
       console.error("Error loading companies:", error);
       toast({
@@ -235,14 +248,22 @@ const MasterDatabaseTab = () => {
     setShowExportWarning(false);
     
     try {
-      const { data, error } = await supabase
-        .from("master_contacts")
-        .select("*")
-        .order("organization");
+      const allContacts: MasterContact[] = [];
+      const PAGE_SIZE = 5000;
+      let offset = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("master_contacts")
+          .select("*")
+          .order("organization")
+          .range(offset, offset + PAGE_SIZE - 1);
 
-      if (error) throw error;
-
-      const allContacts = (data as MasterContact[]) || [];
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allContacts.push(...(data as MasterContact[]));
+        if (data.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
       
       const byOrg: Record<string, MasterContact[]> = {};
       allContacts.forEach((c) => {

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ai_chat_conversations: {
@@ -252,6 +277,11 @@ export type Database = {
       }
       master_contacts: {
         Row: {
+          aleads_credits_used: number | null
+          apollo_credits_used: number | null
+          apollo_person_id: string | null
+          cognism_credits_used: number | null
+          cognism_person_id: string | null
           domain: string | null
           email: string | null
           email_2: string | null
@@ -261,15 +291,22 @@ export type Database = {
           last_name: string | null
           last_updated_at: string
           linkedin: string | null
+          lusha_credits_used: number | null
           organization: string | null
           person_id: string | null
           phone_1: string | null
           phone_2: string | null
+          provider: string | null
           source_search_id: string | null
           source_user_id: string | null
           title: string | null
         }
         Insert: {
+          aleads_credits_used?: number | null
+          apollo_credits_used?: number | null
+          apollo_person_id?: string | null
+          cognism_credits_used?: number | null
+          cognism_person_id?: string | null
           domain?: string | null
           email?: string | null
           email_2?: string | null
@@ -279,15 +316,22 @@ export type Database = {
           last_name?: string | null
           last_updated_at?: string
           linkedin?: string | null
+          lusha_credits_used?: number | null
           organization?: string | null
           person_id?: string | null
           phone_1?: string | null
           phone_2?: string | null
+          provider?: string | null
           source_search_id?: string | null
           source_user_id?: string | null
           title?: string | null
         }
         Update: {
+          aleads_credits_used?: number | null
+          apollo_credits_used?: number | null
+          apollo_person_id?: string | null
+          cognism_credits_used?: number | null
+          cognism_person_id?: string | null
           domain?: string | null
           email?: string | null
           email_2?: string | null
@@ -297,10 +341,12 @@ export type Database = {
           last_name?: string | null
           last_updated_at?: string
           linkedin?: string | null
+          lusha_credits_used?: number | null
           organization?: string | null
           person_id?: string | null
           phone_1?: string | null
           phone_2?: string | null
+          provider?: string | null
           source_search_id?: string | null
           source_user_id?: string | null
           title?: string | null
@@ -528,6 +574,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_enriched_contacts: {
+        Row: {
+          credits_charged: number | null
+          enriched_at: string | null
+          id: string
+          master_contact_id: string
+          search_id: string | null
+          user_id: string
+        }
+        Insert: {
+          credits_charged?: number | null
+          enriched_at?: string | null
+          id?: string
+          master_contact_id: string
+          search_id?: string | null
+          user_id: string
+        }
+        Update: {
+          credits_charged?: number | null
+          enriched_at?: string | null
+          id?: string
+          master_contact_id?: string
+          search_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_enriched_contacts_master_contact_id_fkey"
+            columns: ["master_contact_id"]
+            isOneToOne: false
+            referencedRelation: "master_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_enriched_contacts_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -617,6 +705,17 @@ export type Database = {
         Returns: boolean
       }
       get_queue_position: { Args: { p_search_id: string }; Returns: number }
+      get_user_enriched_contact: {
+        Args: {
+          p_apollo_person_id?: string
+          p_cognism_person_id?: string
+          p_email?: string
+          p_linkedin?: string
+          p_person_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -776,9 +875,14 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "user"],
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.90.0 (currently installed v2.75.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

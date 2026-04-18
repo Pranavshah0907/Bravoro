@@ -118,27 +118,22 @@ serve(async (req) => {
       }
 
       // 3c. Cross-reference: how many results does each search have?
-      // Paginate within each chunk — PostgREST caps responses at 1000 rows.
+      // Use HEAD count queries in parallel batches — avoids row transfer and 1000-row cap.
       const resultCountMap: Record<string, number> = {};
       if (allIds.length > 0) {
-        const PAGE = 1000;
-        for (let i = 0; i < allIds.length; i += 100) {
-          const chunk = allIds.slice(i, i + 100);
-          let from = 0;
-          while (true) {
-            const { data: resultRows, error } = await supabase
-              .from('search_results')
-              .select('search_id')
-              .in('search_id', chunk)
-              .range(from, from + PAGE - 1);
-            if (error) break;
-            const rows = resultRows ?? [];
-            for (const r of rows) {
-              resultCountMap[r.search_id] = (resultCountMap[r.search_id] ?? 0) + 1;
-            }
-            if (rows.length < PAGE) break;
-            from += PAGE;
-          }
+        const BATCH = 25;
+        for (let i = 0; i < allIds.length; i += BATCH) {
+          const batch = allIds.slice(i, i + BATCH);
+          const counts = await Promise.all(
+            batch.map(async (id) => {
+              const { count } = await supabase
+                .from('search_results')
+                .select('*', { count: 'exact', head: true })
+                .eq('search_id', id);
+              return [id, count ?? 0] as const;
+            })
+          );
+          for (const [id, c] of counts) resultCountMap[id] = c;
         }
       }
 

@@ -26,6 +26,9 @@ interface Contact {
   lushaCreditsUsed?: number;
   aLeadscreditsUsed?: number;
   apolloCreditsUsed?: number;
+  // Provider person IDs
+  cognismPersonID?: string;
+  apolloPersonID?: string;
 }
 
 interface Company {
@@ -127,6 +130,13 @@ async function upsertToMasterContacts(
       const phone1 = contact.Phone_Number_1?.trim() || null;
       const phone2 = contact.Phone_Number_2?.trim() || null;
       const title = contact.Title?.trim() || null;
+      const cognismPersonId = contact.cognismPersonID?.trim() || null;
+      const apolloPersonId = contact.apolloPersonID?.trim() || null;
+      const provider = contact.Provider?.trim() || null;
+      const cognismCreditsUsed = toInt(contact.CognismCreditsUsed);
+      const lushaCreditsUsed = toInt(contact.lushaCreditsUsed);
+      const aleadsCreditsUsed = toInt(contact.aLeadscreditsUsed);
+      const apolloCreditsUsed = toInt(contact.apolloCreditsUsed);
 
       // Find existing record using multiple matching strategies
       let existingRecord = null;
@@ -211,6 +221,13 @@ async function upsertToMasterContacts(
         if (linkedin && !existingRecord.linkedin) updates.linkedin = linkedin;
         if (title && !existingRecord.title) updates.title = title;
         if (domain && !existingRecord.domain) updates.domain = domain;
+        if (cognismPersonId && !existingRecord.cognism_person_id) updates.cognism_person_id = cognismPersonId;
+        if (apolloPersonId && !existingRecord.apollo_person_id) updates.apollo_person_id = apolloPersonId;
+        if (provider && !existingRecord.provider) updates.provider = provider;
+        if (cognismCreditsUsed > 0) updates.cognism_credits_used = cognismCreditsUsed;
+        if (lushaCreditsUsed > 0) updates.lusha_credits_used = lushaCreditsUsed;
+        if (aleadsCreditsUsed > 0) updates.aleads_credits_used = aleadsCreditsUsed;
+        if (apolloCreditsUsed > 0) updates.apollo_credits_used = apolloCreditsUsed;
 
         const { error } = await supabase
           .from('master_contacts')
@@ -220,9 +237,24 @@ async function upsertToMasterContacts(
         if (error) {
           console.error(`[${requestId}] Error updating master_contacts:`, error);
         }
+
+        // Upsert to junction table
+        const { error: junctionError } = await supabase
+          .from('user_enriched_contacts')
+          .upsert({
+            user_id: userId,
+            master_contact_id: existingRecord.id,
+            search_id: searchId,
+            credits_charged: cognismCreditsUsed + lushaCreditsUsed + aleadsCreditsUsed + apolloCreditsUsed,
+            enriched_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,master_contact_id' });
+
+        if (junctionError) {
+          console.error(`[${requestId}] Error upserting user_enriched_contacts:`, junctionError);
+        }
       } else {
         // Insert new record
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('master_contacts')
           .insert({
             person_id: personId,
@@ -235,14 +267,40 @@ async function upsertToMasterContacts(
             title: title,
             organization: organization,
             domain: domain,
+            provider: provider,
+            cognism_person_id: cognismPersonId,
+            apollo_person_id: apolloPersonId,
+            cognism_credits_used: cognismCreditsUsed,
+            lusha_credits_used: lushaCreditsUsed,
+            aleads_credits_used: aleadsCreditsUsed,
+            apollo_credits_used: apolloCreditsUsed,
             source_search_id: searchId,
             source_user_id: userId,
             first_seen_at: new Date().toISOString(),
             last_updated_at: new Date().toISOString(),
-          });
+          })
+          .select('id')
+          .single();
 
         if (error) {
           console.error(`[${requestId}] Error inserting to master_contacts:`, error);
+        }
+
+        // Insert to junction table
+        if (inserted?.id) {
+          const { error: junctionError } = await supabase
+            .from('user_enriched_contacts')
+            .upsert({
+              user_id: userId,
+              master_contact_id: inserted.id,
+              search_id: searchId,
+              credits_charged: cognismCreditsUsed + lushaCreditsUsed + aleadsCreditsUsed + apolloCreditsUsed,
+              enriched_at: new Date().toISOString(),
+            }, { onConflict: 'user_id,master_contact_id' });
+
+          if (junctionError) {
+            console.error(`[${requestId}] Error inserting user_enriched_contacts:`, junctionError);
+          }
         }
       }
     } catch (err) {

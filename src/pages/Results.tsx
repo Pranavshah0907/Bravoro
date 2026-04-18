@@ -422,8 +422,8 @@ const Results = () => {
     }
   };
 
-  const fetchSearchResults = async (searchId: string) => {
-    if (searchResults[searchId]) return;
+  const fetchSearchResults = async (searchId: string): Promise<SearchResult[]> => {
+    if (searchResults[searchId]) return searchResults[searchId];
 
     setLoadingResults(prev => new Set(prev).add(searchId));
     try {
@@ -440,12 +440,8 @@ const Results = () => {
       }));
 
       setSearchResults(prev => ({ ...prev, [searchId]: results }));
-      
+
       if (results.length > 0) {
-        // IMPORTANT:
-        // `search_results.result_type` now defaults to 'enriched' for *all* rows, including manual/bulk searches.
-        // So we must NOT use `result_type === 'enriched'` to detect the special "People Enriched / People not found" UI.
-        // People enrichment is driven by the search type (and optionally presence of 'missing' rows for backwards compatibility).
         const search = searches.find(s => s.id === searchId);
         const isPeopleEnrichment =
           search?.search_type === "bulk_people_enrichment" ||
@@ -455,19 +451,19 @@ const Results = () => {
               r.company_name === "People Enriched" ||
               r.company_name === "People not found"
           );
-        
+
         if (isPeopleEnrichment) {
-          // For people enrichment, set 'enriched' as the default active tab
           setActiveCompanyTab(prev => ({ ...prev, [searchId]: 'enriched' }));
           setCurrentPage(prev => ({ ...prev, [`${searchId}-enriched`]: 1 }));
         } else {
-          // For bulk searches, check if there are missing companies and default to that tab
           const hasMissingCompanies = results.some(r => r.result_type === 'missing_company');
           const defaultTab = hasMissingCompanies ? 'missing_companies' : results[0].company_name;
           setActiveCompanyTab(prev => ({ ...prev, [searchId]: defaultTab }));
           setCurrentPage(prev => ({ ...prev, [`${searchId}-${defaultTab}`]: 1 }));
         }
       }
+
+      return results;
     } catch (error) {
       console.error("Error fetching search results:", error);
       toast({
@@ -475,6 +471,7 @@ const Results = () => {
         description: "Failed to fetch contact results",
         variant: "destructive",
       });
+      return [];
     } finally {
       setLoadingResults(prev => {
         const next = new Set(prev);
@@ -507,8 +504,19 @@ const Results = () => {
   };
 
 
-  const handleExportToExcel = (searchId: string) => {
-    const results = searchResults[searchId];
+  const handleStripExport = async (searchId: string, variant: "combined" | "segregated" | "people") => {
+    const fetched = await fetchSearchResults(searchId);
+    if (!fetched || fetched.length === 0) {
+      toast({ title: "No results", description: "No contacts found for this search", variant: "destructive" });
+      return;
+    }
+    if (variant === "people") handleExportPeopleEnrichment(searchId, fetched);
+    else if (variant === "combined") handleExportToExcel(searchId, fetched);
+    else handleExportSegregatedExcel(searchId, fetched);
+  };
+
+  const handleExportToExcel = (searchId: string, resultsOverride?: SearchResult[]) => {
+    const results = resultsOverride || searchResults[searchId];
     if (!results || results.length === 0) return;
 
     // Separate company results from missing companies
@@ -559,8 +567,8 @@ const Results = () => {
     });
   };
 
-  const handleExportSegregatedExcel = (searchId: string) => {
-    const results = searchResults[searchId];
+  const handleExportSegregatedExcel = (searchId: string, resultsOverride?: SearchResult[]) => {
+    const results = resultsOverride || searchResults[searchId];
     if (!results || results.length === 0) return;
 
     // Separate company results from missing companies
@@ -641,8 +649,8 @@ const Results = () => {
     });
   };
 
-  const handleExportPeopleEnrichment = (searchId: string) => {
-    const results = searchResults[searchId];
+  const handleExportPeopleEnrichment = (searchId: string, resultsOverride?: SearchResult[]) => {
+    const results = resultsOverride || searchResults[searchId];
     if (!results) return;
 
     const wb = XLSX.utils.book_new();
@@ -2126,12 +2134,12 @@ const Results = () => {
                           </TableCell>
                           <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
                           <TableCell className="text-right">
-                            {search.status === "completed" ? (
+                            {search.status === "completed" && !expandedRows.has(search.id) ? (
                               search.search_type === "bulk_people_enrichment" ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleExportPeopleEnrichment(search.id)}
+                                  onClick={() => handleStripExport(search.id, "people")}
                                   className="hover-lift border-primary/30 text-primary hover:bg-primary/10 w-24"
                                 >
                                   <Download className="h-4 w-4 mr-2" />
@@ -2141,7 +2149,7 @@ const Results = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleExportSegregatedExcel(search.id)}
+                                  onClick={() => handleStripExport(search.id, "segregated")}
                                   className="hover-lift border-primary/30 text-primary hover:bg-primary/10 w-24"
                                 >
                                   <Download className="h-4 w-4 mr-2" />
@@ -2160,20 +2168,20 @@ const Results = () => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="bg-card border-border shadow-medium">
-                                    <DropdownMenuItem onClick={() => handleExportToExcel(search.id)}>
+                                    <DropdownMenuItem onClick={() => handleStripExport(search.id, "combined")}>
                                       <Download className="h-4 w-4 mr-2" />
                                       Combined Excel
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleExportSegregatedExcel(search.id)}>
+                                    <DropdownMenuItem onClick={() => handleStripExport(search.id, "segregated")}>
                                       <FileSpreadsheet className="h-4 w-4 mr-2" />
                                       Segregated Excel
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               )
-                            ) : (
+                            ) : search.status !== "completed" ? (
                               <span className="text-sm text-muted-foreground">-</span>
-                            )}
+                            ) : null}
                           </TableCell>
                         </TableRow>
                         {expandedRows.has(search.id) && (

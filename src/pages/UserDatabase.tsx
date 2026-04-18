@@ -115,15 +115,25 @@ const UserDatabase = () => {
     setLoading(true);
     try {
       // RLS will automatically filter to user's own contacts
-      const { data, error } = await supabase
-        .from("master_contacts")
-        .select("*")
-        .eq("source_user_id", userId)
-        .order("organization");
+      const allData: MasterContact[] = [];
+      const PAGE_SIZE = 5000;
+      let offset = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("master_contacts")
+          .select("*")
+          .eq("source_user_id", userId)
+          .order("organization")
+          .range(offset, offset + PAGE_SIZE - 1);
 
-      if (error) throw error;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData.push(...(data as MasterContact[]));
+        if (data.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
 
-      setAllContacts((data as MasterContact[]) || []);
+      setAllContacts(allData);
     } catch (error) {
       console.error("Error loading contacts:", error);
       toast({
