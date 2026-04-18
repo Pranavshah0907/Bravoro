@@ -97,6 +97,7 @@ serve(async (req) => {
     const payload = {
       ...searchData,
       search_id: searchId,
+      user_id: userId,
       user_email: userEmail,
       user_name: userName,
       enrichment_remaining: enrichmentRemaining,
