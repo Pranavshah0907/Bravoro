@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, TrendingUp, Activity, Zap, CalendarIcon } from "lucide-react";
+import { RefreshCw, Activity, CalendarIcon } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Sector } from "recharts";
 import { toast } from "sonner";
 import { format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from "date-fns";
@@ -19,32 +19,25 @@ import type { DateRange } from "react-day-picker";
 type TimePeriod = "daily" | "weekly" | "monthly" | "quarterly" | "custom";
 
 interface CreditData {
-  apollo_credits: number;
-  aleads_credits: number;
-  lusha_credits: number;
-  cognism_credits: number;
-  theirstack_credits: number;
+  mobile_phone_credits: number;
+  direct_phone_credits: number;
+  email_only_credits: number;
+  jobs_credits: number;
+  mobile_phone_contacts: number;
+  direct_phone_contacts: number;
+  email_only_contacts: number;
+  jobs_count: number;
   created_at: string;
 }
 
+const CREDIT_CATEGORIES = {
+  mobile_phone: { label: "Mobile Phone", rate: 4, color: "#10b981" },
+  direct_phone: { label: "Direct Phone", rate: 3, color: "#06b6d4" },
+  email_only:   { label: "Email / LinkedIn", rate: 2, color: "#8b5cf6" },
+  jobs:         { label: "Jobs", rate: 1, color: "#f59e0b" },
+} as const;
 
-// Helper function to get platform names based on admin status
-// Platform A = Cognism, B = Apollo, C = ALeads, D = Lusha, Job Search = Theirstack
-const getPlatformNames = (isAdmin: boolean) => ({
-  cognism: isAdmin ? "Cognism" : "Platform A",
-  apollo: isAdmin ? "Apollo" : "Platform B",
-  aleads: isAdmin ? "ALeads" : "Platform C",
-  lusha: isAdmin ? "Lusha" : "Platform D",
-  theirstack: isAdmin ? "Theirstack" : "Job Search Platform",
-});
-
-const COLORS = {
-  cognism: "#8b5cf6",
-  apollo: "#06b6d4",
-  aleads: "#10b981",
-  lusha: "#3b82f6",
-  theirstack: "#f59e0b",
-};
+type CategoryKey = keyof typeof CREDIT_CATEGORIES;
 
 // Custom active shape for pie chart hover effect
 const renderActiveShape = (props: any) => {
@@ -169,25 +162,18 @@ const UsageAnalytics = () => {
     navigate("/auth");
   };
 
-  const getTotalCredits = () => {
-    return creditData.reduce(
-      (acc, curr) => ({
-        cognism: acc.cognism + (curr.cognism_credits ?? 0),
-        apollo: acc.apollo + curr.apollo_credits,
-        aleads: acc.aleads + curr.aleads_credits,
-        lusha: acc.lusha + curr.lusha_credits,
-        theirstack: acc.theirstack + (curr.theirstack_credits ?? 0),
-      }),
-      { cognism: 0, apollo: 0, aleads: 0, lusha: 0, theirstack: 0 }
-    );
-  };
-
-  const platformNames = getPlatformNames(isAdmin);
 
 
   const getBarChartData = () => {
     const now = new Date();
-    type PeriodEntry = { date: string; Cognism: number; Apollo: number; ALeads: number; Lusha: number; Theirstack: number; sortDate: Date };
+    type PeriodEntry = {
+      date: string;
+      "Mobile Phone": number;
+      "Direct Phone": number;
+      "Email / LinkedIn": number;
+      Jobs: number;
+      sortDate: Date;
+    };
 
     // Handle custom date range
     if (timePeriod === "custom" && dateRange?.from && dateRange?.to) {
@@ -200,18 +186,17 @@ const UsageAnalytics = () => {
       if (dayCount <= 14) {
         // Show daily for up to 2 weeks
         days.forEach(day => {
-          periods.push({ date: format(day, "MMM d"), Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: day });
+          periods.push({ date: format(day, "MMM d"), "Mobile Phone": 0, "Direct Phone": 0, "Email / LinkedIn": 0, Jobs: 0, sortDate: day });
         });
 
         creditData.forEach((item) => {
           const date = new Date(item.created_at);
           periods.forEach((period) => {
             if (format(date, "MMM d yyyy") === format(period.sortDate, "MMM d yyyy")) {
-              period.Cognism += item.cognism_credits ?? 0;
-              period.Apollo += item.apollo_credits;
-              period.ALeads += item.aleads_credits;
-              period.Lusha += item.lusha_credits;
-              period.Theirstack += item.theirstack_credits ?? 0;
+              period["Mobile Phone"] += item.mobile_phone_credits ?? 0;
+              period["Direct Phone"] += item.direct_phone_credits ?? 0;
+              period["Email / LinkedIn"] += item.email_only_credits ?? 0;
+              period.Jobs += item.jobs_credits ?? 0;
             }
           });
         });
@@ -219,7 +204,7 @@ const UsageAnalytics = () => {
         // Show weekly for up to 3 months
         const weeks = eachWeekOfInterval({ start: dateRange.from, end: dateRange.to });
         weeks.forEach(week => {
-          periods.push({ date: format(week, "MMM d"), Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: week });
+          periods.push({ date: format(week, "MMM d"), "Mobile Phone": 0, "Direct Phone": 0, "Email / LinkedIn": 0, Jobs: 0, sortDate: week });
         });
 
         creditData.forEach((item) => {
@@ -227,11 +212,10 @@ const UsageAnalytics = () => {
           const itemWeekStart = startOfWeek(date);
           periods.forEach((period) => {
             if (format(itemWeekStart, "MMM d yyyy") === format(period.sortDate, "MMM d yyyy")) {
-              period.Cognism += item.cognism_credits ?? 0;
-              period.Apollo += item.apollo_credits;
-              period.ALeads += item.aleads_credits;
-              period.Lusha += item.lusha_credits;
-              period.Theirstack += item.theirstack_credits ?? 0;
+              period["Mobile Phone"] += item.mobile_phone_credits ?? 0;
+              period["Direct Phone"] += item.direct_phone_credits ?? 0;
+              period["Email / LinkedIn"] += item.email_only_credits ?? 0;
+              period.Jobs += item.jobs_credits ?? 0;
             }
           });
         });
@@ -239,24 +223,25 @@ const UsageAnalytics = () => {
         // Show monthly for longer ranges
         const months = eachMonthOfInterval({ start: dateRange.from, end: dateRange.to });
         months.forEach(month => {
-          periods.push({ date: format(month, "MMM yyyy"), Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: month });
+          periods.push({ date: format(month, "MMM yyyy"), "Mobile Phone": 0, "Direct Phone": 0, "Email / LinkedIn": 0, Jobs: 0, sortDate: month });
         });
 
         creditData.forEach((item) => {
           const date = new Date(item.created_at);
           periods.forEach((period) => {
             if (format(date, "MMM yyyy") === period.date) {
-              period.Cognism += item.cognism_credits ?? 0;
-              period.Apollo += item.apollo_credits;
-              period.ALeads += item.aleads_credits;
-              period.Lusha += item.lusha_credits;
-              period.Theirstack += item.theirstack_credits ?? 0;
+              period["Mobile Phone"] += item.mobile_phone_credits ?? 0;
+              period["Direct Phone"] += item.direct_phone_credits ?? 0;
+              period["Email / LinkedIn"] += item.email_only_credits ?? 0;
+              period.Jobs += item.jobs_credits ?? 0;
             }
           });
         });
       }
 
-      return periods.map(({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }) => ({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }));
+      return periods.map(({ date, "Mobile Phone": mp, "Direct Phone": dp, "Email / LinkedIn": eo, Jobs }) => ({
+        date, "Mobile Phone": mp, "Direct Phone": dp, "Email / LinkedIn": eo, Jobs,
+      }));
     }
 
     const limit = timePeriod === "daily" ? 7 : timePeriod === "weekly" ? 5 : timePeriod === "monthly" ? 6 : 4;
@@ -294,7 +279,7 @@ const UsageAnalytics = () => {
           dateLabel = format(periodDate, "MMM d");
       }
 
-      periods.push({ date: dateLabel, Cognism: 0, Apollo: 0, ALeads: 0, Lusha: 0, Theirstack: 0, sortDate: periodDate });
+      periods.push({ date: dateLabel, "Mobile Phone": 0, "Direct Phone": 0, "Email / LinkedIn": 0, Jobs: 0, sortDate: periodDate });
     }
 
     creditData.forEach((item) => {
@@ -325,16 +310,17 @@ const UsageAnalytics = () => {
         }
 
         if (matches) {
-          period.Cognism += item.cognism_credits ?? 0;
-          period.Apollo += item.apollo_credits;
-          period.ALeads += item.aleads_credits;
-          period.Lusha += item.lusha_credits;
-          period.Theirstack += item.theirstack_credits ?? 0;
+          period["Mobile Phone"] += item.mobile_phone_credits ?? 0;
+          period["Direct Phone"] += item.direct_phone_credits ?? 0;
+          period["Email / LinkedIn"] += item.email_only_credits ?? 0;
+          period.Jobs += item.jobs_credits ?? 0;
         }
       });
     });
 
-    return periods.map(({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }) => ({ date, Cognism, Apollo, ALeads, Lusha, Theirstack }));
+    return periods.map(({ date, "Mobile Phone": mp, "Direct Phone": dp, "Email / LinkedIn": eo, Jobs }) => ({
+      date, "Mobile Phone": mp, "Direct Phone": dp, "Email / LinkedIn": eo, Jobs,
+    }));
   };
 
   // Calculate period totals for the selected time range
@@ -342,17 +328,16 @@ const UsageAnalytics = () => {
     const barData = getBarChartData();
     return barData.reduce(
       (acc, curr) => ({
-        cognism: acc.cognism + curr.Cognism,
-        apollo: acc.apollo + curr.Apollo,
-        aleads: acc.aleads + curr.ALeads,
-        lusha: acc.lusha + curr.Lusha,
-        theirstack: acc.theirstack + curr.Theirstack,
+        mobile_phone: acc.mobile_phone + curr["Mobile Phone"],
+        direct_phone: acc.direct_phone + curr["Direct Phone"],
+        email_only: acc.email_only + curr["Email / LinkedIn"],
+        jobs: acc.jobs + curr.Jobs,
       }),
-      { cognism: 0, apollo: 0, aleads: 0, lusha: 0, theirstack: 0 }
+      { mobile_phone: 0, direct_phone: 0, email_only: 0, jobs: 0 }
     );
   }, [creditData, timePeriod, dateRange]);
 
-  const periodGrandTotal = periodTotals.cognism + periodTotals.apollo + periodTotals.aleads + periodTotals.lusha + periodTotals.theirstack;
+  const periodGrandTotal = periodTotals.mobile_phone + periodTotals.direct_phone + periodTotals.email_only + periodTotals.jobs;
 
   const getPeriodLabel = () => {
     if (timePeriod === "custom" && dateRange?.from && dateRange?.to) {
@@ -368,32 +353,28 @@ const UsageAnalytics = () => {
   };
 
   const barData = getBarChartData();
-  const totals = getTotalCredits();
-  const grandTotal = totals.cognism + totals.apollo + totals.aleads + totals.lusha + totals.theirstack;
 
   // Billing cycle = 1st of current month → today
   const billingCycleStart = startOfMonth(new Date());
   const billingCycleData = creditData.filter(item => new Date(item.created_at) >= billingCycleStart);
-  const billingCyclePlatformTotals = billingCycleData.reduce(
+  const billingCycleTotals = billingCycleData.reduce(
     (acc, item) => ({
-      cognism: acc.cognism + (item.cognism_credits ?? 0),
-      apollo: acc.apollo + item.apollo_credits,
-      aleads: acc.aleads + item.aleads_credits,
-      lusha: acc.lusha + item.lusha_credits,
-      theirstack: acc.theirstack + (item.theirstack_credits ?? 0),
+      mobile_phone: acc.mobile_phone + (item.mobile_phone_credits ?? 0),
+      direct_phone: acc.direct_phone + (item.direct_phone_credits ?? 0),
+      email_only: acc.email_only + (item.email_only_credits ?? 0),
+      jobs: acc.jobs + (item.jobs_credits ?? 0),
     }),
-    { cognism: 0, apollo: 0, aleads: 0, lusha: 0, theirstack: 0 }
+    { mobile_phone: 0, direct_phone: 0, email_only: 0, jobs: 0 }
   );
-  const billingCycleTotal = billingCyclePlatformTotals.cognism + billingCyclePlatformTotals.apollo + billingCyclePlatformTotals.aleads + billingCyclePlatformTotals.lusha + billingCyclePlatformTotals.theirstack;
+  const billingCycleTotal = billingCycleTotals.mobile_phone + billingCycleTotals.direct_phone + billingCycleTotals.email_only + billingCycleTotals.jobs;
   const billingCycleDateLabel = `${format(billingCycleStart, "MMM d")} – ${format(new Date(), "MMM d, yyyy")}`;
 
   // Pie chart reflects the currently selected bar chart period
   const pieData = [
-    { name: platformNames.cognism, value: periodTotals.cognism, color: COLORS.cognism },
-    { name: platformNames.apollo, value: periodTotals.apollo, color: COLORS.apollo },
-    { name: platformNames.aleads, value: periodTotals.aleads, color: COLORS.aleads },
-    { name: platformNames.lusha, value: periodTotals.lusha, color: COLORS.lusha },
-    { name: platformNames.theirstack, value: periodTotals.theirstack, color: COLORS.theirstack },
+    { name: CREDIT_CATEGORIES.mobile_phone.label, value: periodTotals.mobile_phone, color: CREDIT_CATEGORIES.mobile_phone.color },
+    { name: CREDIT_CATEGORIES.direct_phone.label, value: periodTotals.direct_phone, color: CREDIT_CATEGORIES.direct_phone.color },
+    { name: CREDIT_CATEGORIES.email_only.label, value: periodTotals.email_only, color: CREDIT_CATEGORIES.email_only.color },
+    { name: CREDIT_CATEGORIES.jobs.label, value: periodTotals.jobs, color: CREDIT_CATEGORIES.jobs.color },
   ];
 
   return (
@@ -469,36 +450,39 @@ const UsageAnalytics = () => {
             {/* Separator */}
             <div className="h-px bg-gradient-to-r from-primary/40 via-border/60 to-transparent" />
 
-            {/* Platform breakdown tiles */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {[
-                { name: platformNames.cognism, value: billingCyclePlatformTotals.cognism, color: COLORS.cognism },
-                { name: platformNames.apollo, value: billingCyclePlatformTotals.apollo, color: COLORS.apollo },
-                { name: platformNames.aleads, value: billingCyclePlatformTotals.aleads, color: COLORS.aleads },
-                { name: platformNames.lusha, value: billingCyclePlatformTotals.lusha, color: COLORS.lusha },
-                { name: platformNames.theirstack, value: billingCyclePlatformTotals.theirstack, color: COLORS.theirstack },
-              ].map((item, index) => (
-                <Card
-                  key={item.name}
-                  className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-border/60 transition-all duration-300 group"
-                  style={{ animationDelay: `${0.08 + index * 0.04}s` }}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{item.name}</p>
-                        <p className="text-xl font-bold text-foreground mt-0.5 tabular-nums">{item.value.toLocaleString()}</p>
+            {/* Category breakdown tiles */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {([
+                { key: "mobile_phone" as CategoryKey, value: billingCycleTotals.mobile_phone },
+                { key: "direct_phone" as CategoryKey, value: billingCycleTotals.direct_phone },
+                { key: "email_only" as CategoryKey, value: billingCycleTotals.email_only },
+                { key: "jobs" as CategoryKey, value: billingCycleTotals.jobs },
+              ]).map((item, index) => {
+                const cat = CREDIT_CATEGORIES[item.key];
+                return (
+                  <Card
+                    key={item.key}
+                    className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-border/60 transition-all duration-300 group"
+                    style={{ animationDelay: `${0.08 + index * 0.04}s` }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{cat.label}</p>
+                          <p className="text-xl font-bold text-foreground mt-0.5 tabular-nums">{item.value.toLocaleString()}</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">{cat.rate} credits each</p>
+                        </div>
+                        <div
+                          className="p-2.5 rounded-lg transition-transform duration-300 group-hover:scale-110"
+                          style={{ backgroundColor: `${cat.color}20` }}
+                        >
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                        </div>
                       </div>
-                      <div
-                        className="p-2.5 rounded-lg transition-transform duration-300 group-hover:scale-110"
-                        style={{ backgroundColor: `${item.color}20` }}
-                      >
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
 
@@ -575,17 +559,17 @@ const UsageAnalytics = () => {
                   
                   {/* Legend */}
                   <div className="space-y-2">
-                    {[
-                      { name: platformNames.cognism, value: periodTotals.cognism, color: COLORS.cognism },
-                      { name: platformNames.apollo, value: periodTotals.apollo, color: COLORS.apollo },
-                      { name: platformNames.aleads, value: periodTotals.aleads, color: COLORS.aleads },
-                      { name: platformNames.lusha, value: periodTotals.lusha, color: COLORS.lusha },
-                      { name: platformNames.theirstack, value: periodTotals.theirstack, color: COLORS.theirstack },
-                    ].map((item, index) => {
+                    {([
+                      { key: "mobile_phone" as CategoryKey, value: periodTotals.mobile_phone },
+                      { key: "direct_phone" as CategoryKey, value: periodTotals.direct_phone },
+                      { key: "email_only" as CategoryKey, value: periodTotals.email_only },
+                      { key: "jobs" as CategoryKey, value: periodTotals.jobs },
+                    ]).map((item, index) => {
+                      const cat = CREDIT_CATEGORIES[item.key];
                       const percentage = periodGrandTotal > 0 ? ((item.value / periodGrandTotal) * 100).toFixed(1) : "0";
                       return (
-                        <div 
-                          key={item.name}
+                        <div
+                          key={item.key}
                           className={cn(
                             "flex items-center justify-between p-2.5 rounded-lg transition-all duration-300",
                             "hover:bg-muted/50 cursor-pointer group",
@@ -595,11 +579,11 @@ const UsageAnalytics = () => {
                           onMouseLeave={() => setActivePieIndex(undefined)}
                         >
                           <div className="flex items-center gap-2.5">
-                            <div 
-                              className="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125" 
-                              style={{ backgroundColor: item.color, boxShadow: `0 0 8px ${item.color}50` }} 
+                            <div
+                              className="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125"
+                              style={{ backgroundColor: cat.color, boxShadow: `0 0 8px ${cat.color}50` }}
                             />
-                            <span className="text-xs font-medium text-foreground">{item.name}</span>
+                            <span className="text-xs font-medium text-foreground">{cat.label}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">{percentage}%</span>
@@ -719,19 +703,21 @@ const UsageAnalytics = () => {
                   </div>
                   <div className="h-4 w-px bg-border/50 hidden sm:block" />
                   <div className="flex items-center gap-3 flex-wrap">
-                    {[
-                      { name: platformNames.cognism, value: periodTotals.cognism, color: COLORS.cognism },
-                      { name: platformNames.apollo, value: periodTotals.apollo, color: COLORS.apollo },
-                      { name: platformNames.aleads, value: periodTotals.aleads, color: COLORS.aleads },
-                      { name: platformNames.lusha, value: periodTotals.lusha, color: COLORS.lusha },
-                      { name: platformNames.theirstack, value: periodTotals.theirstack, color: COLORS.theirstack },
-                    ].map((item) => (
-                      <div key={item.name} className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-[10px] text-muted-foreground">{item.name}:</span>
-                        <span className="text-xs font-semibold text-foreground">{item.value.toLocaleString()}</span>
-                      </div>
-                    ))}
+                    {([
+                      { key: "mobile_phone" as CategoryKey, value: periodTotals.mobile_phone },
+                      { key: "direct_phone" as CategoryKey, value: periodTotals.direct_phone },
+                      { key: "email_only" as CategoryKey, value: periodTotals.email_only },
+                      { key: "jobs" as CategoryKey, value: periodTotals.jobs },
+                    ]).map((item) => {
+                      const cat = CREDIT_CATEGORIES[item.key];
+                      return (
+                        <div key={item.key} className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                          <span className="text-[10px] text-muted-foreground">{cat.label}:</span>
+                          <span className="text-xs font-semibold text-foreground">{item.value.toLocaleString()}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </CardHeader>
@@ -747,25 +733,21 @@ const UsageAnalytics = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barData} margin={{ top: 10, right: 10, left: -15, bottom: 10 }}>
                       <defs>
-                        <linearGradient id="cognismGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={COLORS.cognism} stopOpacity={1}/>
-                          <stop offset="100%" stopColor={COLORS.cognism} stopOpacity={0.7}/>
+                        <linearGradient id="mobilePhoneGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CREDIT_CATEGORIES.mobile_phone.color} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={CREDIT_CATEGORIES.mobile_phone.color} stopOpacity={0.7}/>
                         </linearGradient>
-                        <linearGradient id="apolloGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={COLORS.apollo} stopOpacity={1}/>
-                          <stop offset="100%" stopColor={COLORS.apollo} stopOpacity={0.7}/>
+                        <linearGradient id="directPhoneGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CREDIT_CATEGORIES.direct_phone.color} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={CREDIT_CATEGORIES.direct_phone.color} stopOpacity={0.7}/>
                         </linearGradient>
-                        <linearGradient id="aleadsGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={COLORS.aleads} stopOpacity={1}/>
-                          <stop offset="100%" stopColor={COLORS.aleads} stopOpacity={0.7}/>
+                        <linearGradient id="emailOnlyGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CREDIT_CATEGORIES.email_only.color} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={CREDIT_CATEGORIES.email_only.color} stopOpacity={0.7}/>
                         </linearGradient>
-                        <linearGradient id="lushaGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={COLORS.lusha} stopOpacity={1}/>
-                          <stop offset="100%" stopColor={COLORS.lusha} stopOpacity={0.7}/>
-                        </linearGradient>
-                        <linearGradient id="theirstackGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={COLORS.theirstack} stopOpacity={1}/>
-                          <stop offset="100%" stopColor={COLORS.theirstack} stopOpacity={0.7}/>
+                        <linearGradient id="jobsGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CREDIT_CATEGORIES.jobs.color} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={CREDIT_CATEGORIES.jobs.color} stopOpacity={0.7}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
@@ -797,56 +779,16 @@ const UsageAnalytics = () => {
                         itemStyle={{ color: "hsl(var(--foreground))", padding: "2px 0", fontSize: "11px" }}
                         labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: "6px", fontSize: "12px" }}
                       />
-                      <Legend 
+                      <Legend
                         wrapperStyle={{ paddingTop: "12px" }}
                         iconType="circle"
                         iconSize={6}
-                        formatter={(value) => {
-                          const nameMap: Record<string, string> = {
-                            "Cognism": platformNames.cognism,
-                            "Apollo": platformNames.apollo,
-                            "ALeads": platformNames.aleads,
-                            "Lusha": platformNames.lusha,
-                            "Theirstack": platformNames.theirstack,
-                          };
-                          return <span className="text-xs text-foreground ml-0.5">{nameMap[value] || value}</span>;
-                        }}
+                        formatter={(value) => <span className="text-xs text-foreground ml-0.5">{value}</span>}
                       />
-                      <Bar
-                        dataKey="Cognism"
-                        name={platformNames.cognism}
-                        stackId="a"
-                        fill="url(#cognismGradient)"
-                        radius={[0, 0, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="Apollo"
-                        name={platformNames.apollo}
-                        stackId="a"
-                        fill="url(#apolloGradient)"
-                        radius={[0, 0, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="ALeads"
-                        name={platformNames.aleads}
-                        stackId="a"
-                        fill="url(#aleadsGradient)"
-                        radius={[0, 0, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="Lusha"
-                        name={platformNames.lusha}
-                        stackId="a"
-                        fill="url(#lushaGradient)"
-                        radius={[0, 0, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="Theirstack"
-                        name={platformNames.theirstack}
-                        stackId="a"
-                        fill="url(#theirstackGradient)"
-                        radius={[3, 3, 0, 0]}
-                      />
+                      <Bar dataKey="Mobile Phone" stackId="a" fill="url(#mobilePhoneGradient)" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Direct Phone" stackId="a" fill="url(#directPhoneGradient)" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Email / LinkedIn" stackId="a" fill="url(#emailOnlyGradient)" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="Jobs" stackId="a" fill="url(#jobsGradient)" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                   </div>
