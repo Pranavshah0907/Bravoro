@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -189,10 +190,18 @@ export type Database = {
           cognism_credits: number
           contacts_count: number
           created_at: string
+          direct_phone_contacts: number
+          direct_phone_credits: number
+          email_only_contacts: number
+          email_only_credits: number
           enriched_contacts_count: number
           grand_total_credits: number
           id: string
+          jobs_count: number
+          jobs_credits: number
           lusha_credits: number
+          mobile_phone_contacts: number
+          mobile_phone_credits: number
           search_id: string | null
           theirstack_credits: number
           updated_at: string
@@ -206,10 +215,18 @@ export type Database = {
           cognism_credits?: number
           contacts_count?: number
           created_at?: string
+          direct_phone_contacts?: number
+          direct_phone_credits?: number
+          email_only_contacts?: number
+          email_only_credits?: number
           enriched_contacts_count?: number
           grand_total_credits?: number
           id?: string
+          jobs_count?: number
+          jobs_credits?: number
           lusha_credits?: number
+          mobile_phone_contacts?: number
+          mobile_phone_credits?: number
           search_id?: string | null
           theirstack_credits?: number
           updated_at?: string
@@ -223,10 +240,18 @@ export type Database = {
           cognism_credits?: number
           contacts_count?: number
           created_at?: string
+          direct_phone_contacts?: number
+          direct_phone_credits?: number
+          email_only_contacts?: number
+          email_only_credits?: number
           enriched_contacts_count?: number
           grand_total_credits?: number
           id?: string
+          jobs_count?: number
+          jobs_credits?: number
           lusha_credits?: number
+          mobile_phone_contacts?: number
+          mobile_phone_credits?: number
           search_id?: string | null
           theirstack_credits?: number
           updated_at?: string
@@ -709,9 +734,8 @@ export type Database = {
         Args: {
           p_apollo_person_id?: string
           p_cognism_person_id?: string
-          p_email?: string
-          p_linkedin?: string
-          p_person_id?: string
+          p_domain?: string
+          p_first_name?: string
           p_user_id: string
         }
         Returns: Json
