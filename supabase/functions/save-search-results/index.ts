@@ -61,6 +61,10 @@ interface CreditCounter {
   apollo_total_credits?: number;
   theirstack_total_credits?: number;
   grand_total_credits?: number;
+  contacts_with_direct_phone_only?: number;
+  email_only_contacts?: number;
+  job_search_runs_count?: number;
+  total_jobs_found_count?: number;
 }
 
 // Missing company structure for bulk search (companies not found)
@@ -491,6 +495,33 @@ serve(async (req: Request) => {
       console.log(`[${requestId}] No credit_counter in payload`);
     }
 
+    // === Contact-type credit system ===
+    let mobilePhoneContacts = 0;
+    let mobilePhoneCredits = 0;
+    let directPhoneContacts = 0;
+    let directPhoneCredits = 0;
+    let emailOnlyContacts = 0;
+    let emailOnlyCredits = 0;
+    let jobsCount = 0;
+    let jobsCredits = 0;
+
+    if (creditCounter) {
+      mobilePhoneContacts = toInt(creditCounter.contacts_with_mobile_phone);
+      directPhoneContacts = toInt(creditCounter.contacts_with_direct_phone_only);
+      emailOnlyContacts = toInt(creditCounter.email_only_contacts);
+      jobsCount = toInt(creditCounter.total_jobs_found_count);
+
+      mobilePhoneCredits = mobilePhoneContacts * 4;
+      directPhoneCredits = directPhoneContacts * 3;
+      emailOnlyCredits = emailOnlyContacts * 2;
+      jobsCredits = jobsCount * 1;
+
+      // Override grand_total with our own credit system calculation
+      grandTotalCredits = mobilePhoneCredits + directPhoneCredits + emailOnlyCredits + jobsCredits;
+
+      console.log(`[${requestId}] Contact-type credits — mobile: ${mobilePhoneContacts}×4=${mobilePhoneCredits}, direct: ${directPhoneContacts}×3=${directPhoneCredits}, email-only: ${emailOnlyContacts}×2=${emailOnlyCredits}, jobs: ${jobsCount}×1=${jobsCredits}, total: ${grandTotalCredits}`);
+    }
+
     console.log(`[${requestId}] Received request for search_id:`, search_id);
     console.log(`[${requestId}] Number of companies:`, companies.length);
     console.log(`[${requestId}] Missing contacts count:`, missingContactsData.length);
@@ -606,7 +637,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const hasAnyCredits = apolloCredits > 0 || aleadsCredits > 0 || lushaCredits > 0 || cognismCredits > 0 || grandTotalCredits > 0;
+    const hasAnyCredits = grandTotalCredits > 0 || apolloCredits > 0 || aleadsCredits > 0 || lushaCredits > 0 || cognismCredits > 0;
 
     // Delete existing results for this search (for re-runs)
     const { error: deleteError } = await supabase
@@ -790,7 +821,7 @@ serve(async (req: Request) => {
 
       const { data: existingCredit, error: existingError } = await supabase
         .from('credit_usage')
-        .select('id, apollo_credits, aleads_credits, lusha_credits, cognism_credits, theirstack_credits, contacts_count, enriched_contacts_count, grand_total_credits')
+        .select('id, apollo_credits, aleads_credits, lusha_credits, cognism_credits, theirstack_credits, contacts_count, enriched_contacts_count, grand_total_credits, mobile_phone_contacts, mobile_phone_credits, direct_phone_contacts, direct_phone_credits, email_only_contacts, email_only_credits, jobs_count, jobs_credits')
         .eq('user_id', searchData.user_id)
         .eq('search_id', search_id)
         .order('created_at', { ascending: false })
@@ -810,6 +841,14 @@ serve(async (req: Request) => {
       const nextContactsCount = Math.max(existingCredit?.contacts_count ?? 0, contactsCount);
       const nextEnrichedContactsCount = Math.max(existingCredit?.enriched_contacts_count ?? 0, enrichedContactsCount);
       const nextGrandTotalCredits = Math.max(existingCredit?.grand_total_credits ?? 0, grandTotalCredits);
+      const nextMobilePhoneContacts = Math.max(existingCredit?.mobile_phone_contacts ?? 0, mobilePhoneContacts);
+      const nextMobilePhoneCredits = Math.max(existingCredit?.mobile_phone_credits ?? 0, mobilePhoneCredits);
+      const nextDirectPhoneContacts = Math.max(existingCredit?.direct_phone_contacts ?? 0, directPhoneContacts);
+      const nextDirectPhoneCredits = Math.max(existingCredit?.direct_phone_credits ?? 0, directPhoneCredits);
+      const nextEmailOnlyContacts = Math.max(existingCredit?.email_only_contacts ?? 0, emailOnlyContacts);
+      const nextEmailOnlyCredits = Math.max(existingCredit?.email_only_credits ?? 0, emailOnlyCredits);
+      const nextJobsCount = Math.max(existingCredit?.jobs_count ?? 0, jobsCount);
+      const nextJobsCredits = Math.max(existingCredit?.jobs_credits ?? 0, jobsCredits);
 
       if (existingCredit?.id) {
         const { error: creditError } = await supabase
@@ -823,6 +862,14 @@ serve(async (req: Request) => {
             contacts_count: nextContactsCount,
             enriched_contacts_count: nextEnrichedContactsCount,
             grand_total_credits: nextGrandTotalCredits,
+            mobile_phone_contacts: nextMobilePhoneContacts,
+            mobile_phone_credits: nextMobilePhoneCredits,
+            direct_phone_contacts: nextDirectPhoneContacts,
+            direct_phone_credits: nextDirectPhoneCredits,
+            email_only_contacts: nextEmailOnlyContacts,
+            email_only_credits: nextEmailOnlyCredits,
+            jobs_count: nextJobsCount,
+            jobs_credits: nextJobsCredits,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingCredit.id);
@@ -846,6 +893,14 @@ serve(async (req: Request) => {
             contacts_count: nextContactsCount,
             enriched_contacts_count: nextEnrichedContactsCount,
             grand_total_credits: nextGrandTotalCredits,
+            mobile_phone_contacts: nextMobilePhoneContacts,
+            mobile_phone_credits: nextMobilePhoneCredits,
+            direct_phone_contacts: nextDirectPhoneContacts,
+            direct_phone_credits: nextDirectPhoneCredits,
+            email_only_contacts: nextEmailOnlyContacts,
+            email_only_credits: nextEmailOnlyCredits,
+            jobs_count: nextJobsCount,
+            jobs_credits: nextJobsCredits,
           });
 
         if (creditError) {
