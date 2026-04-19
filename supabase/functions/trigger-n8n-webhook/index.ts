@@ -68,11 +68,10 @@ serve(async (req) => {
     const n8nWebhookSecret = Deno.env.get('N8N_WEBHOOK_SECRET');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user profile and enrichment limits
+    // Get user profile and workspace credit balance
     let userEmail = '';
     let userName = '';
-    let enrichmentRemaining = 0;
-    let enrichmentLimit = 0;
+    let workspaceId: string | null = null;
 
     const { data: searchRecord } = await supabase
       .from('searches')
@@ -83,14 +82,57 @@ serve(async (req) => {
     if (searchRecord?.user_id) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('email, full_name, enrichment_limit, enrichment_used')
+        .select('email, full_name, workspace_id')
         .eq('id', searchRecord.user_id)
         .maybeSingle();
 
       userEmail = profile?.email || '';
       userName = profile?.full_name || '';
-      enrichmentLimit = profile?.enrichment_limit ?? 0;
-      enrichmentRemaining = Math.max(0, enrichmentLimit - (profile?.enrichment_used ?? 0));
+      workspaceId = profile?.workspace_id || null;
+    }
+
+    // Credit gate — block if no workspace or credits exhausted
+    if (!workspaceId) {
+      await supabase.from('searches').update({
+        status: 'error',
+        error_message: 'No workspace assigned',
+        updated_at: new Date().toISOString(),
+      }).eq('id', searchId);
+
+      return new Response(
+        JSON.stringify({ success: false, error: 'NO_WORKSPACE', message: 'No workspace assigned to your account' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: creditData, error: creditError } = await supabase
+      .rpc('get_workspace_credit_balance', { p_user_id: searchRecord!.user_id });
+
+    if (creditError || !creditData?.success) {
+      console.error('Credit balance check failed:', creditError || creditData);
+      await supabase.from('searches').update({
+        status: 'error',
+        error_message: 'Could not verify credit balance',
+        updated_at: new Date().toISOString(),
+      }).eq('id', searchId);
+
+      return new Response(
+        JSON.stringify({ success: false, error: 'CREDIT_CHECK_FAILED', message: 'Could not verify credit balance' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (creditData.is_exhausted) {
+      await supabase.from('searches').update({
+        status: 'error',
+        error_message: 'Insufficient credits',
+        updated_at: new Date().toISOString(),
+      }).eq('id', searchId);
+
+      return new Response(
+        JSON.stringify({ success: false, error: 'INSUFFICIENT_CREDITS', message: 'Workspace credits exhausted' }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Build n8n payload
@@ -100,8 +142,7 @@ serve(async (req) => {
       user_id: userId,
       user_email: userEmail,
       user_name: userName,
-      enrichment_remaining: enrichmentRemaining,
-      enrichment_limit: enrichmentLimit,
+      workspace_id: workspaceId,
     };
 
     // Try to acquire the processing flag
