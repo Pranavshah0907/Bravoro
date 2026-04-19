@@ -72,9 +72,9 @@ Deno.serve(async (req) => {
     }
 
     // Get the request body
-    const { email, fullName, tempPassword, role = 'user', enrichmentLimit = 0, workspaceId = null } = await req.json();
+    const { email, fullName, tempPassword, role = 'user', workspaceId = null } = await req.json();
 
-    console.log(`[${requestId}] Creating user with email:`, email, 'enrichmentLimit:', enrichmentLimit);
+    console.log(`[${requestId}] Creating user with email:`, email, 'workspaceId:', workspaceId);
 
     // Create the new user
     let { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -143,11 +143,9 @@ Deno.serve(async (req) => {
     }
 
     if (authData.user) {
-      // Update profile with password reset flag, enrichment limit, and workspace
+      // Update profile with password reset flag and workspace
       const profileUpdate: Record<string, unknown> = {
         requires_password_reset: true,
-        enrichment_limit: enrichmentLimit,
-        enrichment_used: 0,
       };
       if (workspaceId) profileUpdate.workspace_id = workspaceId;
 
@@ -171,7 +169,7 @@ Deno.serve(async (req) => {
         .from('user_roles')
         .insert({ user_id: authData.user.id, role: role });
 
-      console.log(`[${requestId}] User created successfully with role:`, role, 'enrichmentLimit:', enrichmentLimit);
+      console.log(`[${requestId}] User created successfully with role:`, role);
 
       // Send welcome email via unified send-email function
       console.log(`[${requestId}] Sending welcome email via send-email function`);
@@ -184,6 +182,7 @@ Deno.serve(async (req) => {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
           },
           body: JSON.stringify({
             type: 'welcome',
