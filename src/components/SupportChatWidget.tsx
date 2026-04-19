@@ -41,20 +41,36 @@ export function SupportChatWidget() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const fetchProfile = async (userId: string) => {
       const { data } = await supabase
         .from("profiles")
         .select("first_name, last_name, email")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single();
       if (data) {
         setUserName(`${data.first_name || ""} ${data.last_name || ""}`.trim());
-        setUserEmail(data.email || user.email || "");
+        setUserEmail(data.email || "");
       }
     };
-    fetchUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setUserName("");
+        setUserEmail("");
+      }
+      setMessages([WELCOME_MESSAGE]);
+      setInput("");
+      setAttachments([]);
+      setIsOpen(false);
+    });
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) fetchProfile(user.id);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
