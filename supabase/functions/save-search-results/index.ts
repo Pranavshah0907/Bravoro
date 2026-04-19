@@ -188,50 +188,33 @@ async function upsertToMasterContacts(
       }
 
       if (existingRecord) {
-        // Update existing record - merge data intelligently
+        // Update existing record - overwrite all fields with fresh data
         const updates: Record<string, any> = {
           last_updated_at: new Date().toISOString(),
         };
 
-        // Update person_id if we have one now and didn't before
-        if (personId && !existingRecord.person_id) {
-          updates.person_id = personId;
-        }
-
-        // Handle email - add to email_2 if different
-        if (email && email !== existingRecord.email && email !== existingRecord.email_2) {
-          if (!existingRecord.email) {
-            updates.email = email;
-          } else if (!existingRecord.email_2) {
-            updates.email_2 = email;
-          }
-        }
-
-        // Handle phone - add to phone_2 if different
-        if (phone1 && phone1 !== existingRecord.phone_1 && phone1 !== existingRecord.phone_2) {
-          if (!existingRecord.phone_1) {
-            updates.phone_1 = phone1;
-          } else if (!existingRecord.phone_2) {
-            updates.phone_2 = phone1;
-          }
-        }
-        if (phone2 && phone2 !== existingRecord.phone_1 && phone2 !== existingRecord.phone_2) {
-          if (!existingRecord.phone_2) {
-            updates.phone_2 = phone2;
-          }
-        }
-
-        // Update other fields if we have new data
-        if (linkedin && !existingRecord.linkedin) updates.linkedin = linkedin;
-        if (title && !existingRecord.title) updates.title = title;
-        if (domain && !existingRecord.domain) updates.domain = domain;
-        if (cognismPersonId && !existingRecord.cognism_person_id) updates.cognism_person_id = cognismPersonId;
-        if (apolloPersonId && !existingRecord.apollo_person_id) updates.apollo_person_id = apolloPersonId;
-        if (provider && !existingRecord.provider) updates.provider = provider;
+        if (personId) updates.person_id = personId;
+        if (email) updates.email = email;
+        if (phone1) updates.phone_1 = phone1;
+        if (phone2) updates.phone_2 = phone2;
+        if (linkedin) updates.linkedin = linkedin;
+        if (title) updates.title = title;
+        if (organization) updates.organization = organization;
+        if (domain) updates.domain = domain;
+        if (cognismPersonId) updates.cognism_person_id = cognismPersonId;
+        if (apolloPersonId) updates.apollo_person_id = apolloPersonId;
+        if (provider) updates.provider = provider;
         if (cognismCreditsUsed > 0) updates.cognism_credits_used = cognismCreditsUsed;
         if (lushaCreditsUsed > 0) updates.lusha_credits_used = lushaCreditsUsed;
         if (aleadsCreditsUsed > 0) updates.aleads_credits_used = aleadsCreditsUsed;
         if (apolloCreditsUsed > 0) updates.apollo_credits_used = apolloCreditsUsed;
+
+        // Keep email_2 merge logic - add secondary email if different
+        if (email && existingRecord.email && email !== existingRecord.email) {
+          if (!existingRecord.email_2 || existingRecord.email_2 !== email) {
+            updates.email_2 = existingRecord.email;
+          }
+        }
 
         const { error } = await supabase
           .from('master_contacts')
@@ -421,6 +404,16 @@ serve(async (req: Request) => {
 
     console.log(`[${requestId}] Webhook authentication successful`);
 
+    const MAX_PAYLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+    const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
+    if (contentLength > MAX_PAYLOAD_BYTES) {
+      console.error(`[${requestId}] Payload too large: ${contentLength} bytes`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Payload too large', request_id: requestId }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -607,6 +600,7 @@ serve(async (req: Request) => {
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${supabaseServiceKey}`,
+                'apikey': supabaseServiceKey,
               },
               body: JSON.stringify({
                 type: 'error',
@@ -783,6 +777,7 @@ serve(async (req: Request) => {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
           },
           body: JSON.stringify({
             type: 'success',
@@ -905,6 +900,35 @@ serve(async (req: Request) => {
           console.error(`[${requestId}] Error saving credit usage:`, creditError);
         } else {
           console.log(`[${requestId}] Credit usage saved - Apollo: ${nextApollo}, A-Leads: ${nextAleads}, Lusha: ${nextLusha}, Cognism: ${nextCognism}, Theirstack: ${nextTheirstack}, Grand Total: ${nextGrandTotalCredits}`);
+        }
+      }
+
+      // ── Workspace credit deduction ──────────────────────────────
+      // Only deduct the *delta* (new credits minus what was already deducted for this search)
+      // This handles webhook retries safely — never double-deducts
+      const previousGrandTotal = existingCredit?.grand_total_credits ?? 0;
+      const creditDelta = nextGrandTotalCredits - previousGrandTotal;
+
+      if (creditDelta > 0) {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('workspace_id')
+          .eq('id', searchData.user_id)
+          .maybeSingle();
+
+        if (userProfile?.workspace_id) {
+          const { data: deductResult } = await supabase.rpc('deduct_workspace_credits', {
+            p_workspace_id: userProfile.workspace_id,
+            p_amount: creditDelta,
+            p_search_id: search_id,
+            p_note: `Search ${search_id}: +${creditDelta} credits (M:${nextMobilePhoneCredits} D:${nextDirectPhoneCredits} E:${nextEmailOnlyCredits} J:${nextJobsCredits})`,
+          });
+
+          if (deductResult?.success) {
+            console.log(`[${requestId}] Deducted ${creditDelta} credits from workspace ${userProfile.workspace_id}. New balance: ${deductResult.new_balance}`);
+          } else {
+            console.error(`[${requestId}] Failed to deduct workspace credits:`, deductResult?.error);
+          }
         }
       }
     } else {
