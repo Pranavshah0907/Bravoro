@@ -82,6 +82,10 @@ const emptyRow = (): GridRow => ({
   jobTitle: "", jobSeniority: "", datePosted: "0",
 });
 
+const DEFAULT_ROW = emptyRow();
+const rowHasData = (r: GridRow): boolean =>
+  (Object.keys(DEFAULT_ROW) as ColKey[]).some(k => r[k] !== DEFAULT_ROW[k]);
+
 // ── Component ──────────────────────────────────────────────────────────────────
 interface SpreadsheetGridProps {
   userId:          string;
@@ -292,7 +296,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     const id   = draftIdRef.current;
     const name = draftNameRef.current;
     const data = rowsRef.current.map(r => ({ ...r }));
-    const rc   = data.filter(r => r.orgName.trim()).length;
+    const rc   = data.filter(rowHasData).length;
     if (!id || rc === 0) return;
     setDraftStatus("saving");
     try {
@@ -306,7 +310,13 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   // ── Draft CRUD ────────────────────────────────────────────────────────────────
   const saveDraft = async () => {
     const data  = rows.map(r => ({ ...r }));
-    const rc    = validCount;
+    const rc    = data.filter(rowHasData).length;
+
+    if (rc === 0) {
+      toast({ title: "Empty sheet", description: "Add some data before saving.", variant: "destructive" });
+      return;
+    }
+
     setDraftSaving(true);
     try {
       if (draftId) {
@@ -316,13 +326,27 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         setDraftStatus("saved");
         toast({ title: "Draft saved", description: `"${draftName}" updated` });
       } else {
+        // Deduplicate name
+        const { data: existing } = await supabase
+          .from("bulk_search_drafts")
+          .select("name")
+          .eq("user_id", userId);
+        const names = new Set((existing ?? []).map(d => d.name));
+        let finalName = draftName;
+        if (names.has(finalName)) {
+          let n = 2;
+          while (names.has(`${draftName} (${n})`)) n++;
+          finalName = `${draftName} (${n})`;
+          setDraftName(finalName);
+        }
+
         const { data: rec, error } = await supabase.from("bulk_search_drafts")
-          .insert({ user_id: userId, name: draftName, grid_data: data, row_count: rc })
+          .insert({ user_id: userId, name: finalName, grid_data: data, row_count: rc })
           .select().single();
         if (error) throw error;
         setDraftId(rec.id);
         setDraftStatus("saved");
-        toast({ title: "Draft saved", description: `"${draftName}" saved` });
+        toast({ title: "Draft saved", description: `"${finalName}" saved` });
       }
     } catch {
       toast({ title: "Save failed", description: "Could not save draft", variant: "destructive" });
@@ -331,7 +355,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
   // ── Imperative handle (used by ExcelUpload/SheetsManager) ───────────────────
   useImperativeHandle(ref, () => ({
-    hasUnsavedData:    () => rowsRef.current.filter(r => r.orgName.trim()).length > 0 && draftStatusRef.current !== "saved",
+    hasUnsavedData:    () => rowsRef.current.some(rowHasData) && draftStatusRef.current !== "saved",
     getCurrentDraftId: () => draftIdRef.current,
     loadRows: (newRows, newDraftId, newDraftName) => {
       skipDirtyRef.current = true;
@@ -991,16 +1015,33 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
   // Submit
   const handleSubmit = async () => {
-    const valid = rows.filter(r => r.orgName.trim());
-    if (!valid.length) {
-      toast({ title: "No Data", description: "Add at least one company name.", variant: "destructive" });
+    const filledRows = rows.filter(rowHasData);
+    if (!filledRows.length) {
+      toast({ title: "No Data", description: "Add at least one row of data.", variant: "destructive" });
+      return;
+    }
+
+    // Validate: every filled row must have Organization Name
+    const missingNameIndices = new Set(
+      rows.reduce<number[]>((acc, r, i) => {
+        if (rowHasData(r) && !r.orgName.trim()) acc.push(i);
+        return acc;
+      }, [])
+    );
+    if (missingNameIndices.size > 0) {
+      const rowNums = Array.from(missingNameIndices).map(i => i + 1).join(", ");
+      toast({
+        title: "Missing Organization Name",
+        description: `Row${missingNameIndices.size === 1 ? "" : "s"} ${rowNums} ${missingNameIndices.size === 1 ? "has" : "have"} data but no Organization Name. Please fill it in or clear the row.`,
+        variant: "destructive",
+      });
       return;
     }
 
     // Validate: all filled rows must have Organization Domain
     const missingIndices = new Set(
       rows.reduce<number[]>((acc, r, i) => {
-        if (r.orgName.trim() && !r.orgDomains.trim()) acc.push(i);
+        if (rowHasData(r) && !r.orgDomains.trim()) acc.push(i);
         return acc;
       }, [])
     );
@@ -1008,7 +1049,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
       setMissingDomainRows(missingIndices);
       toast({
         title: "Missing Organization Domains",
-        description: `${missingIndices.size} row${missingIndices.size === 1 ? "" : "s"} with a company name are missing an Organization Domain. Please fill the highlighted cells.`,
+        description: `${missingIndices.size} row${missingIndices.size === 1 ? "" : "s"} with data ${missingIndices.size === 1 ? "is" : "are"} missing an Organization Domain. Please fill the highlighted cells.`,
         variant: "destructive",
       });
       return;
@@ -1018,7 +1059,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     const badSeparator = /[;:|\t]/;
     const invalidLocIndices = new Set(
       rows.reduce<number[]>((acc, r, i) => {
-        if (r.orgName.trim() && r.orgLocations.trim() && badSeparator.test(r.orgLocations)) acc.push(i);
+        if (rowHasData(r) && r.orgLocations.trim() && badSeparator.test(r.orgLocations)) acc.push(i);
         return acc;
       }, [])
     );
@@ -1040,7 +1081,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         const arr = s.trim() ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
         return arr.length <= 1 ? (arr[0] ?? "") : arr;
       };
-      const mainData = valid.map((r, idx) => ({
+      const mainData = filledRows.map((r, idx) => ({
         "Sr No":                  idx + 1,
         "Organization Name":      r.orgName.trim(),
         "Organization Locations": r.orgLocations.trim(),
@@ -1057,10 +1098,10 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
       const sentName = draftNameRef.current !== "Untitled Draft"
         ? draftNameRef.current
-        : `Bulk Search · ${valid.length} ${valid.length === 1 ? "company" : "companies"}`;
+        : `Bulk Search · ${filledRows.length} ${filledRows.length === 1 ? "company" : "companies"}`;
       const { data: search, error: se } = await supabase
         .from("searches")
-        .insert({ user_id: userId, search_type: "bulk", excel_file_name: sentName, status: "processing", grid_data: valid } as any)
+        .insert({ user_id: userId, search_type: "bulk", excel_file_name: sentName, status: "processing", grid_data: filledRows } as any)
         .select().single();
       if (se) throw se;
 
@@ -1080,7 +1121,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
       }
       setDraftId(null); setDraftName("Untitled Draft"); setDraftStatus("idle");
 
-      toast({ title: "Processing Started", description: `${valid.length} ${valid.length === 1 ? "company" : "companies"} queued. You'll get an email when results are ready.` });
+      toast({ title: "Processing Started", description: `${filledRows.length} ${filledRows.length === 1 ? "company" : "companies"} queued. You'll get an email when results are ready.` });
       sessionStorage.removeItem(`sg_session_${userId}`);
       skipDirtyRef.current = true;
       setRows(Array.from({ length: ROWS_DEFAULT }, emptyRow));
@@ -1104,8 +1145,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   };
 
   const handleNewSheet = async () => {
-    const validCount = rows.filter(r => r.orgName.trim()).length;
-    const hasUnsaved = validCount > 0 && draftStatus !== "saved";
+    const hasUnsaved = rows.some(rowHasData) && draftStatus !== "saved";
     if (hasUnsaved && !window.confirm("You have unsaved changes. Discard them and open a new sheet?")) return;
 
     // Find a unique name: "Untitled Draft", then "Untitled Draft (1)", "(2)", …
@@ -1123,7 +1163,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
   // Clear sheet
   const handleClearSheet = () => {
-    if (!rows.some(r => r.orgName.trim())) return;
+    if (!rows.some(rowHasData)) return;
     if (!window.confirm("Clear all cell data? Your saved draft will not be deleted.")) return;
     skipDirtyRef.current = true;
     undoStackRef.current = [];
@@ -1133,7 +1173,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     setEditing(false);
   };
 
-  const validCount = rows.filter(r => r.orgName.trim()).length;
+  const validCount = rows.filter(rowHasData).length;
   const selected   = getSelected();
   const filtered   = getFiltered();
 
