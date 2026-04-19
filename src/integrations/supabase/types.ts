@@ -378,6 +378,84 @@ export type Database = {
         }
         Relationships: []
       }
+      master_contacts_oldbackup: {
+        Row: {
+          aleads_credits_used: number | null
+          apollo_credits_used: number | null
+          apollo_person_id: string | null
+          cognism_credits_used: number | null
+          cognism_person_id: string | null
+          domain: string | null
+          email: string | null
+          email_2: string | null
+          first_name: string | null
+          first_seen_at: string | null
+          id: string | null
+          last_name: string | null
+          last_updated_at: string | null
+          linkedin: string | null
+          lusha_credits_used: number | null
+          organization: string | null
+          person_id: string | null
+          phone_1: string | null
+          phone_2: string | null
+          provider: string | null
+          source_search_id: string | null
+          source_user_id: string | null
+          title: string | null
+        }
+        Insert: {
+          aleads_credits_used?: number | null
+          apollo_credits_used?: number | null
+          apollo_person_id?: string | null
+          cognism_credits_used?: number | null
+          cognism_person_id?: string | null
+          domain?: string | null
+          email?: string | null
+          email_2?: string | null
+          first_name?: string | null
+          first_seen_at?: string | null
+          id?: string | null
+          last_name?: string | null
+          last_updated_at?: string | null
+          linkedin?: string | null
+          lusha_credits_used?: number | null
+          organization?: string | null
+          person_id?: string | null
+          phone_1?: string | null
+          phone_2?: string | null
+          provider?: string | null
+          source_search_id?: string | null
+          source_user_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          aleads_credits_used?: number | null
+          apollo_credits_used?: number | null
+          apollo_person_id?: string | null
+          cognism_credits_used?: number | null
+          cognism_person_id?: string | null
+          domain?: string | null
+          email?: string | null
+          email_2?: string | null
+          first_name?: string | null
+          first_seen_at?: string | null
+          id?: string | null
+          last_name?: string | null
+          last_updated_at?: string | null
+          linkedin?: string | null
+          lusha_credits_used?: number | null
+          organization?: string | null
+          person_id?: string | null
+          phone_1?: string | null
+          phone_2?: string | null
+          provider?: string | null
+          source_search_id?: string | null
+          source_user_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
@@ -420,8 +498,6 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
-          enrichment_limit: number
-          enrichment_used: number
           first_name: string | null
           full_name: string | null
           id: string
@@ -433,8 +509,6 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email: string
-          enrichment_limit?: number
-          enrichment_used?: number
           first_name?: string | null
           full_name?: string | null
           id: string
@@ -446,8 +520,6 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string
-          enrichment_limit?: number
-          enrichment_used?: number
           first_name?: string | null
           full_name?: string | null
           id?: string
@@ -686,12 +758,65 @@ export type Database = {
         }
         Relationships: []
       }
+      workspace_credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          search_id: string | null
+          type: string
+          workspace_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          search_id?: string | null
+          type: string
+          workspace_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          search_id?: string | null
+          type?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_credit_transactions_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_credit_transactions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           company_address: string | null
           company_name: string
           created_at: string
+          credits_balance: number
           id: string
+          low_credit_threshold: number
           primary_contact_email: string | null
           primary_contact_name: string
           primary_contact_phone: string | null
@@ -701,7 +826,9 @@ export type Database = {
           company_address?: string | null
           company_name: string
           created_at?: string
+          credits_balance?: number
           id?: string
+          low_credit_threshold?: number
           primary_contact_email?: string | null
           primary_contact_name: string
           primary_contact_phone?: string | null
@@ -711,7 +838,9 @@ export type Database = {
           company_address?: string | null
           company_name?: string
           created_at?: string
+          credits_balance?: number
           id?: string
+          low_credit_threshold?: number
           primary_contact_email?: string | null
           primary_contact_name?: string
           primary_contact_phone?: string | null
@@ -729,6 +858,25 @@ export type Database = {
         Args: { p_search_id: string }
         Returns: boolean
       }
+      add_workspace_credits: {
+        Args: {
+          p_amount: number
+          p_created_by?: string
+          p_note?: string
+          p_type?: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
+      deduct_workspace_credits: {
+        Args: {
+          p_amount: number
+          p_note?: string
+          p_search_id?: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       get_queue_position: { Args: { p_search_id: string }; Returns: number }
       get_user_enriched_contact: {
         Args: {
@@ -744,16 +892,16 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_workspace_credit_balance: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
-      }
-      increment_enrichment_used: {
-        Args: { p_count: number; p_user_id: string }
-        Returns: undefined
       }
       release_api_slot: {
         Args: { p_search_id: string; p_slot_name: string }
