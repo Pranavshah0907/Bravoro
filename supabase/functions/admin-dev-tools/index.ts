@@ -322,6 +322,79 @@ serve(async (req) => {
       return respond({ success: true });
     }
 
+    if (action === 'get_workspace_searches') {
+      const { userIds } = body;
+      if (!Array.isArray(userIds) || userIds.length === 0)
+        return respond({ error: 'userIds required' }, 400);
+
+      const { data: allSearches } = await supabase
+        .from('searches')
+        .select('id, user_id, search_type, excel_file_name, status, error_message, created_at, updated_at')
+        .in('user_id', userIds)
+        .order('updated_at', { ascending: false })
+        .limit(500);
+
+      const allIds = (allSearches ?? []).map(s => s.id);
+
+      const gridDataIds = new Set<string>();
+      for (let i = 0; i < allIds.length; i += 100) {
+        const chunk = allIds.slice(i, i + 100);
+        const { data: withGrid } = await supabase
+          .from('searches')
+          .select('id')
+          .in('id', chunk)
+          .not('grid_data', 'is', null);
+        for (const r of withGrid ?? []) gridDataIds.add(r.id);
+      }
+
+      const resultCountMap: Record<string, number> = {};
+      const BATCH = 25;
+      for (let i = 0; i < allIds.length; i += BATCH) {
+        const batch = allIds.slice(i, i + BATCH);
+        const counts = await Promise.all(
+          batch.map(async (id) => {
+            const { count } = await supabase
+              .from('search_results')
+              .select('*', { count: 'exact', head: true })
+              .eq('search_id', id);
+            return [id, count ?? 0] as const;
+          })
+        );
+        for (const [id, c] of counts) resultCountMap[id] = c;
+      }
+
+      const profileMap: Record<string, { email: string; full_name: string }> = {};
+      for (let i = 0; i < userIds.length; i += 100) {
+        const chunk = userIds.slice(i, i + 100);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', chunk);
+        for (const p of profiles ?? [])
+          profileMap[p.id] = { email: p.email ?? '', full_name: p.full_name ?? '' };
+      }
+
+      const searches = (allSearches ?? []).map(s => {
+        const profile = profileMap[s.user_id] ?? { email: '', full_name: '' };
+        const info = getEntryInfo({ ...s, grid_data: gridDataIds.has(s.id) ? true : null });
+        return {
+          search_id: s.id,
+          user_email: profile.email,
+          full_name: profile.full_name,
+          search_type: s.search_type,
+          status: s.status,
+          error_message: s.error_message ?? null,
+          ...info,
+          excel_file_name: s.excel_file_name ?? null,
+          result_count: resultCountMap[s.id] ?? 0,
+          created_at: s.created_at,
+          updated_at: s.updated_at,
+        };
+      });
+
+      return respond({ searches });
+    }
+
     return respond({ error: `Unknown action: ${action}` }, 400);
 
   } catch (err) {
