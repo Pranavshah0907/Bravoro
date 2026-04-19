@@ -122,6 +122,16 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const [draftSaving,    setDraftSaving]    = useState(false);
   const [showSheetsMenu, setShowSheetsMenu] = useState(false);
 
+  // ── Duplicate-name conflict modal state ─────────────────────────────────────
+  const [dupConflict, setDupConflict] = useState<{
+    existingId: string;
+    existingName: string;
+    pendingData: GridRow[];
+    pendingRc: number;
+  } | null>(null);
+  const [dupNewName, setDupNewName] = useState("");
+  const dupInputRef = useRef<HTMLInputElement>(null);
+
   // ── Sheets modal state ───────────────────────────────────────────────────────
   const [sheetsModal,    setSheetsModal]    = useState<"closed"|"export"|"import">("closed");
   const [sheetsStep,     setSheetsStep]     = useState<"form"|"done">("form");
@@ -326,31 +336,79 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         setDraftStatus("saved");
         toast({ title: "Draft saved", description: `"${draftName}" updated` });
       } else {
-        // Deduplicate name
+        // Check for duplicate name
         const { data: existing } = await supabase
           .from("bulk_search_drafts")
-          .select("name")
-          .eq("user_id", userId);
-        const names = new Set((existing ?? []).map(d => d.name));
-        let finalName = draftName;
-        if (names.has(finalName)) {
-          let n = 2;
-          while (names.has(`${draftName} (${n})`)) n++;
-          finalName = `${draftName} (${n})`;
-          setDraftName(finalName);
+          .select("id, name")
+          .eq("user_id", userId)
+          .eq("name", draftName)
+          .limit(1);
+        if (existing && existing.length > 0) {
+          setDupConflict({ existingId: existing[0].id, existingName: existing[0].name, pendingData: data, pendingRc: rc });
+          setDupNewName(draftName);
+          setDraftSaving(false);
+          setTimeout(() => dupInputRef.current?.select(), 50);
+          return;
         }
 
-        const { data: rec, error } = await supabase.from("bulk_search_drafts")
-          .insert({ user_id: userId, name: finalName, grid_data: data, row_count: rc })
-          .select().single();
-        if (error) throw error;
-        setDraftId(rec.id);
-        setDraftStatus("saved");
-        toast({ title: "Draft saved", description: `"${finalName}" saved` });
+        await insertNewDraft(draftName, data, rc);
       }
     } catch {
       toast({ title: "Save failed", description: "Could not save draft", variant: "destructive" });
     } finally { setDraftSaving(false); }
+  };
+
+  const insertNewDraft = async (name: string, data: GridRow[], rc: number) => {
+    const { data: rec, error } = await supabase.from("bulk_search_drafts")
+      .insert({ user_id: userId, name, grid_data: data, row_count: rc })
+      .select().single();
+    if (error) throw error;
+    setDraftId(rec.id);
+    setDraftName(name);
+    setDraftStatus("saved");
+    toast({ title: "Draft saved", description: `"${name}" saved` });
+  };
+
+  const handleDupOverwrite = async () => {
+    if (!dupConflict) return;
+    setDraftSaving(true);
+    try {
+      const { existingId, existingName, pendingData, pendingRc } = dupConflict;
+      await supabase.from("bulk_search_drafts")
+        .update({ grid_data: pendingData, row_count: pendingRc, updated_at: new Date().toISOString() })
+        .eq("id", existingId);
+      setDraftId(existingId);
+      setDraftName(existingName);
+      setDraftStatus("saved");
+      toast({ title: "Draft saved", description: `"${existingName}" overwritten` });
+    } catch {
+      toast({ title: "Save failed", description: "Could not overwrite draft", variant: "destructive" });
+    } finally { setDraftSaving(false); setDupConflict(null); }
+  };
+
+  const handleDupRename = async () => {
+    if (!dupConflict) return;
+    const newName = dupNewName.trim();
+    if (!newName) return;
+
+    // Check the new name isn't also taken
+    const { data: clash } = await supabase
+      .from("bulk_search_drafts")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("name", newName)
+      .limit(1);
+    if (clash && clash.length > 0) {
+      toast({ title: "Name also taken", description: `"${newName}" already exists. Choose a different name.`, variant: "destructive" });
+      return;
+    }
+
+    setDraftSaving(true);
+    try {
+      await insertNewDraft(newName, dupConflict.pendingData, dupConflict.pendingRc);
+    } catch {
+      toast({ title: "Save failed", description: "Could not save draft", variant: "destructive" });
+    } finally { setDraftSaving(false); setDupConflict(null); }
   };
 
   // ── Imperative handle (used by ExcelUpload/SheetsManager) ───────────────────
@@ -1753,6 +1811,80 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Duplicate Name Conflict Modal ──────────────────────────────────────── */}
+      {dupConflict && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: "rgba(6,25,26,0.7)", backdropFilter: "blur(4px)" }}>
+          <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", width: "100%", maxWidth: 440, boxShadow: "0 24px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,157,165,0.2)" }}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4" style={{ background: "#edf6f6", borderBottom: "1px solid #daeaea" }}>
+              <div className="flex items-center gap-2.5">
+                <FileSpreadsheet className="h-4 w-4" style={{ color: "#009da5" }} />
+                <span className="text-[14px] font-bold" style={{ color: "#0c2e2e" }}>Duplicate Sheet Name</span>
+              </div>
+              <button onClick={() => setDupConflict(null)} className="p-1 rounded-lg transition-colors hover:bg-[#daeaea]" style={{ color: "#5a8888" }}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5">
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ background: "#fff8f0", border: "1px solid #f0d8b0" }}>
+                <span className="text-[16px] mt-0.5 shrink-0">⚠️</span>
+                <div className="text-[13px] leading-relaxed" style={{ color: "#6a4a1a" }}>
+                  A sheet named <span className="font-bold">"{dupConflict.existingName}"</span> already exists. You can overwrite it or save with a different name.
+                </div>
+              </div>
+
+              {/* Rename input */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "#5a8888" }}>Save as new name</label>
+                <input
+                  ref={dupInputRef}
+                  value={dupNewName}
+                  onChange={e => setDupNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && dupNewName.trim()) handleDupRename(); }}
+                  placeholder="Enter a new name"
+                  className="w-full px-3 py-2.5 rounded-lg text-[13px] outline-none transition-colors"
+                  style={{ border: "1px solid #c8e2e2", color: "#1a2e2e", background: "#fafefe" }}
+                  onFocus={e => { e.currentTarget.style.borderColor = "#009da5"; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = "#c8e2e2"; }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setDupConflict(null)}
+                  className="py-2.5 px-4 rounded-xl text-[13px] font-medium transition-colors"
+                  style={{ border: "1px solid #daeaea", color: "#5a8888" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDupOverwrite}
+                  disabled={draftSaving}
+                  className="py-2.5 px-4 rounded-xl text-[13px] font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: "#d97706", color: "#fff" }}
+                >
+                  {draftSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Overwrite
+                </button>
+                <button
+                  onClick={handleDupRename}
+                  disabled={draftSaving || !dupNewName.trim() || dupNewName.trim() === dupConflict.existingName}
+                  className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: "#009da5", color: "#fff" }}
+                >
+                  {draftSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Save as New
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
