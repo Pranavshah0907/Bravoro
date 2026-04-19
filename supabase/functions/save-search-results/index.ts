@@ -792,22 +792,6 @@ serve(async (req: Request) => {
       }
     }
 
-    // Update enrichment_used if enriched_contacts_count was provided
-    if (searchData?.user_id && enrichedContactsCount > 0) {
-      console.log(`[${requestId}] Incrementing enrichment_used by ${enrichedContactsCount} for user:`, searchData.user_id);
-      
-      const { error: rpcError } = await supabase.rpc('increment_enrichment_used', {
-        p_user_id: searchData.user_id,
-        p_count: enrichedContactsCount,
-      });
-
-      if (rpcError) {
-        console.error(`[${requestId}] Error incrementing enrichment_used:`, rpcError);
-      } else {
-        console.log(`[${requestId}] Successfully incremented enrichment_used by ${enrichedContactsCount}`);
-      }
-    }
-
     // Save credit usage if any credits were provided
     if (searchData?.user_id && hasAnyCredits) {
       console.log(`[${requestId}] Saving credit usage for user:`, searchData.user_id);
