@@ -203,20 +203,19 @@ const Admin = () => {
       (workspacesData || []).map((w) => [w.id, w.company_name])
     );
 
-    const usersWithRoles = await Promise.all(
-      profilesData.map(async (profile) => {
-        const { data: roleData } = await supabase
-          .from("user_roles").select("role").eq("user_id", profile.id).single();
-        return {
-          ...profile,
-          role: roleData?.role || "user",
-          enrichment_limit: profile.enrichment_limit ?? 0,
-          enrichment_used: profile.enrichment_used ?? 0,
-          workspace_id: profile.workspace_id || null,
-          workspace_name: profile.workspace_id ? workspaceMap[profile.workspace_id] || null : null,
-        };
-      })
+    const { data: allRoles } = await supabase.from("user_roles").select("user_id, role");
+    const roleMap: Record<string, string> = Object.fromEntries(
+      (allRoles || []).map((r) => [r.user_id, r.role])
     );
+
+    const usersWithRoles = profilesData.map((profile) => ({
+      ...profile,
+      role: roleMap[profile.id] || "user",
+      enrichment_limit: profile.enrichment_limit ?? 0,
+      enrichment_used: profile.enrichment_used ?? 0,
+      workspace_id: profile.workspace_id || null,
+      workspace_name: profile.workspace_id ? workspaceMap[profile.workspace_id] || null : null,
+    }));
 
     setUsers(usersWithRoles);
   };
@@ -312,13 +311,17 @@ const Admin = () => {
     setLoadingAnalytics(true);
     try {
       const wsUsers = users.filter((u) => u.workspace_id === workspaceId);
-      const memberDataArr = await Promise.all(
-        wsUsers.map(async (u) => {
-          const { data } = await supabase
-            .from("credit_usage").select("*").eq("user_id", u.id).order("created_at", { ascending: true });
-          return { user: u, credits: (data || []) as CreditData[] };
-        })
-      );
+      const wsUserIds = wsUsers.map((u) => u.id);
+      const { data: allCredits } = await supabase
+        .from("credit_usage").select("*").in("user_id", wsUserIds).order("created_at", { ascending: true });
+      const creditsByUser: Record<string, CreditData[]> = {};
+      for (const c of (allCredits || []) as CreditData[]) {
+        (creditsByUser[c.user_id] ??= []).push(c);
+      }
+      const memberDataArr = wsUsers.map((u) => ({
+        user: u,
+        credits: creditsByUser[u.id] || [],
+      }));
       setWorkspaceMemberData(memberDataArr);
     } catch (error) {
       toast({ title: "Failed to load workspace analytics", description: "Could not fetch workspace data", variant: "destructive" });

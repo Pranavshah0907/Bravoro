@@ -369,14 +369,17 @@ const Results = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (user) {
-      const interval = setInterval(() => {
-        fetchSearches(user.id);
-      }, 10000);
+    const hasActiveSearches = searches.some(
+      (s) => s.status === "processing" || s.status === "pending"
+    );
+    if (!user || !hasActiveSearches) return;
 
-      return () => clearInterval(interval);
-    }
-  }, [user]);
+    const interval = setInterval(() => {
+      fetchSearches(user.id, true);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [user, searches]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -397,12 +400,12 @@ const Results = () => {
     }
   };
 
-  const fetchSearches = async (userId: string) => {
-    setLoading(true);
+  const fetchSearches = async (userId: string, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data, error } = await supabase
         .from("searches")
-        .select("*")
+        .select("id, status, created_at, updated_at, result_url, error_message, excel_file_name, search_type, company_name, domain")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -411,13 +414,15 @@ const Results = () => {
       setSearches(data || []);
     } catch (error) {
       console.error("Error fetching searches:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch search results",
-        variant: "destructive",
-      });
+      if (!silent) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch search results",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
