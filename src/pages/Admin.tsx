@@ -12,10 +12,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
-  UserPlus, Loader2, Shield, Users, Shuffle, Edit, Target,
+  UserPlus, Loader2, Shield, Users, Shuffle, Target,
   BarChart3, CalendarIcon, Activity, Search, Database, Building2, ChevronDown,
   ChevronRight, Plus, MapPin, Phone, Mail, User as UserIcon, FolderOpen,
   Trash2,
@@ -37,7 +36,6 @@ const createUserSchema = z.object({
   fullName: z.string().trim().min(2, "Full name must be at least 2 characters"),
   tempPassword: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["admin", "user"]),
-  enrichmentLimit: z.number().int().min(0, "Enrichment limit must be 0 or greater"),
 });
 
 interface Workspace {
@@ -48,6 +46,8 @@ interface Workspace {
   primary_contact_email: string | null;
   primary_contact_phone: string | null;
   created_at: string;
+  credits_balance: number;
+  low_credit_threshold: number;
 }
 
 interface UserWithRole {
@@ -57,8 +57,6 @@ interface UserWithRole {
   role: string;
   created_at: string;
   requires_password_reset: boolean | null;
-  enrichment_limit: number;
-  enrichment_used: number;
   workspace_id: string | null;
   workspace_name: string | null;
 }
@@ -108,14 +106,18 @@ const Admin = () => {
   const [newUserFullName, setNewUserFullName] = useState("");
   const [newUserTempPassword, setNewUserTempPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
-  const [newUserEnrichmentLimit, setNewUserEnrichmentLimit] = useState<number>(0);
   const [newUserWorkspaceId, setNewUserWorkspaceId] = useState<string>(INDEPENDENT_USER_VALUE);
 
-  // Edit limit modal
-  const [editLimitDialogOpen, setEditLimitDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
-  const [newEnrichmentLimit, setNewEnrichmentLimit] = useState<number>(0);
-  const [updatingLimit, setUpdatingLimit] = useState(false);
+  // Workspace credit top-up
+  const [topUpDialogOpen, setTopUpDialogOpen] = useState(false);
+  const [topUpWorkspaceId, setTopUpWorkspaceId] = useState<string>("");
+  const [topUpWorkspaceName, setTopUpWorkspaceName] = useState<string>("");
+  const [topUpAmount, setTopUpAmount] = useState<number>(0);
+  const [topUpNote, setTopUpNote] = useState<string>("");
+  const [toppingUp, setToppingUp] = useState(false);
+  const [newWsInitialCredits, setNewWsInitialCredits] = useState<number>(0);
+  const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
 
   // Navigation
   const [selectedView, setSelectedView] = useState<SelectedView>({ type: "overview" });
@@ -194,7 +196,7 @@ const Admin = () => {
   const loadUsers = async () => {
     const { data: profilesData } = await supabase
       .from("profiles")
-      .select("id, email, full_name, created_at, requires_password_reset, enrichment_limit, enrichment_used, workspace_id");
+      .select("id, email, full_name, created_at, requires_password_reset, workspace_id");
 
     if (!profilesData) return;
 
@@ -211,8 +213,6 @@ const Admin = () => {
     const usersWithRoles = profilesData.map((profile) => ({
       ...profile,
       role: roleMap[profile.id] || "user",
-      enrichment_limit: profile.enrichment_limit ?? 0,
-      enrichment_used: profile.enrichment_used ?? 0,
       workspace_id: profile.workspace_id || null,
       workspace_name: profile.workspace_id ? workspaceMap[profile.workspace_id] || null : null,
     }));
@@ -228,17 +228,28 @@ const Admin = () => {
     }
     setCreatingWorkspace(true);
     try {
-      const { error } = await supabase.from("workspaces").insert({
+      const { data: newWs, error } = await supabase.from("workspaces").insert({
         company_name: newWsName.trim(),
         company_address: newWsAddress.trim() || null,
         primary_contact_name: newWsContactName.trim(),
         primary_contact_email: newWsContactEmail.trim() || null,
         primary_contact_phone: newWsContactPhone.trim() || null,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      if (newWsInitialCredits > 0 && newWs?.id) {
+        await supabase.rpc("add_workspace_credits", {
+          p_workspace_id: newWs.id,
+          p_amount: newWsInitialCredits,
+          p_type: "initial",
+          p_note: "Initial credit allocation",
+          p_created_by: user?.id ?? null,
+        });
+      }
+
       toast({ title: "Workspace Created", description: `"${newWsName}" has been created.` });
       setNewWsName(""); setNewWsAddress(""); setNewWsContactName("");
-      setNewWsContactEmail(""); setNewWsContactPhone("");
+      setNewWsContactEmail(""); setNewWsContactPhone(""); setNewWsInitialCredits(0);
       setWorkspaceDialogOpen(false);
       loadWorkspaces();
       loadUsers();
@@ -342,6 +353,14 @@ const Admin = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyticsEntityId, analyticsEntityType]);
 
+  // Fetch transaction history when viewing a workspace detail
+  useEffect(() => {
+    if (selectedView.type === "workspace" && selectedView.id) {
+      fetchTransactionHistory(selectedView.id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedView]);
+
   // Computed date range for current time period
   const analyticsPeriod = useMemo(() => {
     const now = new Date();
@@ -383,11 +402,6 @@ const Admin = () => {
       default: return "";
     }
   }, [analyticsTimePeriod, analyticsSelectedDay, analyticsSelectedWeek, analyticsSelectedMonth]);
-
-  const selectedEntityUser = useMemo(
-    () => analyticsEntityType === "user" ? users.find((u) => u.id === analyticsEntityId) : null,
-    [analyticsEntityType, analyticsEntityId, users]
-  );
 
   const analyticsEntityDisplayName = useMemo(() => {
     if (!analyticsEntityId) return "";
@@ -551,7 +565,6 @@ const Admin = () => {
         fullName: newUserFullName,
         tempPassword: newUserTempPassword,
         role: newUserRole,
-        enrichmentLimit: newUserEnrichmentLimit,
       });
       setCreatingUser(true);
 
@@ -563,7 +576,6 @@ const Admin = () => {
           fullName: newUserFullName.trim(),
           tempPassword: newUserTempPassword,
           role: newUserRole,
-          enrichmentLimit: newUserEnrichmentLimit,
           workspaceId,
         },
       });
@@ -588,7 +600,7 @@ const Admin = () => {
         toast({ title: "User Created Successfully", description: data.message || `User ${newUserEmail} has been created and welcome email sent` });
       }
       setNewUserEmail(""); setNewUserFullName(""); setNewUserTempPassword("");
-      setNewUserRole("user"); setNewUserEnrichmentLimit(0); setNewUserWorkspaceId(INDEPENDENT_USER_VALUE);
+      setNewUserRole("user"); setNewUserWorkspaceId(INDEPENDENT_USER_VALUE);
       setCreateUserDialogOpen(false);
       loadUsers();
     } catch (error: any) {
@@ -598,29 +610,49 @@ const Admin = () => {
     }
   };
 
-  const handleOpenEditLimit = (userToEdit: UserWithRole) => {
-    setEditingUser(userToEdit);
-    setNewEnrichmentLimit(userToEdit.enrichment_limit);
-    setEditLimitDialogOpen(true);
+  const handleTopUp = async () => {
+    if (!topUpWorkspaceId || topUpAmount <= 0) return;
+    setToppingUp(true);
+    try {
+      const { data: result } = await supabase.rpc("add_workspace_credits", {
+        p_workspace_id: topUpWorkspaceId,
+        p_amount: topUpAmount,
+        p_type: "topup",
+        p_note: topUpNote.trim() || null,
+        p_created_by: user?.id ?? null,
+      });
+      if (!result?.success) throw new Error(result?.error || "Failed to add credits");
+      toast({
+        title: "Credits Added",
+        description: `${topUpAmount.toLocaleString()} credits added to "${topUpWorkspaceName}". New balance: ${result.new_balance.toLocaleString()}`,
+      });
+      setTopUpDialogOpen(false);
+      setTopUpAmount(0);
+      setTopUpNote("");
+      loadWorkspaces();
+    } catch (err: any) {
+      toast({ title: "Top-up failed", description: err.message, variant: "destructive" });
+    } finally {
+      setToppingUp(false);
+    }
   };
 
-  const handleUpdateEnrichmentLimit = async () => {
-    if (!editingUser) return;
+  const fetchTransactionHistory = async (workspaceId: string) => {
+    setLoadingTransactions(true);
     try {
-      setUpdatingLimit(true);
-      const { error } = await supabase
-        .from("profiles")
-        .update({ enrichment_limit: newEnrichmentLimit, updated_at: new Date().toISOString() })
-        .eq("id", editingUser.id);
+      const { data, error } = await supabase
+        .from("workspace_credit_transactions")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: false })
+        .limit(50);
       if (error) throw error;
-      toast({ title: "Enrichment Limit Updated", description: `${editingUser.email}'s enrichment limit has been updated to ${newEnrichmentLimit}` });
-      setEditLimitDialogOpen(false);
-      setEditingUser(null);
-      loadUsers();
-    } catch (error: any) {
-      toast({ title: "Failed to Update Limit", description: error.message || "An error occurred", variant: "destructive" });
+      setTransactionHistory(data || []);
+    } catch (err: any) {
+      console.error("Failed to fetch transactions:", err);
+      setTransactionHistory([]);
     } finally {
-      setUpdatingLimit(false);
+      setLoadingTransactions(false);
     }
   };
 
@@ -651,8 +683,8 @@ const Admin = () => {
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/20 border-border/30 hover:bg-muted/30">
-            {["User", "Role", "Enrichment", "Status", "Actions"].map((h, i) => (
-              <TableHead key={h} className={cn("text-xs font-semibold text-muted-foreground uppercase tracking-wide", i === 4 && "text-right")}>{h}</TableHead>
+            {["User", "Role", "Status", "Actions"].map((h, i) => (
+              <TableHead key={h} className={cn("text-xs font-semibold text-muted-foreground uppercase tracking-wide", i === 3 && "text-right")}>{h}</TableHead>
             ))}
           </TableRow>
         </TableHeader>
@@ -678,9 +710,6 @@ const Admin = () => {
                 </Badge>
               </TableCell>
               <TableCell>
-                <span className="text-sm text-foreground">{u.enrichment_used} / {u.enrichment_limit}</span>
-              </TableCell>
-              <TableCell>
                 <Badge
                   variant={u.requires_password_reset ? "outline" : "default"}
                   className={u.requires_password_reset ? "border-border/50 text-muted-foreground text-xs" : "bg-primary/20 text-primary border-primary/30 text-xs"}
@@ -699,10 +728,6 @@ const Admin = () => {
                       <Building2 className="h-3.5 w-3.5 mr-1" />Assign
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" onClick={() => handleOpenEditLimit(u)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10">
-                    <Edit className="h-3.5 w-3.5" />
-                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(u.id, u.email)}
                     disabled={u.role === "admin"}
                     className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 disabled:opacity-30">
@@ -808,9 +833,14 @@ const Admin = () => {
                           className="flex-1 flex items-center gap-2 pr-3 py-2 text-left min-w-0"
                         >
                           <Building2 className={cn("h-3.5 w-3.5 shrink-0", isWsSelected ? "text-primary" : "text-primary/50")} />
-                          <span className={cn("flex-1 truncate text-xs font-medium", isWsSelected ? "text-primary" : "text-foreground")}>
-                            {ws.company_name}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className={cn("block truncate text-xs font-medium", isWsSelected ? "text-primary" : "text-foreground")}>
+                              {ws.company_name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground tabular-nums">
+                              {(ws.credits_balance ?? 0).toLocaleString()} credits
+                            </span>
+                          </div>
                           <span className="text-[10px] text-muted-foreground/50 shrink-0">{wsUsers.length}</span>
                         </button>
                       </div>
@@ -1064,14 +1094,47 @@ const Admin = () => {
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="ghost" size="sm"
-                      onClick={() => handleDeleteWorkspace(ws.id, ws.company_name)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1.5" />Delete
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setTopUpWorkspaceId(ws.id);
+                          setTopUpWorkspaceName(ws.company_name);
+                          setTopUpAmount(0);
+                          setTopUpNote("");
+                          setTopUpDialogOpen(true);
+                        }}
+                        className="h-7 px-3 text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />Top Up Credits
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm"
+                        onClick={() => handleDeleteWorkspace(ws.id, ws.company_name)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1.5" />Delete
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Credit Balance */}
+                  <Card className="border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-card to-card/90">
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">Credit Balance</p>
+                          <p className="text-3xl font-bold text-foreground tabular-nums">{(ws.credits_balance ?? 0).toLocaleString()}</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-emerald-500/10">
+                          <Target className="h-6 w-6 text-emerald-400" />
+                        </div>
+                      </div>
+                      {ws.low_credit_threshold > 0 && (ws.credits_balance ?? 0) <= ws.low_credit_threshold && (
+                        <p className="text-xs text-amber-400 mt-2">Low credit balance — below threshold of {ws.low_credit_threshold.toLocaleString()}</p>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   <div>
                     <div className="flex items-center gap-2 mb-3">
@@ -1091,6 +1154,68 @@ const Admin = () => {
 
                   {/* ── Workspace Searches ── */}
                   <WorkspaceSearches userIds={wsUsers.map(u => u.id)} />
+
+                  {/* ── Transaction History ── */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Credit Transactions</h3>
+                      <span className="text-xs font-bold text-primary">{transactionHistory.length}</span>
+                    </div>
+                    {loadingTransactions ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : transactionHistory.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/40 rounded-lg text-muted-foreground">
+                        <Activity className="h-8 w-8 mb-2 opacity-30" />
+                        <p className="text-sm">No transactions yet</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-border/30 overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/20 border-border/30 hover:bg-muted/30">
+                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</TableHead>
+                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Type</TableHead>
+                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Amount</TableHead>
+                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Balance</TableHead>
+                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Note</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {transactionHistory.map((tx) => (
+                              <TableRow key={tx.id} className="hover:bg-muted/10 transition-colors border-border/20">
+                                <TableCell className="text-sm text-foreground">
+                                  {new Date(tx.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={cn("text-[10px]", {
+                                      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20": tx.type === "topup" || tx.type === "initial",
+                                      "bg-red-500/10 text-red-400 border-red-500/20": tx.type === "deduction",
+                                      "bg-amber-500/10 text-amber-400 border-amber-500/20": tx.type === "adjustment",
+                                      "bg-muted text-muted-foreground border-border/30": !["topup", "initial", "deduction", "adjustment"].includes(tx.type),
+                                    })}
+                                  >
+                                    {tx.type}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className={cn("text-sm font-medium text-right tabular-nums", tx.amount >= 0 ? "text-emerald-400" : "text-red-400")}>
+                                  {tx.amount >= 0 ? "+" : ""}{tx.amount.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-sm text-foreground text-right tabular-nums">
+                                  {tx.balance_after?.toLocaleString() ?? "—"}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                                  {tx.note || "—"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
@@ -1121,9 +1246,6 @@ const Admin = () => {
               const u = users.find((u) => u.id === selectedView.id);
               if (!u) return <p className="text-muted-foreground">User not found.</p>;
               const isIndependent = !u.workspace_id;
-              const enrichPct = u.enrichment_limit > 0
-                ? Math.min((u.enrichment_used / u.enrichment_limit) * 100, 100)
-                : 0;
               return (
                 <div className="space-y-6 animate-fade-in max-w-2xl">
                   {/* Header */}
@@ -1180,28 +1302,8 @@ const Admin = () => {
                     </Card>
                   </div>
 
-                  {/* Enrichment */}
-                  <Card className="border-border/40 bg-card/60">
-                    <CardContent className="p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Enrichment Usage</p>
-                        <span className="text-sm font-bold text-foreground">
-                          {u.enrichment_used.toLocaleString()} / {u.enrichment_limit.toLocaleString()}
-                        </span>
-                      </div>
-                      <Progress value={enrichPct} className="h-2 mb-1.5" />
-                      <p className="text-xs text-muted-foreground text-right">
-                        {Math.max(0, u.enrichment_limit - u.enrichment_used).toLocaleString()} remaining
-                      </p>
-                    </CardContent>
-                  </Card>
-
                   {/* Actions */}
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Button variant="outline" size="sm" onClick={() => handleOpenEditLimit(u)}
-                      className="border-border/50 text-foreground hover:bg-muted/20 h-9">
-                      <Edit className="h-3.5 w-3.5 mr-2" />Edit Limit
-                    </Button>
                     {isIndependent && workspaces.length > 0 && (
                       <Button variant="outline" size="sm"
                         onClick={() => { setAssigningUser(u); setAssignTargetWorkspaceId(""); setAssignDialogOpen(true); }}
@@ -1604,30 +1706,6 @@ const Admin = () => {
                       ))}
                     </div>
 
-                    {/* Enrichment progress */}
-                    {selectedEntityUser && selectedEntityUser.enrichment_limit > 0 && (
-                      <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card/90">
-                        <CardContent className="p-5">
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Enrichment Status</p>
-                              <p className="text-2xl font-bold text-foreground mt-1">
-                                {selectedEntityUser.enrichment_used.toLocaleString()} / {selectedEntityUser.enrichment_limit.toLocaleString()}
-                              </p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-primary/10"><Activity className="h-6 w-6 text-primary" /></div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Used: {selectedEntityUser.enrichment_used.toLocaleString()}</span>
-                              <span>Remaining: {Math.max(0, selectedEntityUser.enrichment_limit - selectedEntityUser.enrichment_used).toLocaleString()}</span>
-                            </div>
-                            <Progress value={Math.min((selectedEntityUser.enrichment_used / selectedEntityUser.enrichment_limit) * 100, 100)} className="h-2" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
                     {/* Detailed usage table */}
                     <Card className="border-border/40 bg-card/90">
                       <CardHeader className="pb-3">
@@ -1739,7 +1817,7 @@ const Admin = () => {
               </div>
               <p className="text-sm text-muted-foreground">User will be required to change this password on first login</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label htmlFor="role" className="text-foreground font-medium">User Role *</Label>
                 <select id="role" value={newUserRole} onChange={(e) => setNewUserRole(e.target.value as "admin" | "user")}
@@ -1757,17 +1835,6 @@ const Admin = () => {
                     <option key={ws.id} value={ws.id}>{ws.company_name}</option>
                   ))}
                 </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="enrichmentLimit" className="text-foreground font-medium">Enrichment Limit *</Label>
-                <div className="relative">
-                  <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="enrichmentLimit" type="number" min="0" placeholder="e.g., 1000"
-                    value={newUserEnrichmentLimit}
-                    onChange={(e) => setNewUserEnrichmentLimit(parseInt(e.target.value) || 0)}
-                    required
-                    className="h-11 pl-10 bg-muted/30 border-border/50 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20" />
-                </div>
               </div>
             </div>
             <DialogFooter className="pt-2">
@@ -1829,6 +1896,20 @@ const Admin = () => {
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="wsInitialCredits" className="text-foreground font-medium">Initial Credits</Label>
+              <Input
+                id="wsInitialCredits"
+                type="number"
+                min="0"
+                placeholder="e.g., 5000"
+                value={newWsInitialCredits || ""}
+                onChange={(e) => setNewWsInitialCredits(parseInt(e.target.value) || 0)}
+                className="bg-background/50 border-border/40 focus:border-primary/60 text-foreground placeholder:text-muted-foreground/40"
+              />
+              <p className="text-xs text-muted-foreground">Credits shared by all workspace members. Can be topped up later.</p>
+            </div>
+
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setWorkspaceDialogOpen(false)} className="border-border/50">Cancel</Button>
               <Button type="submit" disabled={creatingWorkspace} className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
@@ -1876,44 +1957,44 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ─── EDIT ENRICHMENT LIMIT DIALOG ─── */}
-      <Dialog open={editLimitDialogOpen} onOpenChange={setEditLimitDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* ─── TOP UP CREDITS DIALOG ─── */}
+      <Dialog open={topUpDialogOpen} onOpenChange={setTopUpDialogOpen}>
+        <DialogContent className="bg-card border-border/40 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              Edit Enrichment Limit
-            </DialogTitle>
-            <DialogDescription>Update the enrichment contact limit for {editingUser?.email}</DialogDescription>
+            <DialogTitle className="text-foreground">Top Up Credits</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Add credits to <span className="text-foreground font-medium">{topUpWorkspaceName}</span>
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label className="text-muted-foreground text-sm">Current Usage</Label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-accent transition-all"
-                    style={{ width: `${editingUser ? Math.min((editingUser.enrichment_used / Math.max(editingUser.enrichment_limit, 1)) * 100, 100) : 0}%` }}
-                  />
-                </div>
-                <span className="text-sm font-medium text-foreground min-w-[80px] text-right">
-                  {editingUser?.enrichment_used} / {editingUser?.enrichment_limit}
-                </span>
-              </div>
+              <Label htmlFor="topUpAmount" className="text-foreground font-medium">Credits to Add</Label>
+              <Input
+                id="topUpAmount"
+                type="number"
+                min="1"
+                placeholder="e.g., 1000"
+                value={topUpAmount || ""}
+                onChange={(e) => setTopUpAmount(parseInt(e.target.value) || 0)}
+                className="bg-background/50 border-border/40 focus:border-primary/60 text-foreground"
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="newLimit" className="text-foreground font-medium">New Enrichment Limit</Label>
-              <Input id="newLimit" type="number" min="0" value={newEnrichmentLimit}
-                onChange={(e) => setNewEnrichmentLimit(parseInt(e.target.value) || 0)}
-                className="h-11 bg-muted/30 border-border/50 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20" />
-              <p className="text-xs text-muted-foreground">Set to 0 to disable enrichment for this user</p>
+              <Label htmlFor="topUpNote" className="text-foreground font-medium">Note (optional)</Label>
+              <Input
+                id="topUpNote"
+                placeholder="e.g., April top-up"
+                value={topUpNote}
+                onChange={(e) => setTopUpNote(e.target.value)}
+                className="bg-background/50 border-border/40 focus:border-primary/60 text-foreground placeholder:text-muted-foreground/40"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditLimitDialogOpen(false)} className="border-border/50">Cancel</Button>
-            <Button onClick={handleUpdateEnrichmentLimit} disabled={updatingLimit}
-              className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
-              {updatingLimit ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : "Update Limit"}
+            <Button variant="ghost" onClick={() => setTopUpDialogOpen(false)} className="text-muted-foreground">Cancel</Button>
+            <Button onClick={handleTopUp} disabled={toppingUp || topUpAmount <= 0}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {toppingUp ? "Adding..." : `Add ${topUpAmount > 0 ? topUpAmount.toLocaleString() : 0} Credits`}
             </Button>
           </DialogFooter>
         </DialogContent>
