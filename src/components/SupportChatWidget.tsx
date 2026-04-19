@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Send, Paperclip, ImageIcon, Trash2 } from "lucide-react";
+import { MessageCircle, X, Send, Paperclip, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,7 +20,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "system",
   content:
-    "Hi there! If you have any questions, feedback, or need help with any feature, please describe it here in as much detail as possible. You can also attach screenshots to help us understand the issue better — just paste (Ctrl+V), drag & drop, or use the attachment button. We'll get back to you as soon as possible.\n\n— Team Bravoro",
+    "Hello! Whether you have a question, feedback, or need assistance with a feature, we're here to help. Please describe what you need in detail and feel free to attach any relevant screenshots.\n\nWe'll get back to you shortly.\n\n— Team Bravoro",
 };
 
 export function SupportChatWidget() {
@@ -37,6 +37,7 @@ export function SupportChatWidget() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,6 +63,20 @@ export function SupportChatWidget() {
 
   useEffect(() => {
     if (isOpen) setHasPulse(false);
+  }, [isOpen]);
+
+  // Click outside to minimize
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!widgetRef.current) return;
+      const target = e.target as Node;
+      if (!widgetRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [isOpen]);
 
   const addAttachments = useCallback((files: FileList | File[]) => {
@@ -171,7 +186,7 @@ export function SupportChatWidget() {
         id: crypto.randomUUID(),
         role: "system",
         content:
-          "Thank you for reaching out! Our team has received your message and will get back to you as soon as possible. We appreciate your patience.",
+          "Thank you for reaching out! Our team has received your message and will get back to you shortly.",
       };
       setMessages((prev) => [...prev, thankYou]);
     } catch (err) {
@@ -194,29 +209,34 @@ export function SupportChatWidget() {
   };
 
   return (
-    <>
+    <div ref={widgetRef}>
       {/* Floating bubble */}
       <button
         onClick={() => setIsOpen((o) => !o)}
         aria-label={isOpen ? "Close support chat" : "Open support chat"}
-        className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center rounded-full shadow-lg transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        className="fixed bottom-5 right-5 z-[9999] flex items-center justify-center rounded-full transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
         style={{
-          width: 56,
-          height: 56,
+          width: 52,
+          height: 52,
           background: "linear-gradient(135deg, #009da5, #00686d)",
-          boxShadow: "0 4px 20px rgba(0, 157, 165, 0.4)",
+          boxShadow: "0 4px 20px rgba(0, 157, 165, 0.35), 0 2px 8px rgba(0,0,0,0.2)",
         }}
       >
-        {isOpen ? (
-          <X className="h-6 w-6 text-white" />
-        ) : (
-          <MessageCircle className="h-6 w-6 text-white" />
-        )}
+        <div
+          className="transition-transform duration-200"
+          style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
+        >
+          {isOpen ? (
+            <X className="h-[22px] w-[22px] text-white" />
+          ) : (
+            <MessageCircle className="h-[22px] w-[22px] text-white" />
+          )}
+        </div>
         {hasPulse && !isOpen && (
           <span
             className="absolute inset-0 rounded-full animate-ping"
             style={{
-              background: "rgba(0, 157, 165, 0.3)",
+              background: "rgba(0, 157, 165, 0.25)",
               animationDuration: "2s",
               animationIterationCount: "3",
             }}
@@ -227,60 +247,75 @@ export function SupportChatWidget() {
       {/* Chat window */}
       {isOpen && (
         <div
-          className="fixed bottom-20 right-6 z-[9998] flex flex-col overflow-hidden rounded-2xl border border-white/10"
+          className="fixed z-[9998] flex flex-col overflow-hidden"
           style={{
-            width: 380,
+            bottom: 72,
+            right: 20,
+            width: 360,
             maxWidth: "calc(100vw - 32px)",
-            height: 540,
-            maxHeight: "calc(100vh - 120px)",
-            background: "#0a1414",
+            height: 500,
+            maxHeight: "calc(100vh - 100px)",
+            borderRadius: 16,
+            background: "#080f0f",
+            border: "1px solid rgba(88, 221, 221, 0.08)",
             boxShadow:
-              "0 12px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(88, 221, 221, 0.08)",
-            animation: "supportChatSlideUp 0.25s ease-out",
+              "0 16px 56px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(88, 221, 221, 0.05)",
+            animation: "supportChatSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
         >
           {/* Header */}
           <div
-            className="flex items-center gap-3 px-5 py-4 shrink-0"
+            className="flex items-center gap-3 px-4 py-3 shrink-0"
             style={{
-              background: "linear-gradient(135deg, #0d222e, #00686d)",
-              borderBottom: "1px solid rgba(88, 221, 221, 0.15)",
+              background: "linear-gradient(135deg, #0b1e28 0%, #0e3a3d 100%)",
+              borderBottom: "1px solid rgba(88, 221, 221, 0.08)",
             }}
           >
             <div
               className="flex items-center justify-center rounded-full shrink-0"
               style={{
-                width: 36,
-                height: 36,
-                background: "rgba(255, 255, 255, 0.15)",
+                width: 32,
+                height: 32,
+                background: "rgba(0, 157, 165, 0.15)",
+                border: "1px solid rgba(0, 157, 165, 0.2)",
               }}
             >
-              <MessageCircle className="h-5 w-5 text-emerald-300" />
+              <MessageCircle className="h-4 w-4 text-emerald-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white leading-tight">
+              <p
+                className="font-semibold text-white leading-tight"
+                style={{ fontSize: 13 }}
+              >
                 Bravoro Support
               </p>
-              <p className="text-xs text-emerald-300/70 leading-tight mt-0.5">
+              <p
+                className="leading-tight mt-0.5"
+                style={{ fontSize: 10.5, color: "rgba(94, 234, 212, 0.5)" }}
+              >
                 We typically reply within a few hours
               </p>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
               aria-label="Close chat"
             >
-              <X className="h-5 w-5 text-white/70" />
+              <X className="h-4 w-4 text-white/40 hover:text-white/70" />
             </button>
           </div>
 
           {/* Messages */}
           <div
             ref={chatBodyRef}
-            className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
-            style={{ scrollbarWidth: "thin", scrollbarColor: "#1a3535 transparent" }}
+            className="flex-1 overflow-y-auto px-3.5 py-3.5 space-y-2.5"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#1a3535 transparent",
+              background: "#080f0f",
+            }}
           >
             {messages.map((msg) => (
               <div
@@ -288,32 +323,42 @@ export function SupportChatWidget() {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+                  className="max-w-[82%]"
                   style={
                     msg.role === "user"
                       ? {
-                          background: "linear-gradient(135deg, #009da5, #007a80)",
-                          color: "#fff",
-                          borderBottomRightRadius: 6,
+                          background: "linear-gradient(135deg, #007a80, #006266)",
+                          color: "#e0f5f5",
+                          padding: "10px 14px",
+                          borderRadius: "14px 14px 4px 14px",
+                          fontSize: 12.5,
+                          lineHeight: 1.55,
                         }
                       : {
-                          background: "#122020",
-                          color: "#d1e8e8",
-                          border: "1px solid rgba(88, 221, 221, 0.1)",
-                          borderBottomLeftRadius: 6,
+                          background: "#0e1818",
+                          color: "#a8c8c8",
+                          padding: "10px 14px",
+                          borderRadius: "14px 14px 14px 4px",
+                          border: "1px solid rgba(88, 221, 221, 0.06)",
+                          fontSize: 12.5,
+                          lineHeight: 1.55,
                         }
                   }
                 >
-                  <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                  <p className="whitespace-pre-wrap break-words m-0">{msg.content}</p>
                   {msg.attachments && msg.attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex flex-wrap gap-1.5 mt-2">
                       {msg.attachments.map((src, i) => (
                         <img
                           key={i}
                           src={src}
                           alt={`Attachment ${i + 1}`}
-                          className="rounded-lg object-cover border border-white/10"
-                          style={{ width: 80, height: 80 }}
+                          className="rounded-md object-cover"
+                          style={{
+                            width: 64,
+                            height: 64,
+                            border: "1px solid rgba(88, 221, 221, 0.1)",
+                          }}
                         />
                       ))}
                     </div>
@@ -327,10 +372,10 @@ export function SupportChatWidget() {
           {/* Attachment previews */}
           {attachments.length > 0 && (
             <div
-              className="px-4 py-2 flex gap-2 overflow-x-auto shrink-0"
+              className="px-3.5 py-2 flex gap-2 overflow-x-auto shrink-0"
               style={{
-                borderTop: "1px solid rgba(88, 221, 221, 0.1)",
-                background: "#0e1a1a",
+                borderTop: "1px solid rgba(88, 221, 221, 0.06)",
+                background: "#0a1212",
                 scrollbarWidth: "none",
               }}
             >
@@ -339,15 +384,19 @@ export function SupportChatWidget() {
                   <img
                     src={att.preview}
                     alt="Attachment preview"
-                    className="rounded-lg object-cover border border-white/10"
-                    style={{ width: 56, height: 56 }}
+                    className="rounded-md object-cover"
+                    style={{
+                      width: 48,
+                      height: 48,
+                      border: "1px solid rgba(88, 221, 221, 0.1)",
+                    }}
                   />
                   <button
                     onClick={() => removeAttachment(att.id)}
-                    className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full bg-red-500/90 hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ width: 18, height: 18 }}
+                    className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500/80 hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ width: 16, height: 16 }}
                   >
-                    <Trash2 className="h-2.5 w-2.5 text-white" />
+                    <Trash2 className="h-2 w-2 text-white" />
                   </button>
                 </div>
               ))}
@@ -356,10 +405,10 @@ export function SupportChatWidget() {
 
           {/* Input area */}
           <div
-            className="shrink-0 px-3 py-3 flex items-end gap-2"
+            className="shrink-0 px-3 py-2.5 flex items-end gap-1.5"
             style={{
-              borderTop: "1px solid rgba(88, 221, 221, 0.1)",
-              background: "#0c1616",
+              borderTop: "1px solid rgba(88, 221, 221, 0.06)",
+              background: "#0a1212",
             }}
           >
             <input
@@ -375,11 +424,11 @@ export function SupportChatWidget() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-xl hover:bg-white/5 transition-colors shrink-0"
+              className="p-1.5 rounded-lg hover:bg-white/5 transition-colors shrink-0"
               aria-label="Attach image"
-              title="Attach image"
+              title="Attach screenshot"
             >
-              <Paperclip className="h-5 w-5 text-emerald-400/60 hover:text-emerald-400" />
+              <Paperclip className="h-4 w-4 text-emerald-400/40 hover:text-emerald-400/70" />
             </button>
             <textarea
               ref={textareaRef}
@@ -387,28 +436,32 @@ export function SupportChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder="Type your message..."
+              placeholder="Describe your issue..."
               disabled={isSending}
               rows={1}
-              className="flex-1 resize-none rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-emerald-400/40 disabled:opacity-50"
+              className="flex-1 resize-none rounded-lg px-3 py-2 text-white placeholder:text-white/25 focus:outline-none disabled:opacity-50"
               style={{
-                background: "#162222",
-                border: "1px solid rgba(88, 221, 221, 0.1)",
-                maxHeight: 100,
-                minHeight: 40,
+                background: "#121e1e",
+                border: "1px solid rgba(88, 221, 221, 0.06)",
+                fontSize: 12.5,
+                maxHeight: 88,
+                minHeight: 36,
                 scrollbarWidth: "thin",
                 scrollbarColor: "#1a3535 transparent",
+                transition: "border-color 0.15s",
               }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(0, 157, 165, 0.3)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(88, 221, 221, 0.06)"; }}
               onInput={(e) => {
                 const el = e.currentTarget;
-                el.style.height = "40px";
-                el.style.height = Math.min(el.scrollHeight, 100) + "px";
+                el.style.height = "36px";
+                el.style.height = Math.min(el.scrollHeight, 88) + "px";
               }}
             />
             <button
               onClick={handleSend}
               disabled={isSending || (!input.trim() && attachments.length === 0)}
-              className="p-2.5 rounded-xl transition-all duration-150 shrink-0 disabled:opacity-30"
+              className="p-2 rounded-lg transition-all duration-150 shrink-0 disabled:opacity-20"
               style={{
                 background:
                   !isSending && (input.trim() || attachments.length > 0)
@@ -419,23 +472,22 @@ export function SupportChatWidget() {
             >
               {isSending ? (
                 <div
-                  className="h-5 w-5 rounded-full border-2 border-emerald-400/40 border-t-emerald-400 animate-spin"
+                  className="h-4 w-4 rounded-full border-2 border-emerald-400/40 border-t-emerald-400 animate-spin"
                 />
               ) : (
-                <Send className="h-5 w-5 text-white" />
+                <Send className="h-4 w-4 text-white" />
               )}
             </button>
           </div>
         </div>
       )}
 
-      {/* Keyframe animation */}
       <style>{`
         @keyframes supportChatSlideUp {
-          from { opacity: 0; transform: translateY(16px) scale(0.96); }
+          from { opacity: 0; transform: translateY(12px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
-    </>
+    </div>
   );
 }
