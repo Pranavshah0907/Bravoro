@@ -5,11 +5,11 @@ import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { User as UserIcon, Lock, BarChart3, Loader2 } from "lucide-react";
+import { User as UserIcon, Lock, BarChart3, Loader2, CreditCard } from "lucide-react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
@@ -21,8 +21,7 @@ interface ProfileData {
   first_name: string;
   last_name: string;
   email: string;
-  enrichment_used: number;
-  enrichment_limit: number;
+  workspace_id: string | null;
 }
 
 const Settings = () => {
@@ -38,9 +37,9 @@ const Settings = () => {
     first_name: "",
     last_name: "",
     email: "",
-    enrichment_used: 0,
-    enrichment_limit: 0,
+    workspace_id: null,
   });
+  const [workspaceCredits, setWorkspaceCredits] = useState<{ balance: number; name: string } | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Security state
@@ -62,7 +61,7 @@ const Settings = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("first_name, last_name, email, enrichment_used, enrichment_limit")
+        .select("first_name, last_name, email, workspace_id")
         .eq("id", currentUser.id)
         .single();
 
@@ -71,9 +70,19 @@ const Settings = () => {
           first_name: profileData.first_name ?? "",
           last_name: profileData.last_name ?? "",
           email: profileData.email ?? currentUser.email ?? "",
-          enrichment_used: profileData.enrichment_used ?? 0,
-          enrichment_limit: profileData.enrichment_limit ?? 0,
+          workspace_id: profileData.workspace_id ?? null,
         });
+
+        if (profileData.workspace_id) {
+          const { data: ws } = await supabase
+            .from("workspaces")
+            .select("credits_balance, company_name")
+            .eq("id", profileData.workspace_id)
+            .maybeSingle();
+          if (ws) {
+            setWorkspaceCredits({ balance: ws.credits_balance, name: ws.company_name });
+          }
+        }
       }
 
       // Check admin role
@@ -174,14 +183,6 @@ const Settings = () => {
   const initials =
     (profile.first_name?.[0] ?? "").toUpperCase() +
     (profile.last_name?.[0] ?? "").toUpperCase() || "U";
-
-  const usagePercent =
-    profile.enrichment_limit > 0
-      ? Math.min(
-          Math.round((profile.enrichment_used / profile.enrichment_limit) * 100),
-          100,
-        )
-      : 0;
 
   if (loading) {
     return (
@@ -372,33 +373,41 @@ const Settings = () => {
             </TabsContent>
 
             {/* ── Usage Tab ── */}
-            <TabsContent value="usage">
-              <div className="rounded-xl border border-border/40 bg-card/30 backdrop-blur-sm p-6 md:p-8 space-y-6">
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">
-                    Enrichment Credits
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Your enrichment credit usage and remaining balance.
-                  </p>
-                </div>
-
-                <Separator className="bg-border/30" />
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Credits Used</span>
-                    <span className="font-medium text-foreground">
-                      {profile.enrichment_used.toLocaleString()} /{" "}
-                      {profile.enrichment_limit.toLocaleString()}
-                    </span>
+            <TabsContent value="usage" className="space-y-6 animate-in fade-in-50 duration-300">
+              <Card className="border-border/40 bg-gradient-to-br from-card to-card/80">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg bg-emerald-500/10">
+                      <CreditCard className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Workspace Credits</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {workspaceCredits ? workspaceCredits.name : "Not assigned to a workspace"}
+                      </p>
+                    </div>
                   </div>
-                  <Progress value={usagePercent} className="h-3" />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {usagePercent}% used
-                  </p>
-                </div>
-              </div>
+                  {workspaceCredits ? (
+                    <div className="space-y-3">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-foreground tabular-nums">
+                          {workspaceCredits.balance.toLocaleString()}
+                        </span>
+                        <span className="text-sm text-muted-foreground">credits remaining</span>
+                      </div>
+                      {workspaceCredits.balance <= 0 && (
+                        <p className="text-xs text-red-400">
+                          Your workspace is out of credits. Contact your admin to top up.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Contact your admin to get assigned to a workspace.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
