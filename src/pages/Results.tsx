@@ -810,29 +810,44 @@ const Results = () => {
       lusha:   0.087416,
     };
 
+    const NO_COST_PROVIDERS: Record<string, string> = {
+      master_database: "Master DB",
+      client_database: "Client DB",
+    };
+
     const contactRows = allContacts.map(c => {
       const name = [c.First_Name, c.Last_Name].filter(Boolean).join(" ") || "—";
       const phones = [c.Phone_Number_1, c.Phone_Number_2].filter(p => p && String(p).trim());
       const phoneStr = phones.length ? phones.join("  ·  ") : "—";
 
-      // Build per-contact cost cell
-      const cognismCr = Number(c.CognismCreditsUsed) || 0;
-      const lushaCr   = Number(c.lushaCreditsUsed) || 0;
-      const aleadsCr  = Number(c.aLeadscreditsUsed) || 0;
-      const apolloCr  = Number(c.apolloCreditsUsed) || 0;
-      const contactCost =
-        cognismCr * CONTACT_COST_RATES.cognism +
-        lushaCr   * CONTACT_COST_RATES.lusha +
-        aleadsCr  * CONTACT_COST_RATES.aleads +
-        apolloCr  * CONTACT_COST_RATES.apollo;
-
       const searchBy = (c.People_Search_By || "—").trim();
       const enrichBy = (c.Provider || "—").trim();
-      const costLines = [
-        `Search: ${searchBy}`,
-        `Enrich: ${enrichBy}`,
-        `Cost: € ${contactCost.toFixed(2)}`,
-      ].join("\n");
+      const providerLower = enrichBy.toLowerCase();
+
+      let costLines: string;
+      if (NO_COST_PROVIDERS[providerLower]) {
+        costLines = [
+          `Search: ${searchBy}`,
+          `Source: ${NO_COST_PROVIDERS[providerLower]}`,
+          `Cost: € 0.00`,
+        ].join("\n");
+      } else {
+        const cognismCr = Number(c.CognismCreditsUsed) || 0;
+        const lushaCr   = Number(c.lushaCreditsUsed) || 0;
+        const aleadsCr  = Number(c.aLeadscreditsUsed) || 0;
+        const apolloCr  = Number(c.apolloCreditsUsed) || 0;
+        const contactCost =
+          cognismCr * CONTACT_COST_RATES.cognism +
+          lushaCr   * CONTACT_COST_RATES.lusha +
+          aleadsCr  * CONTACT_COST_RATES.aleads +
+          apolloCr  * CONTACT_COST_RATES.apollo;
+
+        costLines = [
+          `Search: ${searchBy}`,
+          `Enrich: ${enrichBy}`,
+          `Cost: € ${contactCost.toFixed(2)}`,
+        ].join("\n");
+      }
 
       return [name, c.Organization || "—", c.Title || "—", phoneStr, costLines];
     });
@@ -1060,7 +1075,7 @@ const Results = () => {
     // Fetch credit usage for this search
     const { data: creditRow } = await supabase
       .from("credit_usage")
-      .select("cognism_credits, apollo_credits, aleads_credits, lusha_credits, theirstack_credits")
+      .select("cognism_credits, apollo_credits, aleads_credits, lusha_credits, theirstack_credits, mobile_phone_credits, direct_phone_credits, email_only_credits, jobs_credits, grand_total_credits")
       .eq("search_id", searchId)
       .maybeSingle();
 
@@ -1131,6 +1146,87 @@ const Results = () => {
           alternateRowStyles: { fillColor: C.rowAlt },
           didParseCell: (data) => {
             if (data.row.index === costRows.length - 1 && data.section === "body") {
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.textColor = C.accentDark;
+              data.cell.styles.fillColor = C.totalRow;
+            }
+          },
+          columnStyles: {
+            0: { cellWidth: "auto" },
+            1: { cellWidth: 36, halign: "center" },
+            2: { cellWidth: 36, halign: "center" },
+            3: { cellWidth: 36, halign: "right" },
+          },
+        });
+      }
+    }
+
+    // ── TABLE 4: Client Revenue (contact-type credits) ─────────────────────
+    if (creditRow) {
+      const CREDIT_RATE = 0.19;
+      const CREDIT_TYPE_LABELS: { dbField: string; label: string; multiplier: string }[] = [
+        { dbField: "mobile_phone_credits",  label: "Mobile Phone",  multiplier: "×4" },
+        { dbField: "direct_phone_credits",  label: "Direct Phone",  multiplier: "×3" },
+        { dbField: "email_only_credits",    label: "Email / LinkedIn", multiplier: "×2" },
+        { dbField: "jobs_credits",          label: "Jobs",          multiplier: "×1" },
+      ];
+
+      const revenueRows: string[][] = [];
+      let totalCredits = 0;
+
+      CREDIT_TYPE_LABELS.forEach(({ dbField, label, multiplier }) => {
+        const credits = Number((creditRow as Record<string, unknown>)[dbField]) || 0;
+        if (credits <= 0) return;
+        const lineCost = credits * CREDIT_RATE;
+        totalCredits += credits;
+        revenueRows.push([
+          `${label}  ${multiplier}`,
+          String(credits),
+          `€ ${CREDIT_RATE.toFixed(2)}`,
+          `€ ${lineCost.toFixed(2)}`,
+        ]);
+      });
+
+      if (revenueRows.length > 0) {
+        const totalRevenue = totalCredits * CREDIT_RATE;
+        revenueRows.push(["Total", String(totalCredits), "", `€ ${totalRevenue.toFixed(2)}`]);
+
+        const prevTableEndY = (doc as any).lastAutoTable?.finalY ?? cursorY;
+        const revenueBlockH = 12 + revenueRows.length * 8 + 10;
+        if (prevTableEndY + revenueBlockH + 14 > PH - 14) {
+          doc.addPage();
+          cursorY = 20;
+        } else {
+          cursorY = prevTableEndY + 10;
+        }
+
+        sectionHeading("Client Revenue", cursorY);
+        cursorY += 5;
+
+        autoTable(doc, {
+          startY: cursorY,
+          head: [["Contact Type", "Credits", "Rate / Credit", "Revenue"]],
+          body: revenueRows,
+          margin: { left: ML, right: MR },
+          tableWidth: TW,
+          styles: {
+            fontSize: 8,
+            cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+            textColor: C.text,
+            lineColor: C.border,
+            lineWidth: 0.15,
+            fillColor: C.white,
+          },
+          headStyles: {
+            fillColor: C.headerBg,
+            textColor: [200, 230, 226] as [number, number, number],
+            fontStyle: "bold",
+            fontSize: 8,
+            lineWidth: 0,
+          },
+          alternateRowStyles: { fillColor: C.rowAlt },
+          didParseCell: (data) => {
+            if (data.row.index === revenueRows.length - 1 && data.section === "body") {
               data.cell.styles.fontStyle = "bold";
               data.cell.styles.textColor = C.accentDark;
               data.cell.styles.fillColor = C.totalRow;
