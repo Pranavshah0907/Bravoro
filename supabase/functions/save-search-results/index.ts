@@ -62,7 +62,7 @@ interface CreditCounter {
   theirstack_total_credits?: number;
   grand_total_credits?: number;
   contacts_with_direct_phone_only?: number;
-  email_only_contacts?: number;
+  email_linkedin_only_contacts?: number;
   job_search_runs_count?: number;
   total_jobs_found_count?: number;
 }
@@ -508,7 +508,7 @@ serve(async (req: Request) => {
     if (creditCounter) {
       mobilePhoneContacts = toInt(creditCounter.contacts_with_mobile_phone);
       directPhoneContacts = toInt(creditCounter.contacts_with_direct_phone_only);
-      emailOnlyContacts = toInt(creditCounter.email_only_contacts);
+      emailOnlyContacts = toInt(creditCounter.email_linkedin_only_contacts);
       jobsCount = toInt(creditCounter.total_jobs_found_count);
 
       mobilePhoneCredits = mobilePhoneContacts * 4;
@@ -758,9 +758,7 @@ serve(async (req: Request) => {
         }
       });
 
-      // Upsert to master_contacts in background (don't await to avoid slowing response)
-      upsertToMasterContacts(supabase, requestId, allContacts, search_id, searchData.user_id)
-        .catch((err) => console.error(`[${requestId}] Master contacts upsert failed:`, err));
+      await upsertToMasterContacts(supabase, requestId, allContacts, search_id, searchData.user_id);
     }
 
     // Get user email for notification
