@@ -21,6 +21,7 @@ import {
   Trash2,
 } from "lucide-react";
 import MasterDatabaseTab from "@/components/MasterDatabaseTab";
+import WorkspaceSearches from "@/components/WorkspaceSearches";
 import { z } from "zod";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
@@ -1084,6 +1085,9 @@ const Admin = () => {
                       renderDetailTable(wsUsers, false)
                     )}
                   </div>
+
+                  {/* ── Workspace Searches ── */}
+                  <WorkspaceSearches userIds={wsUsers.map(u => u.id)} />
                 </div>
               );
             })()}
