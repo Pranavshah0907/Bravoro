@@ -489,6 +489,21 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate caller identity — deployed with --no-verify-jwt because this function
+    // serves both pre-auth (password reset) and authenticated (support widget) callers.
+    // We verify the apikey JWT belongs to our project instead.
+    const apikey = req.headers.get("apikey") || "";
+    try {
+      const payload = JSON.parse(atob(apikey.split(".")[1]));
+      if (payload.ref !== "ggvhwxpaovfvoyvzixqw") throw new Error("wrong project");
+    } catch {
+      console.warn(`[${requestId}] Rejected: invalid or missing apikey`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       console.error(`[${requestId}] RESEND_API_KEY not configured`);

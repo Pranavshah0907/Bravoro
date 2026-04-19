@@ -186,8 +186,7 @@ export function SupportChatWidget() {
       attachments.forEach((a) => URL.revokeObjectURL(a.preview));
       setAttachments([]);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const invokeOptions: Record<string, unknown> = {
+      const { data, error } = await supabase.functions.invoke("send-email", {
         body: {
           type: "support",
           userName: userName || "Unknown User",
@@ -195,12 +194,7 @@ export function SupportChatWidget() {
           message: trimmed,
           attachments: attachmentPayloads,
         },
-      };
-      if (sessionData?.session?.access_token) {
-        invokeOptions.headers = { Authorization: `Bearer ${sessionData.session.access_token}` };
-      }
-
-      const { data, error } = await supabase.functions.invoke("send-email", invokeOptions);
+      });
 
       console.log("[SupportChat] invoke result:", { data, error });
 
