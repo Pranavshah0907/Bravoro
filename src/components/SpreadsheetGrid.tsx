@@ -329,6 +329,24 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
     setDraftSaving(true);
     try {
+      // Check for duplicate name (exclude current draft if updating)
+      const query = supabase
+        .from("bulk_search_drafts")
+        .select("id, name")
+        .eq("user_id", userId)
+        .eq("name", draftName)
+        .limit(1);
+      if (draftId) query.neq("id", draftId);
+      const { data: existing } = await query;
+
+      if (existing && existing.length > 0) {
+        setDupConflict({ existingId: existing[0].id, existingName: existing[0].name, pendingData: data, pendingRc: rc });
+        setDupNewName(draftName);
+        setDraftSaving(false);
+        setTimeout(() => dupInputRef.current?.select(), 50);
+        return;
+      }
+
       if (draftId) {
         await supabase.from("bulk_search_drafts")
           .update({ name: draftName, grid_data: data, row_count: rc, updated_at: new Date().toISOString() })
@@ -336,21 +354,6 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         setDraftStatus("saved");
         toast({ title: "Draft saved", description: `"${draftName}" updated` });
       } else {
-        // Check for duplicate name
-        const { data: existing } = await supabase
-          .from("bulk_search_drafts")
-          .select("id, name")
-          .eq("user_id", userId)
-          .eq("name", draftName)
-          .limit(1);
-        if (existing && existing.length > 0) {
-          setDupConflict({ existingId: existing[0].id, existingName: existing[0].name, pendingData: data, pendingRc: rc });
-          setDupNewName(draftName);
-          setDraftSaving(false);
-          setTimeout(() => dupInputRef.current?.select(), 50);
-          return;
-        }
-
         await insertNewDraft(draftName, data, rc);
       }
     } catch {
@@ -374,9 +377,14 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     setDraftSaving(true);
     try {
       const { existingId, existingName, pendingData, pendingRc } = dupConflict;
+      // Delete the old draft we're overwriting, replace with current data
       await supabase.from("bulk_search_drafts")
         .update({ grid_data: pendingData, row_count: pendingRc, updated_at: new Date().toISOString() })
         .eq("id", existingId);
+      // If current sheet was also a saved draft (different id), delete it since we merged into the existing one
+      if (draftId && draftId !== existingId) {
+        await supabase.from("bulk_search_drafts").delete().eq("id", draftId);
+      }
       setDraftId(existingId);
       setDraftName(existingName);
       setDraftStatus("saved");
@@ -391,13 +399,15 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
     const newName = dupNewName.trim();
     if (!newName) return;
 
-    // Check the new name isn't also taken
-    const { data: clash } = await supabase
+    // Check the new name isn't also taken (exclude current draft)
+    const clashQuery = supabase
       .from("bulk_search_drafts")
       .select("id")
       .eq("user_id", userId)
       .eq("name", newName)
       .limit(1);
+    if (draftId) clashQuery.neq("id", draftId);
+    const { data: clash } = await clashQuery;
     if (clash && clash.length > 0) {
       toast({ title: "Name also taken", description: `"${newName}" already exists. Choose a different name.`, variant: "destructive" });
       return;
@@ -405,7 +415,17 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
     setDraftSaving(true);
     try {
-      await insertNewDraft(newName, dupConflict.pendingData, dupConflict.pendingRc);
+      if (draftId) {
+        // Existing draft — just update its name + data
+        await supabase.from("bulk_search_drafts")
+          .update({ name: newName, grid_data: dupConflict.pendingData, row_count: dupConflict.pendingRc, updated_at: new Date().toISOString() })
+          .eq("id", draftId);
+        setDraftName(newName);
+        setDraftStatus("saved");
+        toast({ title: "Draft saved", description: `"${newName}" saved` });
+      } else {
+        await insertNewDraft(newName, dupConflict.pendingData, dupConflict.pendingRc);
+      }
     } catch {
       toast({ title: "Save failed", description: "Could not save draft", variant: "destructive" });
     } finally { setDraftSaving(false); setDupConflict(null); }
