@@ -607,7 +607,11 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
       if (fnError) {
         console.error("trigger-n8n-webhook failed:", fnError);
-        throw new Error(`Webhook invoke failed: ${fnError.message}`);
+        const errMsg = fnError.message || "";
+        if (errMsg.includes("INSUFFICIENT_CREDITS") || errMsg.includes("run out of credits")) {
+          throw new Error("Your workspace has run out of credits. Please contact your admin to top up.");
+        }
+        throw new Error("Failed to start processing. Please try again.");
       }
 
       toast({ title: "Request Submitted", description: "Your lead enrichment request is being processed" });

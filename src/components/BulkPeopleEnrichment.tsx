@@ -408,7 +408,11 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
       );
 
       if (webhookError) {
-        throw new Error(`N8N webhook trigger failed: ${webhookError.message}`);
+        const errMsg = webhookError.message || "";
+        if (errMsg.includes("INSUFFICIENT_CREDITS") || errMsg.includes("run out of credits")) {
+          throw new Error("Your workspace has run out of credits. Please contact your admin to top up.");
+        }
+        throw new Error("Failed to start processing. Please try again.");
       }
 
       console.log('Webhook triggered successfully');

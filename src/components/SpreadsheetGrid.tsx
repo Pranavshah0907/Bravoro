@@ -1189,7 +1189,15 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         body: { searchId: search.id, entryType: "bulk_upload", searchData: { search_id: search.id, data: { Main_Data: mainData } } },
       });
       if (we) {
-        toast({ title: "Processing Failed", description: "Couldn't reach the processing server.", variant: "destructive" });
+        const errMsg = we.message || "";
+        const isCredits = errMsg.includes("INSUFFICIENT_CREDITS") || errMsg.includes("run out of credits");
+        toast({
+          title: isCredits ? "Insufficient Credits" : "Processing Failed",
+          description: isCredits
+            ? "Your workspace has run out of credits. Please contact your admin to top up."
+            : "Couldn't reach the processing server.",
+          variant: "destructive",
+        });
         return;
       }
 
