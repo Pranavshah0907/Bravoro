@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 // Email type definitions
-type EmailType = 'welcome' | 'success' | 'error' | 'password-reset';
+type EmailType = 'welcome' | 'success' | 'error' | 'password-reset' | 'support';
 
 interface SendEmailRequest {
   type: EmailType;
@@ -25,6 +25,10 @@ interface SendEmailRequest {
   resetEmail?: string;
   // Origin URL for generating reset links
   origin?: string;
+  // For support emails
+  userName?: string;
+  message?: string;
+  attachments?: Array<{ filename: string; content: string; type: string }>;
 }
 
 // Generate a unique request ID for tracking
@@ -416,6 +420,66 @@ function getPasswordResetEmailHtml(resetLink: string): string {
   `;
 }
 
+function getSupportEmailHtml(userName: string, userEmail: string, message: string, hasAttachments: boolean): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support Request - Bravoro</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #e8eeee; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-width: 100%; background-color: #e8eeee;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #0d222e 0%, #b45309 50%, #f59e0b 100%); padding: 48px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: 0.5px;">
+                Support Request
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 48px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #f9fafb; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">From</p>
+                    <p style="margin: 0; color: #0d222e; font-size: 15px; font-weight: 500;">${userName}</p>
+                    <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">${userEmail}</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Message</p>
+              <div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 24px;">
+                <p style="margin: 0; color: #374151; font-size: 15px; line-height: 1.7; white-space: pre-wrap;">${message}</p>
+              </div>
+              ${hasAttachments ? '<p style="margin: 0; color: #6b7280; font-size: 14px; font-style: italic;">Screenshots are attached to this email.</p>' : ''}
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-top: 1px solid #e5e7eb; margin-top: 32px;">
+                <tr>
+                  <td style="padding-top: 24px;">
+                    <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                      Sent via Bravoro in-app support widget
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
 serve(async (req: Request): Promise<Response> => {
   const requestId = generateRequestId();
   
@@ -586,6 +650,38 @@ serve(async (req: Request): Promise<Response> => {
           to: [resetEmail],
           subject: "Reset Your Bravoro Password",
           html: getPasswordResetEmailHtml(resetLink),
+        });
+        break;
+      }
+
+      case 'support': {
+        const { userName, userEmail, message, attachments: supportAttachments } = body;
+
+        if (!message && (!supportAttachments || supportAttachments.length === 0)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Message or attachments required", request_id: requestId }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const senderName = userName || 'Unknown User';
+        const senderEmail = userEmail || 'unknown';
+        const hasAttachments = !!(supportAttachments && supportAttachments.length > 0);
+
+        console.log(`[${requestId}] Sending support email from: ${senderName} (${senderEmail})`);
+
+        const emailAttachments = supportAttachments?.map((att: { filename: string; content: string; type: string }) => ({
+          filename: att.filename,
+          content: att.content,
+        })) || [];
+
+        emailResponse = await resend.emails.send({
+          from: "Bravoro <service@mail.bravoro.com>",
+          to: ["pranavshah0907@gmail.com", "sandy.s9995@gmail.com"],
+          replyTo: senderEmail,
+          subject: `URGENT - Support Request from ${senderName}`,
+          html: getSupportEmailHtml(senderName, senderEmail, message || '(No message — see attachments)', hasAttachments),
+          attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
         });
         break;
       }

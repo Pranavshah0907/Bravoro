@@ -1,5 +1,6 @@
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { DevVersionBadge } from "@/components/DevVersionBadge";
+import { SupportChatWidget } from "@/components/SupportChatWidget";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      <SupportChatWidget />
     </TooltipProvider>
   </QueryClientProvider>
 );
