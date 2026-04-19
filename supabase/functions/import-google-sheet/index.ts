@@ -148,6 +148,7 @@ function validateRows(
     return idx;
   };
   const domainIdx = findIdx("organization domains");
+  const locIdx = findIdx("organization locations");
   const functionsIdx = findIdx("person functions");
   const jobTitleIdx = findIdx("person job title");
   const errors: { row: number; message: string }[] = [];
@@ -170,6 +171,16 @@ function validateRows(
     const domain = domainIdx >= 0 ? (row[headers[domainIdx]] ?? "").trim() : "";
     if (!domain) {
       errors.push({ row: rowNum, message: `Row ${rowNum}: Missing Organization Domain` });
+    }
+
+    // Check Organization Locations — comma-separated only
+    const loc = locIdx >= 0 ? (row[headers[locIdx]] ?? "").trim() : "";
+    if (loc) {
+      const badMatch = loc.match(/[;:|\t]/);
+      if (badMatch) {
+        const charName = badMatch[0] === "\t" ? "tab" : `"${badMatch[0]}"`;
+        errors.push({ row: rowNum, message: `Row ${rowNum}: Organization Locations contains ${charName} — only commas are allowed to separate locations` });
+      }
     }
 
     // Check Person Job Title guard

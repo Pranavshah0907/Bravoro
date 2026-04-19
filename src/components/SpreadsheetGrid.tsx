@@ -103,6 +103,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
   const [submitting,        setSubmitting]        = useState(false);
   const [sessionRestored,   setSessionRestored]   = useState(false);
   const [missingDomainRows, setMissingDomainRows] = useState<Set<number>>(new Set());
+  const [invalidLocationRows, setInvalidLocationRows] = useState<Set<number>>(new Set());
   const [copyRange,         setCopyRange]         = useState<{ r1: number; r2: number; c1: number; c2: number } | null>(null);
   const [copyOverlay,       setCopyOverlay]       = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [isCut,             setIsCut]             = useState(false); // true when last copy was a cut
@@ -1013,6 +1014,26 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
       return;
     }
 
+    // Validate: Organization Locations must be comma-separated only
+    const badSeparator = /[;:|\t]/;
+    const invalidLocIndices = new Set(
+      rows.reduce<number[]>((acc, r, i) => {
+        if (r.orgName.trim() && r.orgLocations.trim() && badSeparator.test(r.orgLocations)) acc.push(i);
+        return acc;
+      }, [])
+    );
+    if (invalidLocIndices.size > 0) {
+      setInvalidLocationRows(invalidLocIndices);
+      const sample = rows[Array.from(invalidLocIndices)[0]].orgLocations;
+      const badChar = sample.match(badSeparator)?.[0] === "\t" ? "tab" : `"${sample.match(badSeparator)?.[0]}"`;
+      toast({
+        title: "Invalid Character in Organization Locations",
+        description: `${invalidLocIndices.size} row${invalidLocIndices.size === 1 ? " contains" : "s contain"} ${badChar} — only commas are allowed to separate locations. Please fix the highlighted cells.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const toArrOrStr = (s: string) => {
@@ -1343,13 +1364,14 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                         const isJobCol = JOB_COLS.includes(col.key);
                         const jobLocked = isJobCol && row.toggleJobSearch !== "Yes";
                         const isMissingDomain = missingDomainRows.has(ri) && col.key === "orgDomains";
+                        const isInvalidLocation = invalidLocationRows.has(ri) && col.key === "orgLocations";
                         const cellBg = jobLocked ? "rgba(0,0,0,0.03)"
-                          : isMissingDomain && !isActive ? "rgba(239,68,68,0.08)"
+                          : (isMissingDomain || isInvalidLocation) && !isActive ? "rgba(239,68,68,0.08)"
                           : inSel && !isActive ? "rgba(0,157,165,0.14)"
                           : isPicker && hasValue && !isActive ? "rgba(0,157,165,0.04)"
                           : undefined;
                         const activeStyle = isActive ? { outline: isEditing ? "1px solid #009da5" : "3px solid #009da5", outlineOffset: isEditing ? "-1px" : "-3px", position: "relative" as const, zIndex: 20 } : {};
-                        const missingStyle = isMissingDomain && !isActive ? { outline: "1px solid rgba(220,50,50,0.45)", outlineOffset: "-1px" } : {};
+                        const missingStyle = (isMissingDomain || isInvalidLocation) && !isActive ? { outline: "1px solid rgba(220,50,50,0.45)", outlineOffset: "-1px" } : {};
                         return (
                           <td key={col.key} className="relative p-0 border-b border-r" style={{ height: 32, borderColor: "#daeaea", background: cellBg, ...activeStyle, ...missingStyle }}
                             onContextMenu={(e) => {
@@ -1370,6 +1392,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                               if (!alreadyEditing) {
                                 e.preventDefault();
                                 if (missingDomainRows.size > 0) setMissingDomainRows(new Set());
+                                if (invalidLocationRows.size > 0) setInvalidLocationRows(new Set());
                                 setAnchor({ r: ri, c: ci });
                                 setActive({ r: ri, c: ci });
                                 setEditing(false);

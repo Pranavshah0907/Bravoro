@@ -178,13 +178,6 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
         toast({ title: "Header Names Mismatch", description: "Please use the same headers as in the template file and try again.", variant: "destructive" });
         setLoading(false); setCurrentStep("idle"); return;
       }
-      setCurrentStep("creating");
-      const { data: search, error: searchError } = await supabase
-        .from("searches").insert({ user_id: userId, search_type: "bulk", excel_file_name: selectedFile.name, status: "processing" })
-        .select().single();
-      if (searchError) throw searchError;
-      setCurrentStep("triggering");
-
       // Transform Excel data to match SpreadsheetGrid's payload format
       const toArrOrStr = (s: string) => {
         const arr = s.trim() ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
@@ -200,6 +193,29 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
         }
         return "";
       };
+
+      // Validate: Organization Locations must be comma-separated only
+      const badSeparator = /[;:|\t]/;
+      const badLocRows = rawRows.reduce<number[]>((acc, row, i) => {
+        const loc = getVal(row, "Organization Location");
+        if (loc && badSeparator.test(loc)) acc.push(i + 2);
+        return acc;
+      }, []);
+      if (badLocRows.length > 0) {
+        toast({
+          title: "Invalid Character in Organization Locations",
+          description: `Row${badLocRows.length === 1 ? "" : "s"} ${badLocRows.slice(0, 5).join(", ")}${badLocRows.length > 5 ? "…" : ""}: only commas are allowed to separate locations. Characters like ; : | are not permitted.`,
+          variant: "destructive",
+        });
+        setLoading(false); setCurrentStep("idle"); return;
+      }
+
+      setCurrentStep("creating");
+      const { data: search, error: searchError } = await supabase
+        .from("searches").insert({ user_id: userId, search_type: "bulk", excel_file_name: selectedFile.name, status: "processing" })
+        .select().single();
+      if (searchError) throw searchError;
+      setCurrentStep("triggering");
       const mainData = rawRows
         .filter(row => getVal(row, "Organization Domain", "Organization Name", "Person Function", "Person Seniori"))
         .map((row, idx) => ({
