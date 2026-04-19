@@ -186,7 +186,8 @@ export function SupportChatWidget() {
       attachments.forEach((a) => URL.revokeObjectURL(a.preview));
       setAttachments([]);
 
-      const { data, error } = await supabase.functions.invoke("send-email", {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const invokeOptions: Record<string, unknown> = {
         body: {
           type: "support",
           userName: userName || "Unknown User",
@@ -194,10 +195,19 @@ export function SupportChatWidget() {
           message: trimmed,
           attachments: attachmentPayloads,
         },
-      });
+      };
+      if (sessionData?.session?.access_token) {
+        invokeOptions.headers = { Authorization: `Bearer ${sessionData.session.access_token}` };
+      }
 
-      const errorMsg = data?.error || (error?.message !== "Edge Function returned a non-2xx status code" ? error?.message : null);
-      if (error || !data?.success) throw new Error(errorMsg || "Failed to send message");
+      const { data, error } = await supabase.functions.invoke("send-email", invokeOptions);
+
+      console.log("[SupportChat] invoke result:", { data, error });
+
+      if (error) {
+        const detail = typeof data === "object" && data?.error ? data.error : error.message;
+        throw new Error(detail || "Failed to send message");
+      }
 
       const thankYou: ChatMessage = {
         id: crypto.randomUUID(),
@@ -206,11 +216,11 @@ export function SupportChatWidget() {
           "Thank you for reaching out! Our team has received your message and will get back to you shortly.",
       };
       setMessages((prev) => [...prev, thankYou]);
-    } catch (err) {
-      console.error("Support email error:", err);
+    } catch (err: any) {
+      console.error("[SupportChat] send error:", err);
       toast({
         title: "Couldn't send message",
-        description: "Please try again or email us directly at support@bravoro.com",
+        description: err?.message || "Please try again or email us directly at support@bravoro.com",
         variant: "destructive",
       });
     } finally {
