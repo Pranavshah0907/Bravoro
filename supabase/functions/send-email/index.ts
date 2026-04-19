@@ -670,19 +670,24 @@ serve(async (req: Request): Promise<Response> => {
 
         console.log(`[${requestId}] Sending support email from: ${senderName} (${senderEmail})`);
 
-        const emailAttachments = supportAttachments?.map((att: { filename: string; content: string; type: string }) => ({
-          filename: att.filename,
-          content: att.content,
-        })) || [];
-
-        emailResponse = await resend.emails.send({
+        const emailPayload: Record<string, unknown> = {
           from: "Bravoro <service@mail.bravoro.com>",
           to: ["pranavshah0907@gmail.com", "sandy.s9995@gmail.com"],
           replyTo: senderEmail,
           subject: `URGENT - Support Request from ${senderName}`,
           html: getSupportEmailHtml(senderName, senderEmail, message || '(No message — see attachments)', hasAttachments),
-          attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
-        });
+        };
+
+        if (hasAttachments) {
+          emailPayload.attachments = supportAttachments!.map((att: { filename: string; content: string; type: string }) => {
+            const binaryStr = atob(att.content);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+            return { filename: att.filename, content: bytes };
+          });
+        }
+
+        emailResponse = await resend.emails.send(emailPayload as any);
         break;
       }
 

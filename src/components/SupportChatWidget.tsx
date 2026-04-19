@@ -186,7 +186,7 @@ export function SupportChatWidget() {
       attachments.forEach((a) => URL.revokeObjectURL(a.preview));
       setAttachments([]);
 
-      const { error } = await supabase.functions.invoke("send-email", {
+      const { data, error } = await supabase.functions.invoke("send-email", {
         body: {
           type: "support",
           userName: userName || "Unknown User",
@@ -196,7 +196,8 @@ export function SupportChatWidget() {
         },
       });
 
-      if (error) throw error;
+      const errorMsg = data?.error || (error?.message !== "Edge Function returned a non-2xx status code" ? error?.message : null);
+      if (error || !data?.success) throw new Error(errorMsg || "Failed to send message");
 
       const thankYou: ChatMessage = {
         id: crypto.randomUUID(),
