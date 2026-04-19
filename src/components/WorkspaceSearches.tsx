@@ -214,8 +214,8 @@ export function WorkspaceSearches({ userIds }: WorkspaceSearchesProps) {
       }));
 
       await exportEnrichmentPdf(item.search_id, results, searchRecord);
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.error("PDF export failed:", err);
     } finally {
       setExporting(null);
     }
