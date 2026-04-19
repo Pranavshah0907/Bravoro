@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, Activity, CalendarIcon } from "lucide-react";
+import { RefreshCw, Activity, CalendarIcon, Wallet } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Sector } from "recharts";
 import { toast } from "sonner";
 import { format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from "date-fns";
@@ -95,6 +95,7 @@ const UsageAnalytics = () => {
     to: new Date(),
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [workspaceCredits, setWorkspaceCredits] = useState<{ balance: number; name: string; low_threshold: number } | null>(null);
 
   const dateRangeRef = useRef<DateRange | undefined>(dateRange);
   useEffect(() => {
@@ -133,6 +134,28 @@ const UsageAnalytics = () => {
         .single();
       setIsAdmin(roleData?.role === "admin");
       setIsDeveloper(user.email === "pranavshah0907@gmail.com");
+
+      // Fetch workspace credits
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("workspace_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileData?.workspace_id) {
+        const { data: ws } = await supabase
+          .from("workspaces")
+          .select("credits_balance, company_name, low_credit_threshold")
+          .eq("id", profileData.workspace_id)
+          .maybeSingle();
+        if (ws) {
+          setWorkspaceCredits({
+            balance: ws.credits_balance,
+            name: ws.company_name,
+            low_threshold: ws.low_credit_threshold,
+          });
+        }
+      }
 
       const { data, error } = await supabase
         .from("credit_usage")
@@ -426,6 +449,59 @@ const UsageAnalytics = () => {
               Refresh
             </Button>
           </div>
+
+          {/* Credits Remaining Card */}
+          {workspaceCredits && (
+            <Card className={cn(
+              "border-border/40 bg-gradient-to-br from-card to-card/80 animate-fade-in",
+              workspaceCredits.balance <= 0 && "border-red-500/40",
+              workspaceCredits.balance > 0 && workspaceCredits.balance <= workspaceCredits.low_threshold && "border-yellow-500/40"
+            )} style={{ animationDelay: "0.03s" }}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                        Credits Remaining
+                      </span>
+                      <span className="text-muted-foreground/35 select-none">·</span>
+                      <span className="text-xs text-muted-foreground">{workspaceCredits.name}</span>
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={cn(
+                        "text-2xl font-bold tabular-nums leading-none",
+                        workspaceCredits.balance <= 0 ? "text-red-400" :
+                        workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-400" :
+                        "text-emerald-400"
+                      )}>
+                        {workspaceCredits.balance.toLocaleString()}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-medium">credits</span>
+                    </div>
+                    {workspaceCredits.balance <= 0 && (
+                      <p className="text-xs text-red-400 mt-1">Searches are blocked. Contact your admin to top up.</p>
+                    )}
+                    {workspaceCredits.balance > 0 && workspaceCredits.balance <= workspaceCredits.low_threshold && (
+                      <p className="text-xs text-yellow-400 mt-1">Low credits — consider requesting a top-up.</p>
+                    )}
+                  </div>
+                  <div className={cn(
+                    "p-3 rounded-xl",
+                    workspaceCredits.balance <= 0 ? "bg-red-500/10" :
+                    workspaceCredits.balance <= workspaceCredits.low_threshold ? "bg-yellow-500/10" :
+                    "bg-emerald-500/10"
+                  )}>
+                    <Wallet className={cn(
+                      "h-5 w-5",
+                      workspaceCredits.balance <= 0 ? "text-red-400" :
+                      workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-400" :
+                      "text-emerald-400"
+                    )} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Stats Section */}
           <div className="space-y-3 animate-fade-in" style={{ animationDelay: "0.05s" }}>
