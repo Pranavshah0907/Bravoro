@@ -30,7 +30,7 @@ export const AI_STAFFING_CONFIG: ChatConfig = {
   ],
   features: {
     contactSelection: true,
-    enrichmentButton: false,
+    enrichmentButton: true,
     syncToResults: true,
   },
 };
