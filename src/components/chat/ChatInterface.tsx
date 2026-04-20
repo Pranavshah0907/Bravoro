@@ -604,11 +604,11 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                           )}
                         </div>
                       </div>
-                      {/* Credits + API cost line — admin only, assistant messages only */}
-                      {isAdmin && msg.role === "assistant" && (msgMeta?.credits || msgMeta?.apiCost) && (
+                      {/* Credits line — all users; API cost — admin only */}
+                      {msg.role === "assistant" && (msgMeta?.credits || msgMeta?.apiCost) && (
                         <div className="flex items-center gap-2 mt-1 ml-10 text-[10px] text-muted-foreground/50 select-none">
                           {msgMeta?.credits && <CreditsLine credits={msgMeta.credits} />}
-                          {msgMeta?.apiCost != null && msgMeta.apiCost > 0 && (
+                          {isAdmin && msgMeta?.apiCost != null && msgMeta.apiCost > 0 && (
                             <>
                               {msgMeta?.credits && <span className="mx-0.5">|</span>}
                               <span>
