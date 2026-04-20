@@ -287,9 +287,6 @@ function ContactGroup({
                   {contact.jobTitle}
                 </div>
               </div>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground/50 font-medium shrink-0">
-                {contact.source}
-              </span>
             </div>
           );
         })}
@@ -321,11 +318,6 @@ function EnrichedContactCard({ contact }: { contact: ContactData }) {
             )}
           </div>
         </div>
-        {contact.source && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400/70 font-medium shrink-0">
-            {contact.source}
-          </span>
-        )}
       </div>
 
       {/* Contact details grid */}
