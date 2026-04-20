@@ -71,6 +71,7 @@ export interface Credits {
   mobile_phone_credits?: number;
   direct_phone_credits?: number;
   email_only_credits?: number;
+  theirstack_total_credits?: number;
   [key: string]: number | undefined;
 }
 

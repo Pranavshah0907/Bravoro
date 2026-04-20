@@ -144,33 +144,7 @@ export function parseN8nResponse(item: Record<string, unknown>): {
   }
 
   // 5. Credits
-  let credits = (item?.credits as Credits) ?? null;
-
-  // 5b. Derive contact-type credits from enriched contacts if not already present
-  const enrichedContacts = structuredData?.contacts?.filter((c) => !c.previewOnly) ?? [];
-  if (enrichedContacts.length > 0 && (credits == null || credits.mobile_phone_credits == null)) {
-    if (!credits) credits = { theirstack: 0, cognism: 0, apollo: 0, lusha: 0, aleads: 0, total: 0 };
-    let mobileCount = 0;
-    let directCount = 0;
-    let emailOnlyCount = 0;
-    for (const c of enrichedContacts) {
-      if (c.mobilePhone || (c.phone && c.phone !== "Locked" && c.phone.length > 6)) {
-        mobileCount++;
-      } else if (c.directPhone) {
-        directCount++;
-      } else if (c.email || c.linkedinUrl) {
-        emailOnlyCount++;
-      }
-    }
-    if (mobileCount > 0 || directCount > 0 || emailOnlyCount > 0) {
-      credits.contacts_with_mobile_phone = mobileCount;
-      credits.mobile_phone_credits = mobileCount * 4;
-      credits.contacts_with_direct_phone_only = directCount;
-      credits.direct_phone_credits = directCount * 3;
-      credits.email_linkedin_only_contacts = emailOnlyCount;
-      credits.email_only_credits = emailOnlyCount * 2;
-    }
-  }
+  const credits = (item?.credits as Credits) ?? null;
 
   // 6. API cost (estimated by n8n Parse Response node)
   const apiCost = typeof item?.apiCost === "number" && item.apiCost > 0 ? item.apiCost : null;

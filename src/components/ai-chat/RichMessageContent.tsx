@@ -34,6 +34,7 @@ const CREDIT_LABELS: Record<string, string> = {
   mobile_phone_credits: "Mobile Phone",
   direct_phone_credits: "Direct Phone",
   email_only_credits: "Email / LinkedIn",
+  theirstack_total_credits: "Jobs",
 };
 
 export function CreditsLine({ credits }: { credits: Credits }) {
