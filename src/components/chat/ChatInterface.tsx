@@ -363,14 +363,10 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
            parsed.structuredData.type === "candidates" ||
            parsed.structuredData.type === "enriched_contacts");
         const hasRealCredits = parsed.credits && (
-          (parsed.credits.total ?? 0) > 0 ||
-          (parsed.credits.mobile_phone_credits ?? 0) > 0 ||
-          (parsed.credits.direct_phone_credits ?? 0) > 0 ||
-          (parsed.credits.email_only_credits ?? 0) > 0 ||
-          (parsed.credits.theirstack_total_credits ?? 0) > 0 ||
           (parsed.credits.contacts_with_mobile_phone ?? 0) > 0 ||
           (parsed.credits.contacts_with_direct_phone_only ?? 0) > 0 ||
-          (parsed.credits.email_linkedin_only_contacts ?? 0) > 0
+          (parsed.credits.email_linkedin_only_contacts ?? 0) > 0 ||
+          (parsed.credits.theirstack_total_credits ?? 0) > 0
         );
         const hasApiCost = parsed.apiCost != null && parsed.apiCost > 0;
 
