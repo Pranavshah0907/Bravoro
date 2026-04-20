@@ -67,7 +67,12 @@ BEGIN
 
   -- Not found by anyone
   IF v_master IS NULL THEN
-    RETURN NULL;
+    RETURN jsonb_build_object('status', 'not_found');
+  END IF;
+
+  -- Check data freshness — if older than 6 months, treat as expired
+  IF v_master.last_updated_at < now() - interval '6 months' THEN
+    RETURN jsonb_build_object('status', 'expired', 'master_contact_id', v_master.id);
   END IF;
 
   -- Check if THIS user has enriched this contact before
@@ -76,8 +81,9 @@ BEGIN
     WHERE user_id = p_user_id AND master_contact_id = v_master.id
   ) INTO v_is_cached;
 
-  -- Return contact data with cache flag
+  -- Return contact data with status
   RETURN jsonb_build_object(
+    'status', CASE WHEN v_is_cached THEN 'cached' ELSE 'found' END,
     'is_cached', v_is_cached,
     'master_contact_id', v_master.id,
     'person_id', v_master.person_id,

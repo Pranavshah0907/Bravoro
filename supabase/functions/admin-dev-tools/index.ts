@@ -74,6 +74,11 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    const ALLOWED_ACTIONS = ['get_queue', 'stop_search', 'delete_item', 'get_workspace_searches'];
+    if (!action || !ALLOWED_ACTIONS.includes(action)) {
+      return respond({ error: `Invalid action` }, 400);
+    }
+
     // ── GET ALL SEARCHES ──────────────────────────────────────────────────────
     if (action === 'get_queue') {
       // 1. Processing flag
@@ -395,7 +400,7 @@ serve(async (req) => {
       return respond({ searches });
     }
 
-    return respond({ error: `Unknown action: ${action}` }, 400);
+    return respond({ error: 'Invalid action' }, 400);
 
   } catch (err) {
     console.error('admin-dev-tools error:', err);

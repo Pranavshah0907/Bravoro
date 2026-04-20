@@ -489,14 +489,35 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Validate caller identity — deployed with --no-verify-jwt because this function
-    // serves both pre-auth (password reset) and authenticated (support widget) callers.
-    // We verify the apikey JWT belongs to our project instead.
+    // Scope callers to this project. The anon key is public (shipped in the frontend
+    // bundle), so this is a project-identity check, not a secret-based auth gate.
+    // Real protection comes from: (a) function logic only emailing known users,
+    // (b) Supabase rate limiting, (c) RLS on any DB access inside.
+    const PROJECT_REF = "ggvhwxpaovfvoyvzixqw";
     const apikey = req.headers.get("apikey") || "";
-    try {
-      const payload = JSON.parse(atob(apikey.split(".")[1]));
-      if (payload.ref !== "ggvhwxpaovfvoyvzixqw") throw new Error("wrong project");
-    } catch {
+    let apikeyValid = false;
+    // Accept runtime-injected keys (short-format sb_publishable_ / sb_secret_)
+    const allowedKeys = [
+      Deno.env.get("SUPABASE_ANON_KEY") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+    ].filter(Boolean);
+    if (apikey && allowedKeys.includes(apikey)) {
+      apikeyValid = true;
+    }
+    // Accept JWT-format keys (sent by frontend supabase.functions.invoke)
+    if (!apikeyValid && apikey.startsWith("eyJ")) {
+      try {
+        const parts = apikey.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.iss === "supabase" && payload.ref === PROJECT_REF &&
+              (payload.role === "anon" || payload.role === "service_role")) {
+            apikeyValid = true;
+          }
+        }
+      } catch { /* invalid JWT, reject */ }
+    }
+    if (!apikeyValid) {
       console.warn(`[${requestId}] Rejected: invalid or missing apikey`);
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),

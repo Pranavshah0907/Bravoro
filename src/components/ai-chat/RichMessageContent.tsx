@@ -31,11 +31,9 @@ import { cn } from "@/lib/utils";
 /* ──────────────────────────────────────────────────────────────── */
 
 const CREDIT_LABELS: Record<string, string> = {
-  theirstack: "Theirstack",
-  cognism: "Cognism",
-  apollo: "Apollo",
-  lusha: "Lusha",
-  aleads: "A-Leads",
+  mobile_phone_credits: "Mobile Phone",
+  direct_phone_credits: "Direct Phone",
+  email_only_credits: "Email / LinkedIn",
 };
 
 export function CreditsLine({ credits }: { credits: Credits }) {
@@ -588,11 +586,35 @@ const EnrichedCandidateCard = ({ contact }: { contact: ContactData }) => (
       {(contact.city || contact.country) && (
         <p className="text-xs text-white/40 mt-0.5">{[contact.city, contact.country].filter(Boolean).join(", ")}</p>
       )}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs">
-        {contact.email && <a href={`mailto:${contact.email}`} className="text-emerald-400 hover:text-emerald-300 truncate max-w-[200px]">{contact.email}</a>}
-        {contact.phone && <a href={`tel:${contact.phone}`} className="text-emerald-400 hover:text-emerald-300">{contact.phone}</a>}
+      {contact.seniority && (
+        <p className="text-xs text-white/40 mt-0.5">Seniority: {contact.seniority}</p>
+      )}
+      <div className="flex flex-col gap-1 mt-2 text-xs">
+        {contact.email && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/40 shrink-0">Email:</span>
+            <a href={`mailto:${contact.email}`} className="text-emerald-400 hover:text-emerald-300 truncate">{contact.email}</a>
+          </div>
+        )}
+        {contact.mobilePhone && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/40 shrink-0">Mobile:</span>
+            <a href={`tel:${contact.mobilePhone}`} className="text-emerald-400 hover:text-emerald-300">{contact.mobilePhone}</a>
+          </div>
+        )}
+        {contact.directPhone && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/40 shrink-0">Direct:</span>
+            <a href={`tel:${contact.directPhone}`} className="text-emerald-400 hover:text-emerald-300">{contact.directPhone}</a>
+          </div>
+        )}
+        {!contact.mobilePhone && !contact.directPhone && contact.phone && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/40 shrink-0">Phone:</span>
+            <a href={`tel:${contact.phone}`} className="text-emerald-400 hover:text-emerald-300">{contact.phone}</a>
+          </div>
+        )}
       </div>
-      {contact.source && <p className="text-[10px] text-white/30 mt-1.5">Source: {contact.source}</p>}
     </div>
   </div>
 );

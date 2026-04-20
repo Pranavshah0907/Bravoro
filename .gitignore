@@ -35,6 +35,9 @@ dist-ssr
 # Claude Code project metadata
 .claude/
 
+# MCP server config (contains API keys)
+.mcp.json
+
 # Lovable IDE metadata
 .lovable/
 
