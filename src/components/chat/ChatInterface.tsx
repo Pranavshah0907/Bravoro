@@ -17,7 +17,7 @@ import { parseN8nResponse } from "../ai-chat/parseMessage";
 import { RichMessageContent, CreditsLine, contactKey } from "../ai-chat/RichMessageContent";
 import { FormattedText } from "../ai-chat/FormattedText";
 import { syncChatToResults, hasSyncableData } from "../ai-chat/syncToResults";
-import { saveChatContacts } from "../ai-chat/saveChatContacts";
+import { saveChatContacts, saveChatCreditsOnly } from "../ai-chat/saveChatContacts";
 import type { MessageMetadata, ContactData } from "../ai-chat/types";
 import type { ChatConfig, ChatHandle, ConversationMeta, Message } from "./chatTypes";
 
@@ -459,7 +459,8 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           convForSave?.title || "Chat",
           convForSave?.synced_search_id ?? null,
           enrichedContacts,
-          replyMetadata?.credits ?? null
+          replyMetadata?.credits ?? null,
+          config.chatType === "recruiting" ? "recruiting" : "ai_chat"
         )
           .then((result) => {
             console.log(`[ChatInterface] Auto-saved ${result.savedCount} contacts (${result.cachedCount} cached) to master DB`);
@@ -481,6 +482,19 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           .catch((err) => {
             console.error("[ChatInterface] Auto-save failed:", err);
           });
+      } else if (replyMetadata?.credits) {
+        // Credits exist but no enriched contacts (e.g. jobs-only response)
+        const convForSave = conversations.find((c) => c.id === activeId);
+        saveChatCreditsOnly(
+          userId,
+          activeId,
+          convForSave?.title || "Chat",
+          convForSave?.synced_search_id ?? null,
+          replyMetadata.credits,
+          config.chatType === "recruiting" ? "recruiting" : "ai_chat"
+        ).catch((err) => {
+          console.error("[ChatInterface] Credits-only save failed:", err);
+        });
       }
 
       setConversations((prev) => {

@@ -41,6 +41,8 @@ interface CreditPayload {
   direct_phone_credits: number;
   email_only_contacts: number;
   email_only_credits: number;
+  jobs_count: number;
+  jobs_credits: number;
   enriched_contacts_count: number;
 }
 
@@ -107,9 +109,9 @@ serve(async (req) => {
     const body: RequestBody = await req.json();
     const { search_id, contacts, credits } = body;
 
-    if (!search_id || !contacts?.length) {
+    if (!search_id || (!contacts?.length && !credits)) {
       return new Response(
-        JSON.stringify({ error: "search_id and contacts[] required" }),
+        JSON.stringify({ error: "search_id and contacts[] or credits required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -298,25 +300,27 @@ serve(async (req) => {
     if (credits) {
       const { data: existingCredit } = await supabase
         .from("credit_usage")
-        .select("id, cognism_credits, apollo_credits, aleads_credits, lusha_credits, grand_total_credits, mobile_phone_contacts, mobile_phone_credits, direct_phone_contacts, direct_phone_credits, email_only_contacts, email_only_credits, enriched_contacts_count")
+        .select("id, cognism_credits, apollo_credits, aleads_credits, lusha_credits, grand_total_credits, mobile_phone_contacts, mobile_phone_credits, direct_phone_contacts, direct_phone_credits, email_only_contacts, email_only_credits, jobs_count, jobs_credits, enriched_contacts_count")
         .eq("user_id", userId)
         .eq("search_id", search_id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const nextCognism = Math.max(existingCredit?.cognism_credits ?? 0, credits.cognism_credits);
-      const nextApollo = Math.max(existingCredit?.apollo_credits ?? 0, credits.apollo_credits);
-      const nextAleads = Math.max(existingCredit?.aleads_credits ?? 0, credits.aleads_credits);
-      const nextLusha = Math.max(existingCredit?.lusha_credits ?? 0, credits.lusha_credits);
-      const nextGrandTotal = Math.max(existingCredit?.grand_total_credits ?? 0, credits.grand_total_credits);
-      const nextMobileContacts = Math.max(existingCredit?.mobile_phone_contacts ?? 0, credits.mobile_phone_contacts);
-      const nextMobileCredits = Math.max(existingCredit?.mobile_phone_credits ?? 0, credits.mobile_phone_credits);
-      const nextDirectContacts = Math.max(existingCredit?.direct_phone_contacts ?? 0, credits.direct_phone_contacts);
-      const nextDirectCredits = Math.max(existingCredit?.direct_phone_credits ?? 0, credits.direct_phone_credits);
-      const nextEmailContacts = Math.max(existingCredit?.email_only_contacts ?? 0, credits.email_only_contacts);
-      const nextEmailCredits = Math.max(existingCredit?.email_only_credits ?? 0, credits.email_only_credits);
-      const nextEnrichedCount = Math.max(existingCredit?.enriched_contacts_count ?? 0, credits.enriched_contacts_count);
+      const nextCognism = Math.max(existingCredit?.cognism_credits ?? 0, credits.cognism_credits ?? 0);
+      const nextApollo = Math.max(existingCredit?.apollo_credits ?? 0, credits.apollo_credits ?? 0);
+      const nextAleads = Math.max(existingCredit?.aleads_credits ?? 0, credits.aleads_credits ?? 0);
+      const nextLusha = Math.max(existingCredit?.lusha_credits ?? 0, credits.lusha_credits ?? 0);
+      const nextGrandTotal = Math.max(existingCredit?.grand_total_credits ?? 0, credits.grand_total_credits ?? 0);
+      const nextMobileContacts = Math.max(existingCredit?.mobile_phone_contacts ?? 0, credits.mobile_phone_contacts ?? 0);
+      const nextMobileCredits = Math.max(existingCredit?.mobile_phone_credits ?? 0, credits.mobile_phone_credits ?? 0);
+      const nextDirectContacts = Math.max(existingCredit?.direct_phone_contacts ?? 0, credits.direct_phone_contacts ?? 0);
+      const nextDirectCredits = Math.max(existingCredit?.direct_phone_credits ?? 0, credits.direct_phone_credits ?? 0);
+      const nextEmailContacts = Math.max(existingCredit?.email_only_contacts ?? 0, credits.email_only_contacts ?? 0);
+      const nextEmailCredits = Math.max(existingCredit?.email_only_credits ?? 0, credits.email_only_credits ?? 0);
+      const nextJobsCount = Math.max(existingCredit?.jobs_count ?? 0, credits.jobs_count ?? 0);
+      const nextJobsCredits = Math.max(existingCredit?.jobs_credits ?? 0, credits.jobs_credits ?? 0);
+      const nextEnrichedCount = Math.max(existingCredit?.enriched_contacts_count ?? 0, credits.enriched_contacts_count ?? 0);
 
       const creditRow = {
         cognism_credits: nextCognism,
@@ -330,6 +334,8 @@ serve(async (req) => {
         direct_phone_credits: nextDirectCredits,
         email_only_contacts: nextEmailContacts,
         email_only_credits: nextEmailCredits,
+        jobs_count: nextJobsCount,
+        jobs_credits: nextJobsCredits,
         enriched_contacts_count: nextEnrichedCount,
       };
 
@@ -360,7 +366,7 @@ serve(async (req) => {
             p_workspace_id: userProfile.workspace_id,
             p_amount: creditDelta,
             p_search_id: search_id,
-            p_note: `Chat enrichment ${search_id}: +${creditDelta} credits (M:${nextMobileCredits} D:${nextDirectCredits} E:${nextEmailCredits})`,
+            p_note: `Chat enrichment ${search_id}: +${creditDelta} credits (M:${nextMobileCredits} D:${nextDirectCredits} E:${nextEmailCredits} J:${nextJobsCredits})`,
           });
 
           if (deductResult?.success) {

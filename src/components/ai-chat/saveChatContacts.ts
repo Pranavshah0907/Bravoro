@@ -49,46 +49,53 @@ function formatForSearchResults(contact: ContactData) {
 }
 
 function buildCreditPayload(credits: Credits | null, contacts: ContactData[]) {
+  const mobileCount = credits?.contacts_with_mobile_phone ?? 0;
+  const directCount = credits?.contacts_with_direct_phone_only ?? 0;
+  const emailCount = credits?.email_linkedin_only_contacts ?? 0;
+  const jobsCredits = credits?.theirstack_total_credits ?? 0;
+  const grandTotal = mobileCount * 4 + directCount * 3 + emailCount * 2 + jobsCredits;
+
   if (credits) {
     return {
       cognism_credits: credits.cognism ?? 0,
       apollo_credits: credits.apollo ?? 0,
       aleads_credits: credits.aleads ?? 0,
       lusha_credits: credits.lusha ?? 0,
-      grand_total_credits: credits.total ?? 0,
-      mobile_phone_contacts: credits.contacts_with_mobile_phone ?? 0,
-      mobile_phone_credits: credits.mobile_phone_credits ?? 0,
-      direct_phone_contacts: credits.contacts_with_direct_phone_only ?? 0,
-      direct_phone_credits: credits.direct_phone_credits ?? 0,
-      email_only_contacts: credits.email_linkedin_only_contacts ?? 0,
-      email_only_credits: credits.email_only_credits ?? 0,
-      enriched_contacts_count:
-        (credits.contacts_with_mobile_phone ?? 0) +
-        (credits.contacts_with_direct_phone_only ?? 0) +
-        (credits.email_linkedin_only_contacts ?? 0),
+      grand_total_credits: grandTotal,
+      mobile_phone_contacts: mobileCount,
+      mobile_phone_credits: mobileCount * 4,
+      direct_phone_contacts: directCount,
+      direct_phone_credits: directCount * 3,
+      email_only_contacts: emailCount,
+      email_only_credits: emailCount * 2,
+      jobs_count: jobsCredits,
+      jobs_credits: jobsCredits,
+      enriched_contacts_count: mobileCount + directCount + emailCount,
     };
   }
   // Fallback: compute from contacts if no Credits object
-  let mobileCount = 0;
-  let directOnlyCount = 0;
-  let emailOnlyCount = 0;
+  let mc = 0;
+  let dc = 0;
+  let ec = 0;
   for (const c of contacts) {
-    if (c.mobilePhone) mobileCount++;
-    else if (c.directPhone) directOnlyCount++;
-    else emailOnlyCount++;
+    if (c.mobilePhone) mc++;
+    else if (c.directPhone) dc++;
+    else ec++;
   }
   return {
     cognism_credits: 0,
     apollo_credits: 0,
     aleads_credits: 0,
     lusha_credits: 0,
-    grand_total_credits: mobileCount * 4 + directOnlyCount * 3 + emailOnlyCount * 2,
-    mobile_phone_contacts: mobileCount,
-    mobile_phone_credits: mobileCount * 4,
-    direct_phone_contacts: directOnlyCount,
-    direct_phone_credits: directOnlyCount * 3,
-    email_only_contacts: emailOnlyCount,
-    email_only_credits: emailOnlyCount * 2,
+    grand_total_credits: mc * 4 + dc * 3 + ec * 2,
+    mobile_phone_contacts: mc,
+    mobile_phone_credits: mc * 4,
+    direct_phone_contacts: dc,
+    direct_phone_credits: dc * 3,
+    email_only_contacts: ec,
+    email_only_credits: ec * 2,
+    jobs_count: 0,
+    jobs_credits: 0,
     enriched_contacts_count: contacts.length,
   };
 }
@@ -97,7 +104,8 @@ async function ensureSearchRecord(
   userId: string,
   conversationId: string,
   conversationTitle: string,
-  existingSearchId: string | null
+  existingSearchId: string | null,
+  chatType: string
 ): Promise<string> {
   if (existingSearchId) return existingSearchId;
 
@@ -107,6 +115,7 @@ async function ensureSearchRecord(
       user_id: userId,
       search_type: "ai_chat",
       company_name: conversationTitle,
+      domain: chatType,
       status: "completed",
     })
     .select("id")
@@ -138,7 +147,8 @@ export async function saveChatContacts(
   conversationTitle: string,
   existingSearchId: string | null,
   contacts: ContactData[],
-  credits: Credits | null
+  credits: Credits | null,
+  searchType: string = "ai_chat"
 ): Promise<SaveResult> {
   const enrichedWithPhone = contacts.filter(
     (c) =>
@@ -155,8 +165,10 @@ export async function saveChatContacts(
     userId,
     conversationId,
     conversationTitle,
-    existingSearchId
+    existingSearchId,
+    searchType
   );
+  // searchType is stored in the `domain` column to differentiate AI Chat vs Recruiting
 
   // 2. Call edge function for master_contacts + credits + workspace deduction
   const { data: sessionData } = await supabase.auth.getSession();
@@ -216,4 +228,44 @@ export async function saveChatContacts(
     savedCount: edgeResult.saved_count ?? 0,
     cachedCount: edgeResult.cached_count ?? 0,
   };
+}
+
+/**
+ * Save credits to credit_usage when there are no enriched contacts
+ * (e.g. jobs-only responses with theirstack_total_credits).
+ */
+export async function saveChatCreditsOnly(
+  userId: string,
+  conversationId: string,
+  conversationTitle: string,
+  existingSearchId: string | null,
+  credits: Credits,
+  chatType: string = "ai_chat"
+): Promise<void> {
+  const searchId = await ensureSearchRecord(
+    userId,
+    conversationId,
+    conversationTitle,
+    existingSearchId,
+    chatType
+  );
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) return;
+
+  const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/save-chat-contacts`;
+
+  await fetch(edgeFnUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      search_id: searchId,
+      contacts: [],
+      credits: buildCreditPayload(credits, []),
+    }),
+  });
 }
