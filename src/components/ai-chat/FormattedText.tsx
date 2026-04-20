@@ -21,7 +21,7 @@ import { Fragment, type ReactNode } from "react";
  * Render inline markdown: **bold**, [text](url), and bare URLs.
  * Handles nesting (bold inside links, etc).
  */
-const INLINE_RE = /(\*\*(.+?)\*\*|\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s),]+))/g;
+const INLINE_RE = /(\*\*(.+?)\*\*|\*(.+?)\*|\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s),]+))/g;
 
 function renderInline(text: string): ReactNode {
   const parts: ReactNode[] = [];
@@ -38,20 +38,23 @@ function renderInline(text: string): ReactNode {
     if (match[2] !== undefined) {
       // **bold**
       parts.push(<strong key={match.index} className="font-semibold">{match[2]}</strong>);
-    } else if (match[3] !== undefined && match[4] !== undefined) {
+    } else if (match[3] !== undefined) {
+      // *italic/emphasis*
+      parts.push(<strong key={match.index} className="font-semibold">{match[3]}</strong>);
+    } else if (match[4] !== undefined && match[5] !== undefined) {
       // [text](url)
-      parts.push(
-        <a key={match.index} href={match[4]} target="_blank" rel="noopener noreferrer"
-          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all">
-          {match[3]}
-        </a>
-      );
-    } else if (match[5] !== undefined) {
-      // bare URL
       parts.push(
         <a key={match.index} href={match[5]} target="_blank" rel="noopener noreferrer"
           className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all">
-          {match[5]}
+          {match[4]}
+        </a>
+      );
+    } else if (match[6] !== undefined) {
+      // bare URL
+      parts.push(
+        <a key={match.index} href={match[6]} target="_blank" rel="noopener noreferrer"
+          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all">
+          {match[6]}
         </a>
       );
     }

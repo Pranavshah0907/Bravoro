@@ -65,6 +65,33 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
       }
     }, [activeId]);
 
+    // Detect pending response: last message is from user → poll for assistant reply
+    useEffect(() => {
+      const msgs = messages[activeId];
+      if (!msgs || msgs.length === 0 || sending) return;
+      const lastMsg = msgs[msgs.length - 1];
+      if (lastMsg.role !== "user") return;
+
+      setSending(true);
+      let cancelled = false;
+      const poll = setInterval(async () => {
+        const { data } = await supabase
+          .from("ai_chat_messages")
+          .select("id, role, content, metadata")
+          .eq("conversation_id", activeId)
+          .order("created_at", { ascending: true });
+        if (cancelled) return;
+        const fresh = (data as Message[]) ?? [];
+        if (fresh.length > msgs.length || fresh[fresh.length - 1]?.role === "assistant") {
+          clearInterval(poll);
+          setMessages((prev) => ({ ...prev, [activeId]: fresh }));
+          setSending(false);
+        }
+      }, 3000);
+
+      return () => { cancelled = true; clearInterval(poll); };
+    }, [activeId, messages[activeId]?.length]);
+
     useEffect(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages[activeId], sending]);
