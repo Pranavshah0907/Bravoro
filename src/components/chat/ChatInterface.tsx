@@ -17,6 +17,7 @@ import { parseN8nResponse } from "../ai-chat/parseMessage";
 import { RichMessageContent, CreditsLine, contactKey } from "../ai-chat/RichMessageContent";
 import { FormattedText } from "../ai-chat/FormattedText";
 import { syncChatToResults, hasSyncableData } from "../ai-chat/syncToResults";
+import { saveChatContacts } from "../ai-chat/saveChatContacts";
 import type { MessageMetadata, ContactData } from "../ai-chat/types";
 import type { ChatConfig, ChatHandle, ConversationMeta, Message } from "./chatTypes";
 
@@ -371,24 +372,6 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           if (hasApiCost) replyMetadata.apiCost = parsed.apiCost!;
         }
 
-        // Track credits in analytics (fire-and-forget — don't block chat)
-        if (hasRealCredits) {
-          supabase
-            .from("credit_usage")
-            .insert({
-              user_id: userId,
-              cognism_credits: parsed.credits!.cognism ?? 0,
-              apollo_credits: parsed.credits!.apollo ?? 0,
-              aleads_credits: parsed.credits!.aleads ?? 0,
-              lusha_credits: parsed.credits!.lusha ?? 0,
-              theirstack_credits: parsed.credits!.theirstack ?? 0,
-              grand_total_credits: parsed.credits!.total ?? 0,
-            })
-            .then(({ error }) => {
-              if (error) console.error("[ChatInterface] credit_usage insert failed:", error);
-            });
-        }
-
         // Auto-rename conversation from chatName
         if (parsed.chatName) {
           await handleRenameConv(activeId, parsed.chatName);
@@ -431,6 +414,42 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           },
         ],
       }));
+
+      // Auto-save enriched contacts to master DB + search_results (fire-and-forget)
+      const enrichedContacts = replyMetadata?.data?.contacts?.filter(
+        (c) => !c.previewOnly && (c.mobilePhone || c.directPhone || (c.phone && c.phone !== "Locked"))
+      );
+      if (enrichedContacts && enrichedContacts.length > 0) {
+        const convForSave = conversations.find((c) => c.id === activeId);
+        saveChatContacts(
+          userId,
+          activeId,
+          convForSave?.title || "Chat",
+          convForSave?.synced_search_id ?? null,
+          enrichedContacts,
+          replyMetadata?.credits ?? null
+        )
+          .then((result) => {
+            console.log(`[ChatInterface] Auto-saved ${result.savedCount} contacts (${result.cachedCount} cached) to master DB`);
+            if (!convForSave?.synced_search_id && result.searchId) {
+              supabase
+                .from("ai_chat_conversations")
+                .select("id, title, session_id, updated_at, chat_type, synced_search_id")
+                .eq("id", activeId)
+                .single()
+                .then(({ data: updated }) => {
+                  if (updated) {
+                    setConversations((prev) =>
+                      prev.map((c) => (c.id === activeId ? (updated as ConversationMeta) : c))
+                    );
+                  }
+                });
+            }
+          })
+          .catch((err) => {
+            console.error("[ChatInterface] Auto-save failed:", err);
+          });
+      }
 
       setConversations((prev) => {
         const now = new Date().toISOString();

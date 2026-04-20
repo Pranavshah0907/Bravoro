@@ -12,6 +12,33 @@ function normalizeCandidates(data: StructuredData | null): void {
   }
 }
 
+/** Map n8n enrichment field names to ContactData interface */
+function normalizeEnrichedContacts(data: StructuredData | null): void {
+  if (!data?.contacts) return;
+  for (const contact of data.contacts) {
+    const raw = contact as Record<string, unknown>;
+    const mobile = raw["phoneNumber(mobile)"] as string | undefined;
+    const direct = raw["phoneNumber(direct)"] as string | undefined;
+    if (mobile) contact.mobilePhone = mobile;
+    if (direct) contact.directPhone = direct;
+    contact.phone = contact.phone || mobile || direct || "";
+    if (raw.seniority && typeof raw.seniority === "string") contact.seniority = raw.seniority;
+    if (raw.departments && typeof raw.departments === "string") contact.departments = raw.departments;
+    if (raw.provider && typeof raw.provider === "string" && !contact.source) contact.source = raw.provider;
+    // Preserve raw enrichment fields for DB persistence
+    if (raw.personId && typeof raw.personId === "string") contact.personId = raw.personId;
+    if (raw.firstName && typeof raw.firstName === "string") contact.firstName = raw.firstName;
+    if (raw.lastName && typeof raw.lastName === "string") contact.lastName = raw.lastName;
+    if (raw.apolloPersonID && typeof raw.apolloPersonID === "string") contact.apolloPersonID = raw.apolloPersonID;
+    if (raw.cognismPersonID && typeof raw.cognismPersonID === "string") contact.cognismPersonID = raw.cognismPersonID;
+    if (raw.peopleSearchBy && typeof raw.peopleSearchBy === "string") contact.peopleSearchBy = raw.peopleSearchBy;
+    if (typeof raw.apolloCreditsUsed === "number") contact.apolloCreditsUsed = raw.apolloCreditsUsed;
+    if (typeof raw.cognismCreditsUsed === "number") contact.cognismCreditsUsed = raw.cognismCreditsUsed;
+    if (typeof raw.lushaCreditsUsed === "number") contact.lushaCreditsUsed = raw.lushaCreditsUsed;
+    if (typeof raw.aLeadscreditsUsed === "number") contact.aLeadscreditsUsed = raw.aLeadscreditsUsed;
+  }
+}
+
 /**
  * Parse the n8n response item to extract clean text, structured data, credits, and chatName.
  *
@@ -50,8 +77,8 @@ export function parseN8nResponse(item: Record<string, unknown>): {
     if (lastMatch) {
       try {
         structuredData = JSON.parse(lastMatch[1]) as StructuredData;
-        // Normalize: n8n recruiting agent uses "candidates" key → map to "contacts"
         normalizeCandidates(structuredData);
+        normalizeEnrichedContacts(structuredData);
       } catch {
         // Malformed JSON — ignore
       }
@@ -68,6 +95,7 @@ export function parseN8nResponse(item: Record<string, unknown>): {
     ) {
       structuredData = d as unknown as StructuredData;
       normalizeCandidates(structuredData);
+      normalizeEnrichedContacts(structuredData);
     }
   }
 
@@ -89,6 +117,7 @@ export function parseN8nResponse(item: Record<string, unknown>): {
         try {
           const parsed = JSON.parse(lastMatch[1]) as StructuredData;
           normalizeCandidates(parsed);
+          normalizeEnrichedContacts(parsed);
           // Guard: only use if it has non-empty companies or contacts
           if (
             (Array.isArray(parsed.companies) && parsed.companies.length > 0) ||
