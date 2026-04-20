@@ -30,16 +30,22 @@ import { cn } from "@/lib/utils";
 /*  Credits Line (admin-only, outside the bubble)                  */
 /* ──────────────────────────────────────────────────────────────── */
 
-const CREDIT_LABELS: Record<string, string> = {
-  mobile_phone_credits: "Mobile Phone",
-  direct_phone_credits: "Direct Phone",
-  email_only_credits: "Email / LinkedIn",
-  theirstack_total_credits: "Jobs",
-};
+const CREDIT_ROWS: { label: string; creditKey: string; countKey: string; multiplier: number }[] = [
+  { label: "Mobile Phone", creditKey: "mobile_phone_credits", countKey: "contacts_with_mobile_phone", multiplier: 4 },
+  { label: "Direct Phone", creditKey: "direct_phone_credits", countKey: "contacts_with_direct_phone_only", multiplier: 3 },
+  { label: "Email / LinkedIn", creditKey: "email_only_credits", countKey: "email_linkedin_only_contacts", multiplier: 2 },
+  { label: "Jobs", creditKey: "theirstack_total_credits", countKey: "theirstack_total_credits", multiplier: 1 },
+];
 
 export function CreditsLine({ credits }: { credits: Credits }) {
-  const entries = Object.entries(CREDIT_LABELS)
-    .map(([key, label]) => ({ label, value: credits[key] ?? 0 }))
+  const entries = CREDIT_ROWS
+    .map(({ label, creditKey, countKey, multiplier }) => {
+      const direct = credits[creditKey] ?? 0;
+      if (direct > 0) return { label, value: direct };
+      const count = credits[countKey] ?? 0;
+      if (count > 0) return { label, value: count * multiplier };
+      return { label, value: 0 };
+    })
     .filter((e) => e.value > 0);
 
   if (entries.length === 0) return null;
