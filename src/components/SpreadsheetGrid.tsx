@@ -83,8 +83,11 @@ const emptyRow = (): GridRow => ({
 });
 
 const DEFAULT_ROW = emptyRow();
+const ROW_DATA_KEYS: ColKey[] = (Object.keys(DEFAULT_ROW) as ColKey[]).filter(
+  k => k !== "resultsPerTitle" && k !== "toggleJobSearch" && k !== "datePosted",
+);
 const rowHasData = (r: GridRow): boolean =>
-  (Object.keys(DEFAULT_ROW) as ColKey[]).some(k => r[k] !== DEFAULT_ROW[k]);
+  ROW_DATA_KEYS.some(k => r[k] !== DEFAULT_ROW[k]);
 
 // ── Component ──────────────────────────────────────────────────────────────────
 interface SpreadsheetGridProps {

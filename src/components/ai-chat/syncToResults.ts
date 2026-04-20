@@ -236,6 +236,7 @@ export async function syncChatToResults(
         user_id: userId,
         search_type: "ai_chat",
         company_name: conversationTitle,
+        domain: "ai_staffing",
         status: "completed",
       })
       .select("id")

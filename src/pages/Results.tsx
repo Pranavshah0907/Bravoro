@@ -829,7 +829,11 @@ const Results = () => {
 
   const filteredSearches = searches.filter(search => {
     if (filter !== "all" && search.status !== filter) return false;
-    if (typeFilter !== "all" && search.search_type !== typeFilter) return false;
+    if (typeFilter === "recruiting") {
+      if (!(search.search_type === "ai_chat" && search.domain === "recruiting")) return false;
+    } else if (typeFilter === "ai_chat") {
+      if (!(search.search_type === "ai_chat" && search.domain !== "recruiting")) return false;
+    } else if (typeFilter !== "all" && search.search_type !== typeFilter) return false;
     
     if (dateFrom || dateTo) {
       const searchDate = new Date(search.created_at);
@@ -1492,7 +1496,8 @@ const Results = () => {
                   <SelectItem value="bulk">Bulk Upload</SelectItem>
                   <SelectItem value="manual">Manual Entry</SelectItem>
                   <SelectItem value="bulk_people_enrichment">People Enrichment</SelectItem>
-                  <SelectItem value="ai_chat">AI Staffing</SelectItem>
+                  <SelectItem value="ai_chat">AI Chat</SelectItem>
+                  <SelectItem value="recruiting">Recruiting</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -1672,11 +1677,12 @@ const Results = () => {
                                 "font-medium",
                                 search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" :
                                 search.search_type === "bulk_people_enrichment" ? "border-accent text-accent" :
+                                search.search_type === "ai_chat" && search.domain === "recruiting" ? "border-cyan-500/40 text-cyan-400" :
                                 search.search_type === "ai_chat" ? "border-emerald-500/40 text-emerald-400" :
                                 "bg-muted text-muted-foreground"
                               )}
                             >
-                              {search.search_type === "bulk" ? "Bulk" : search.search_type === "bulk_people_enrichment" ? "People Enrich" : search.search_type === "ai_chat" ? "AI Chat" : "Manual"}
+                              {search.search_type === "bulk" ? "Bulk" : search.search_type === "bulk_people_enrichment" ? "People Enrich" : search.search_type === "ai_chat" && search.domain === "recruiting" ? "Recruiting" : search.search_type === "ai_chat" ? "AI Chat" : "Manual"}
                             </Badge>
                           </TableCell>
                           <TableCell className="max-w-[300px]">

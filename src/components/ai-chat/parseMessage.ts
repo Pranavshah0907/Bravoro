@@ -39,6 +39,32 @@ function normalizeEnrichedContacts(data: StructuredData | null): void {
   }
 }
 
+/** Sanitize LLM-generated JSON: fix German typographic quotes that break parsing */
+function sanitizeJsonString(str: string): string {
+  // German opening low quote „ (U+201E) paired with ASCII " breaks JSON
+  let s = str.replace(/\u201E([^\u201C"]{0,50}?)"/g, "'$1'");
+  s = s.replace(/\u201E([^\u201C]{0,50}?)\u201C/g, "'$1'");
+  s = s.replace(/[\u201C\u201D\u201E\u201F]/g, "'");
+  s = s.replace(/[\u2018\u2019\u201A\u201B]/g, "'");
+  return s;
+}
+
+function safeJsonParse(str: string): unknown | null {
+  try {
+    return JSON.parse(str);
+  } catch {
+    try {
+      return JSON.parse(sanitizeJsonString(str));
+    } catch {
+      try {
+        return JSON.parse(sanitizeJsonString(str).replace(/,\s*([}\]])/g, "$1"));
+      } catch {
+        return null;
+      }
+    }
+  }
+}
+
 /**
  * Parse the n8n response item to extract clean text, structured data, credits, and chatName.
  *
@@ -75,12 +101,11 @@ export function parseN8nResponse(item: Record<string, unknown>): {
       lastMatch = match;
     }
     if (lastMatch) {
-      try {
-        structuredData = JSON.parse(lastMatch[1]) as StructuredData;
+      const parsed = safeJsonParse(lastMatch[1]);
+      if (parsed && typeof parsed === "object") {
+        structuredData = parsed as StructuredData;
         normalizeCandidates(structuredData);
         normalizeEnrichedContacts(structuredData);
-      } catch {
-        // Malformed JSON — ignore
       }
     }
   }
@@ -114,19 +139,17 @@ export function parseN8nResponse(item: Record<string, unknown>): {
         lastMatch = match;
       }
       if (lastMatch) {
-        try {
-          const parsed = JSON.parse(lastMatch[1]) as StructuredData;
+        const rawParsed = safeJsonParse(lastMatch[1]);
+        if (rawParsed && typeof rawParsed === "object") {
+          const parsed = rawParsed as StructuredData;
           normalizeCandidates(parsed);
           normalizeEnrichedContacts(parsed);
-          // Guard: only use if it has non-empty companies or contacts
           if (
             (Array.isArray(parsed.companies) && parsed.companies.length > 0) ||
             (Array.isArray(parsed.contacts) && parsed.contacts.length > 0)
           ) {
             structuredData = parsed;
           }
-        } catch {
-          // Malformed JSON — ignore
         }
       }
     }
@@ -134,6 +157,9 @@ export function parseN8nResponse(item: Record<string, unknown>): {
 
   // 3. Strip ALL <!--JSONSTART-->...<!--JSONEND--> blocks from text
   let cleanText = rawText.replace(/<!--JSONSTART-->[\s\S]*?<!--JSONEND-->/g, "").trim();
+
+  // 3b. Strip provider-name credit lines (e.g. "Credits used: 21 total (11 Apollo, 10 Lusha)")
+  cleanText = cleanText.replace(/\n*\**Credits?\s*used\**:?\s*\d+.*?\b(Apollo|Cognism|Lusha|a-leads|aleads)\b.*$/gim, "").trim();
 
   // 4. Handle chatname: prefix
   let chatName: string | null = (item?.chatName as string) ?? null;
