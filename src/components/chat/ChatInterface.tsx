@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Send,
@@ -117,8 +117,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
       deleteConv: handleDeleteConv,
     }));
 
-    // Derived: set of selected contact keys for quick lookup
-    const selectedContactKeys = new Set(selectedContacts.keys());
+    const selectedContactKeys = useMemo(() => new Set(selectedContacts.keys()), [selectedContacts]);
 
     const handleToggleContact = (contact: ContactData, key: string) => {
       setSelectedContacts((prev) => {
@@ -366,10 +365,8 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           throw new Error("Service unavailable");
         }
         const raw = await res.text();
-        console.log("[ChatInterface] n8n raw response:", raw);
         if (!raw?.trim()) throw new Error("Empty response");
         const data = JSON.parse(raw);
-        console.log("[ChatInterface] n8n parsed data:", data);
         if (
           (data.code !== undefined && typeof data.code === "number" && data.code >= 400) ||
           (data.error !== undefined && data.error !== null && data.error !== false && data.error !== "")
@@ -463,7 +460,6 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           config.chatType === "recruiting" ? "recruiting" : "ai_chat"
         )
           .then((result) => {
-            console.log(`[ChatInterface] Auto-saved ${result.savedCount} contacts (${result.cachedCount} cached) to master DB`);
             if (!convForSave?.synced_search_id && result.searchId) {
               supabase
                 .from("ai_chat_conversations")
@@ -476,7 +472,8 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                       prev.map((c) => (c.id === activeId ? (updated as ConversationMeta) : c))
                     );
                   }
-                });
+                })
+                .catch(() => {});
             }
           })
           .catch((err) => {

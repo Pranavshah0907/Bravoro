@@ -196,8 +196,6 @@ export function SupportChatWidget() {
         },
       });
 
-      console.log("[SupportChat] invoke result:", { data, error });
-
       if (error) {
         const detail = typeof data === "object" && data?.error ? data.error : error.message;
         throw new Error(detail || "Failed to send message");

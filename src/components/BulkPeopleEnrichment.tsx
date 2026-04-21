@@ -331,8 +331,6 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
     setCurrentStep('parsing');
 
     try {
-      // Step 1: Parse Excel to JSON
-      console.log('Parsing Excel file...');
       const { data: excelData, headers } = await parseExcelToJSON(selectedFile);
       
       // Validate headers first
@@ -349,8 +347,6 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
       
       setCurrentStep('validating');
       
-      // Step 2: Validate the data
-      console.log('Validating data...');
       const validationErrors = validateData(excelData);
       
       if (validationErrors.length > 0) {
@@ -370,8 +366,6 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
       setCurrentStep('creating');
 
-      // Step 3: Insert search record into Supabase
-      console.log('Creating search record...');
       const { data: search, error: searchError } = await supabase
         .from("searches")
         .insert({
@@ -385,12 +379,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
 
       if (searchError) throw searchError;
 
-      console.log('Search created with ID:', search.id);
-
       setCurrentStep('triggering');
-
-      // Step 4: Trigger processing via backend function
-      console.log('Triggering processing...');
       const { data: { session } } = await supabase.auth.getSession();
       const { error: webhookError } = await supabase.functions.invoke(
         "trigger-n8n-webhook",
@@ -415,7 +404,6 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
         throw new Error("Failed to start processing. Please try again.");
       }
 
-      console.log('Webhook triggered successfully');
       setCurrentStep('complete');
 
       toast({

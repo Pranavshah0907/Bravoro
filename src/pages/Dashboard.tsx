@@ -24,6 +24,44 @@ type EnrichmentType = "manual" | "bulk" | "people_enrichment" | "ai_staffing" | 
 
 const VALID_TABS: EnrichmentType[] = ["manual", "bulk", "people_enrichment", "ai_staffing", "recruiting_chat"];
 
+const ENRICHMENT_OPTIONS = [
+  {
+    type: "manual" as const,
+    title: "Single Search",
+    description: "Search and enrich contacts from a single company",
+    icon: Search,
+    gradient: "from-primary/25 via-accent/15 to-primary/8",
+  },
+  {
+    type: "bulk" as const,
+    title: "Bulk Search",
+    description: "Upload multiple companies and enrich contacts in batch",
+    icon: Upload,
+    gradient: "from-accent/25 via-secondary/15 to-accent/8",
+  },
+  {
+    type: "people_enrichment" as const,
+    title: "Bulk People Enrichment",
+    description: "Enrich existing contact lists with updated information",
+    icon: Users,
+    gradient: "from-secondary/25 via-primary/15 to-secondary/8",
+  },
+  {
+    type: "ai_staffing" as const,
+    title: "AI-based Staffing",
+    description: "Chat with AI to find and shortlist candidates for your roles",
+    icon: Bot,
+    gradient: "from-caretta/25 via-primary/15 to-caretta/8",
+  },
+  {
+    type: "recruiting_chat" as const,
+    title: "Recruiting Search",
+    description: "Find candidates by role, skills & location using AI",
+    icon: UserSearch,
+    gradient: "from-accent/25 via-primary/15 to-caretta/8",
+  },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,44 +94,6 @@ const Dashboard = () => {
   const recruitChatRef = useRef<RecruitingChatHandle>(null);
 
   const [isSidebarPinned, setIsSidebarPinned] = useState(false);
-
-  const enrichmentOptions = [
-    {
-      type: "manual" as const,
-      title: "Single Search",
-      description: "Search and enrich contacts from a single company",
-      icon: Search,
-      gradient: "from-primary/25 via-accent/15 to-primary/8",
-    },
-    {
-      type: "bulk" as const,
-      title: "Bulk Search",
-      description: "Upload multiple companies and enrich contacts in batch",
-      icon: Upload,
-      gradient: "from-accent/25 via-secondary/15 to-accent/8",
-    },
-    {
-      type: "people_enrichment" as const,
-      title: "Bulk People Enrichment",
-      description: "Enrich existing contact lists with updated information",
-      icon: Users,
-      gradient: "from-secondary/25 via-primary/15 to-secondary/8",
-    },
-    {
-      type: "ai_staffing" as const,
-      title: "AI-based Staffing",
-      description: "Chat with AI to find and shortlist candidates for your roles",
-      icon: Bot,
-      gradient: "from-caretta/25 via-primary/15 to-caretta/8",
-    },
-    {
-      type: "recruiting_chat" as const,
-      title: "Recruiting Search",
-      description: "Find candidates by role, skills & location using AI",
-      icon: UserSearch,
-      gradient: "from-accent/25 via-primary/15 to-caretta/8",
-    },
-  ];
 
   useEffect(() => {
     checkAuthAndProfile();
@@ -343,7 +343,7 @@ const Dashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 max-w-6xl w-full items-stretch">
-                {enrichmentOptions.map((option, index) => (
+                {ENRICHMENT_OPTIONS.map((option, index) => (
                   <div
                     key={option.type}
                     className="animate-slide-up"
@@ -376,10 +376,10 @@ const Dashboard = () => {
                       Enrichment
                     </p>
                     <h1 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-white tracking-tight mb-2">
-                      {enrichmentOptions.find(o => o.type === selectedType)?.title}
+                      {ENRICHMENT_OPTIONS.find(o => o.type === selectedType)?.title}
                     </h1>
                     <p className="text-sm lg:text-base text-[#3d7070] font-medium">
-                      {enrichmentOptions.find(o => o.type === selectedType)?.description}
+                      {ENRICHMENT_OPTIONS.find(o => o.type === selectedType)?.description}
                     </p>
                     <div className="mt-4 h-px w-16 bg-gradient-to-r from-[#009da5] to-transparent rounded-full" />
                   </div>

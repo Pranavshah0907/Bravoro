@@ -147,9 +147,9 @@ function CompanyRow({ company }: { company: CompanyData }) {
           </button>
           {jobsOpen && (
             <div className="mt-1.5 ml-1 space-y-1 animate-fade-in">
-              {company.jobs.map((job, i) => (
+              {company.jobs.map((job) => (
                 <a
-                  key={i}
+                  key={`${job.title}-${job.url}`}
                   href={job.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -186,7 +186,7 @@ function CompaniesPanel({ companies }: { companies: CompanyData[] }) {
   return (
     <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden divide-y divide-border/30">
       {companies.map((company, i) => (
-        <CompanyRow key={`${company.domain || company.name}-${i}`} company={company} />
+        <CompanyRow key={company.domain || company.name} company={company} />
       ))}
     </div>
   );
@@ -383,8 +383,8 @@ function EnrichedContactsPanel({ contacts }: { contacts: ContactData[] }) {
             <span className="text-[12px] font-semibold text-foreground/80">{company}</span>
           </div>
           <div className="divide-y divide-border/20">
-            {groupContacts.map((contact, i) => (
-              <EnrichedContactCard key={i} contact={contact} />
+            {groupContacts.map((contact) => (
+              <EnrichedContactCard key={contactKey(contact)} contact={contact} />
             ))}
           </div>
         </div>

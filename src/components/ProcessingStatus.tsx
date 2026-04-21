@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -52,6 +52,10 @@ export const ProcessingStatus = ({ searchId, onReset, searchSummary }: Processin
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [queuePosition, setQueuePosition] = useState<number>(0);
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const statusRef = useRef(status);
+  statusRef.current = status;
 
   const handleExportExcel = async () => {
     setExporting(true);
@@ -182,15 +186,15 @@ export const ProcessingStatus = ({ searchId, onReset, searchSummary }: Processin
         (payload) => {
           const newStatus = payload.new.status as "processing" | "completed" | "error" | "queued";
           setStatus(newStatus);
-          
+
           if (newStatus === "completed") {
-            toast({
+            toastRef.current({
               title: "Processing Complete!",
               description: "Your enriched data is ready to export",
             });
           } else if (newStatus === "error") {
             setErrorMessage(payload.new.error_message);
-            toast({
+            toastRef.current({
               title: "Processing Failed",
               description: payload.new.error_message || "An error occurred",
               variant: "destructive",
@@ -213,8 +217,7 @@ export const ProcessingStatus = ({ searchId, onReset, searchSummary }: Processin
           table: "request_queue",
         },
         () => {
-          // Recalculate position when queue changes
-          if (status === "queued") {
+          if (statusRef.current === "queued") {
             fetchQueuePosition();
           }
         }
@@ -247,7 +250,7 @@ export const ProcessingStatus = ({ searchId, onReset, searchSummary }: Processin
       supabase.removeChannel(channel);
       supabase.removeChannel(queueChannel);
     };
-  }, [searchId, toast, status]);
+  }, [searchId]);
 
   return (
     <Card className="shadow-soft">
