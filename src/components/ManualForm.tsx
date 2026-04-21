@@ -559,13 +559,19 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
     }
   };
 
+  const jobTitlesRequireSingleFunction = includeJobSearch && jobTitles.length > 0 && selectedFunctions.length > 1;
+
   const isFormValid = () =>
-    companyName.trim() && domain.trim() && selectedSeniority.length > 0 && resultsPerFunction > 0;
+    companyName.trim() && domain.trim() && selectedSeniority.length > 0 && resultsPerFunction > 0 && !jobTitlesRequireSingleFunction;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       formSchema.parse({ companyName, domain, functions: selectedFunctions, seniority: selectedSeniority, geography, resultsPerFunction });
+      if (jobTitlesRequireSingleFunction) {
+        toast({ title: "Validation Error", description: "Job Titles filter supports only one Person Function. Please remove extra functions or clear the Job Titles.", variant: "destructive" });
+        return;
+      }
       setLoading(true);
 
       const { data: search, error: searchError } = await supabase
@@ -726,6 +732,11 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 keepSelectedInList={true}
               />
               <HintLine>Pick from dropdown · Type custom & press <Kbd>Enter</Kbd> · <Kbd>⌫</Kbd> removes last</HintLine>
+              {jobTitlesRequireSingleFunction && (
+                <p className="text-[12px] text-red-400 mt-1.5 leading-relaxed">
+                  Only one function is allowed when Job Titles are specified. Remove extra functions or clear the Job Titles.
+                </p>
+              )}
             </div>
 
             <PaneDivider />
