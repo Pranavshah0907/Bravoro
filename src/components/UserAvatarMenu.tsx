@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, Settings, Shield, Terminal, ChevronUp } from "lucide-react";
+import { LogOut, Settings, Shield, Terminal, ChevronUp, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UserAvatarMenuProps {
@@ -183,6 +183,16 @@ export function UserAvatarMenu({ isExpanded, onSignOut, isAdmin = false, isDevel
               Dev Tools
             </button>
           )}
+          <button
+            onClick={() => {
+              setOpen(false);
+              navigate("/docs");
+            }}
+            className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+          >
+            <BookOpen className="h-4 w-4 text-sidebar-foreground/60" />
+            Documentation
+          </button>
           <button
             onClick={() => {
               setOpen(false);

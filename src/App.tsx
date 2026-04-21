@@ -20,6 +20,7 @@ const GoogleSheetsGuide = lazy(() => import("./pages/GoogleSheetsGuide"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const DocsPage = lazy(() => import("./pages/DocsPage"));
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,8 @@ const App = () => (
             <Route path="/google-sheets-guide" element={<GoogleSheetsGuide />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/docs" element={<Navigate to="/docs/overview" replace />} />
+            <Route path="/docs/:sectionSlug" element={<DocsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
