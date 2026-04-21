@@ -480,28 +480,36 @@ function SelectAllButton({
 const CandidatePreviewCard = ({
   contact,
   isSelected,
+  isEnriched,
   onToggle,
   contactKey: key,
 }: {
   contact: ContactData;
   isSelected: boolean;
+  isEnriched?: boolean;
   onToggle: (contact: ContactData, key: string) => void;
   contactKey: string;
 }) => (
   <div
     className={cn(
-      "group relative flex items-start gap-3 p-3 rounded-lg border transition-colors cursor-pointer",
-      isSelected
-        ? "bg-emerald-500/10 border-emerald-500/30"
-        : "bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12]"
+      "group relative flex items-start gap-3 p-3 rounded-lg border transition-colors",
+      isEnriched
+        ? "bg-emerald-500/5 border-emerald-500/20 opacity-60 cursor-default"
+        : isSelected
+          ? "bg-emerald-500/10 border-emerald-500/30 cursor-pointer"
+          : "bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12] cursor-pointer"
     )}
-    onClick={() => onToggle(contact, key)}
+    onClick={() => !isEnriched && onToggle(contact, key)}
   >
     <div className={cn(
       "mt-0.5 h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors",
-      isSelected ? "bg-emerald-500 border-emerald-500" : "border-white/20 group-hover:border-white/40"
+      isEnriched
+        ? "bg-emerald-700/50 border-emerald-700/50"
+        : isSelected
+          ? "bg-emerald-500 border-emerald-500"
+          : "border-white/20 group-hover:border-white/40"
     )}>
-      {isSelected && (
+      {(isSelected || isEnriched) && (
         <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
@@ -609,6 +617,7 @@ interface RichMessageContentProps {
   content: string;
   metadata?: MessageMetadata | null;
   selectedContactKeys?: Set<string>;
+  enrichedContactKeys?: Set<string>;
   onToggleContact?: (contact: ContactData, key: string) => void;
 }
 
@@ -616,6 +625,7 @@ export function RichMessageContent({
   content,
   metadata,
   selectedContactKeys,
+  enrichedContactKeys,
   onToggleContact,
 }: RichMessageContentProps) {
   const structuredData = metadata?.data;
@@ -697,8 +707,9 @@ export function RichMessageContent({
             </span>
             <button
               onClick={() => {
-                const allSelected = structuredData.contacts.every((c) => selectedContactKeys?.has(contactKey(c)));
-                structuredData.contacts.forEach((c) => {
+                const selectableContacts = structuredData.contacts.filter((c) => !enrichedContactKeys?.has(contactKey(c)));
+                const allSelected = selectableContacts.every((c) => selectedContactKeys?.has(contactKey(c)));
+                selectableContacts.forEach((c) => {
                   const k = contactKey(c);
                   if (allSelected) { if (selectedContactKeys?.has(k)) onToggleContact(c, k); }
                   else { if (!selectedContactKeys?.has(k)) onToggleContact(c, k); }
@@ -706,14 +717,14 @@ export function RichMessageContent({
               }}
               className="text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors"
             >
-              {structuredData.contacts.every((c) => selectedContactKeys?.has(contactKey(c))) ? "Deselect All" : "Select All"}
+              {structuredData.contacts.filter((c) => !enrichedContactKeys?.has(contactKey(c))).every((c) => selectedContactKeys?.has(contactKey(c))) && structuredData.contacts.some((c) => !enrichedContactKeys?.has(contactKey(c))) ? "Deselect All" : "Select All"}
             </button>
           </div>
           <div className="grid gap-2">
             {structuredData.contacts.map((contact) => {
               const key = contactKey(contact);
               return (
-                <CandidatePreviewCard key={key} contact={contact} isSelected={selectedContactKeys?.has(key) ?? false} onToggle={onToggleContact} contactKey={key} />
+                <CandidatePreviewCard key={key} contact={contact} isSelected={selectedContactKeys?.has(key) ?? false} isEnriched={enrichedContactKeys?.has(key)} onToggle={onToggleContact} contactKey={key} />
               );
             })}
           </div>

@@ -43,6 +43,8 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
     );
     // Selected contacts for sending with next message: key → ContactData
     const [selectedContacts, setSelectedContacts] = useState<Map<string, ContactData>>(new Map());
+    // Contacts that have already been enriched — shown as checked+disabled
+    const [enrichedContactKeys, setEnrichedContactKeys] = useState<Set<string>>(new Set());
     const [syncing, setSyncing] = useState(false);
 
     const { toast } = useToast();
@@ -101,6 +103,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
       if (externalActiveId && externalActiveId !== activeId) {
         setActiveId(externalActiveId);
         clearSelectedContacts();
+        setEnrichedContactKeys(new Set());
       }
     }, [externalActiveId]);
 
@@ -120,6 +123,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
     const selectedContactKeys = useMemo(() => new Set(selectedContacts.keys()), [selectedContacts]);
 
     const handleToggleContact = (contact: ContactData, key: string) => {
+      if (enrichedContactKeys.has(key)) return;
       setSelectedContacts((prev) => {
         const next = new Map(prev);
         if (next.has(key)) {
@@ -334,11 +338,18 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
         }));
       }
 
-      // Capture and clear selected contacts BEFORE the async call
-      const contactsToSend = selectedContacts.size > 0
-        ? Array.from(selectedContacts.values())
+      // Capture only NEW (not already enriched) selected contacts; mark them as enriched
+      const newEntries = Array.from(selectedContacts.entries()).filter(([k]) => !enrichedContactKeys.has(k));
+      const contactsToSend = newEntries.length > 0
+        ? newEntries.map(([, v]) => v)
         : undefined;
-      if (contactsToSend) clearSelectedContacts();
+      if (contactsToSend) {
+        setEnrichedContactKeys((prev) => {
+          const next = new Set(prev);
+          for (const [k] of newEntries) next.add(k);
+          return next;
+        });
+      }
 
       let replyContent =
         "The AI assistant is currently unavailable. Please try again later.";
@@ -640,6 +651,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                               content={msg.content}
                               metadata={msgMeta}
                               selectedContactKeys={selectedContactKeys}
+                              enrichedContactKeys={enrichedContactKeys}
                               onToggleContact={handleToggleContact}
                             />
                           ) : (
@@ -698,11 +710,15 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
             <div className="shrink-0 py-4 border-t border-border/30 bg-card/30 backdrop-blur-sm">
               <div className="max-w-4xl mx-auto px-5">
               {/* Selected contacts badge */}
-              {selectedContacts.size > 0 && (
+              {(() => {
+                const newSelections = Array.from(selectedContacts.keys()).filter(k => !enrichedContactKeys.has(k));
+                const newCount = newSelections.length;
+                if (newCount === 0) return null;
+                return (
                 <div className="flex items-center gap-2 mb-2 px-1">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
                     <UserCheck className="h-3 w-3" />
-                    <span>{selectedContacts.size} contact{selectedContacts.size > 1 ? "s" : ""} selected</span>
+                    <span>{newCount} contact{newCount > 1 ? "s" : ""} selected</span>
                     <button
                       type="button"
                       onClick={clearSelectedContacts}
@@ -715,13 +731,12 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                   {config.features.enrichmentButton && !sending ? (
                     <button
                       onClick={() => {
-                        const count = selectedContacts.size;
-                        sendMessage(`Enrich these ${count} candidate${count > 1 ? "s" : ""}`);
+                        sendMessage(`Enrich these ${newCount} candidate${newCount > 1 ? "s" : ""}`);
                       }}
                       className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors"
                     >
                       <ArrowUpFromLine className="h-3 w-3" />
-                      Enrich Selected ({selectedContacts.size})
+                      Enrich Selected ({newCount})
                     </button>
                   ) : (
                     <span className="text-[11px] text-muted-foreground/50">
@@ -729,7 +744,8 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                     </span>
                   )}
                 </div>
-              )}
+                );
+              })()}
               <div className="flex gap-3 items-end">
                 <textarea
                   ref={inputRef}
