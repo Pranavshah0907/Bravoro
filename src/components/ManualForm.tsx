@@ -597,18 +597,22 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         : 0;
 
       const searchData: Record<string, unknown> = {
-        "Sr No": 1,
-        "Organization Name": companyName.trim(),
-        "Organization Locations": geography,
-        "Organization Domains": domain.trim(),
-        "Person Functions": selectedFunctions.join(", "),
-        "Person Seniorities": selectedSeniority.join(", "),
-        "Person Job Title": personJobTitles.join(", "),
-        "Results per Function": resultsPerFunction,
-        "Toggle job search": includeJobSearch ? "Yes" : "No",
-        "Job Title": includeJobSearch ? jobTitles.join(", ") : "",
-        "Job Seniority": includeJobSearch ? jobSeniority : [],
-        "Date Posted": datePostedDays,
+        data: {
+          Main_Data: [{
+            "Sr No": 1,
+            "Organization Name": companyName.trim(),
+            "Organization Locations": geography,
+            "Organization Domains": domain.trim(),
+            "Person Functions": selectedFunctions,
+            "Person Seniorities": selectedSeniority.join(", "),
+            "Person Job Title": personJobTitles.join(", "),
+            "Results per Function": resultsPerFunction,
+            "Toggle job search": includeJobSearch ? "Yes" : "No",
+            "Job Title": includeJobSearch ? jobTitles.join(", ") : "",
+            "Job Seniority": includeJobSearch ? jobSeniority : [],
+            "Date Posted": datePostedDays,
+          }],
+        },
         search_type: "manual",
       };
 
