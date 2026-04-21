@@ -30,33 +30,19 @@ import { cn } from "@/lib/utils";
 /*  Credits Line (admin-only, outside the bubble)                  */
 /* ──────────────────────────────────────────────────────────────── */
 
-const CREDIT_ROWS: { label: string; key: string; multiplier: number }[] = [
-  { label: "Mobile Phone", key: "contacts_with_mobile_phone", multiplier: 4 },
-  { label: "Direct Phone", key: "contacts_with_direct_phone_only", multiplier: 3 },
-  { label: "Email / LinkedIn", key: "email_linkedin_only_contacts", multiplier: 2 },
-  { label: "Jobs", key: "theirstack_total_credits", multiplier: 1 },
-];
-
 export function CreditsLine({ credits }: { credits: Credits }) {
-  const entries = CREDIT_ROWS
-    .map(({ label, key, multiplier }) => {
-      const count = credits[key] ?? 0;
-      return { label, value: count * multiplier };
-    })
-    .filter((e) => e.value > 0);
+  const total =
+    ((credits.contacts_with_mobile_phone ?? 0) * 4) +
+    ((credits.contacts_with_direct_phone_only ?? 0) * 3) +
+    ((credits.email_linkedin_only_contacts ?? 0) * 2) +
+    (credits.theirstack_total_credits ?? 0);
 
-  if (entries.length === 0) return null;
+  if (total === 0) return null;
 
   return (
-    <>
-      {entries.map((e, i) => (
-        <span key={e.label}>
-          {i > 0 && <span className="mx-1">|</span>}
-          <span className="font-medium">{e.label}:</span>{" "}
-          <span>{e.value}</span>
-        </span>
-      ))}
-    </>
+    <span>
+      <span className="font-medium">Credits used:</span> {total}
+    </span>
   );
 }
 
