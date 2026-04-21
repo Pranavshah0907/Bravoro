@@ -559,7 +559,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
     }
   };
 
-  const jobTitlesRequireSingleFunction = includeJobSearch && jobTitles.length > 0 && selectedFunctions.length > 1;
+  const jobTitlesRequireSingleFunction = personJobTitles.length > 0 && selectedFunctions.length > 1;
 
   const isFormValid = () =>
     companyName.trim() && domain.trim() && selectedSeniority.length > 0 && resultsPerFunction > 0 && !jobTitlesRequireSingleFunction;
