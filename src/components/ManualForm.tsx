@@ -224,6 +224,7 @@ const TagDropdownInput = ({
   selected, onAdd, onRemove,
   placeholder, suggestions, tagVariant = "teal",
   keepSelectedInList = false,
+  allowCustom,
 }: {
   selected: string[];
   onAdd: (val: string) => void;
