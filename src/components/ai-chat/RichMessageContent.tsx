@@ -576,9 +576,6 @@ const EnrichedCandidateCard = ({ contact }: { contact: ContactData }) => (
       {(contact.city || contact.country) && (
         <p className="text-xs text-white/40 mt-0.5">{[contact.city, contact.country].filter(Boolean).join(", ")}</p>
       )}
-      {contact.seniority && (
-        <p className="text-xs text-white/40 mt-0.5">Seniority: {contact.seniority}</p>
-      )}
       <div className="flex flex-col gap-1 mt-2 text-xs">
         {contact.email && (
           <div className="flex items-center gap-1.5">
@@ -640,7 +637,20 @@ export function RichMessageContent({
     return <FormattedText text={content} />;
   }
 
-  const { intro, outro } = extractConversationalParts(content, true);
+  let { intro, outro } = extractConversationalParts(content, true);
+
+  // For enriched contacts, strip the duplicate contact detail lines from text
+  // (the cards already show email/phone/location/linkedin)
+  if (data?.type === "enriched_contacts") {
+    const stripDetailLines = (text: string) =>
+      text
+        .replace(/\n*\*{0,2}[\w\s.'-]+\*{0,2}\s*[-–—]\s*[A-Z][\w\s/&()]+at\s+.+/g, "")
+        .replace(/^[-•]\s*(?:📧|📱|📍|🔗|✉️|📞)?\s*(?:Email|Mobile|Phone|Direct|Location|LinkedIn|Seniority|City|Country)\s*:\s*.+$/gim, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    intro = stripDetailLines(intro);
+    outro = stripDetailLines(outro);
+  }
 
   // Split contacts into preview (locked) vs enriched (unlocked)
   const previewContacts = data?.contacts?.filter((c) => c.previewOnly) ?? [];
