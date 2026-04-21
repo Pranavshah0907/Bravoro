@@ -4,15 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Database, 
-  Search, 
-  Download, 
+import {
+  Database,
+  Download,
   Building2, 
   Loader2, 
   ChevronDown,
@@ -48,7 +46,6 @@ import {
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
 
 interface MasterContact {
   id: string;
@@ -350,24 +347,25 @@ const UserDatabase = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl" />
-        
-        <div className="flex flex-col items-center gap-4 relative z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground animate-pulse">Loading your database...</p>
-        </div>
+      <div className="min-h-screen bg-background flex">
+        <AppSidebar
+          isAdmin={isAdmin}
+          isDeveloper={user?.email === "pranavshah0907@gmail.com"}
+          onSignOut={handleSignOut}
+          onHomeClick={handleHomeClick}
+        />
+        <main className="flex-1 ml-0 md:ml-16 min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+            <p className="text-muted-foreground animate-pulse">Loading your database...</p>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-background relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/8 rounded-full blur-3xl pointer-events-none" />
-      
+    <div className="min-h-screen bg-background flex">
       <AppSidebar
         isAdmin={isAdmin}
         isDeveloper={user?.email === "pranavshah0907@gmail.com"}
@@ -377,257 +375,272 @@ const UserDatabase = () => {
       <MobileHeader />
       <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} />
 
-      <main className="flex-1 p-6 ml-0 md:ml-16 relative z-10 pt-14 pb-20 md:pt-0 md:pb-0">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">My Database</h1>
-            <p className="text-muted-foreground mt-1">Your personal contact repository</p>
-          </div>
-          <img 
-            src={bravoroLogo}
-            alt="Bravoro Logo" 
-            className="h-10 object-contain"
-          />
+      <main className="flex-1 ml-0 md:ml-16 min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
+        {/* Background Effects — matching Analytics/Results */}
+        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
+          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-25" style={{
+            background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
+            filter: "blur(60px)",
+            animation: "float 22s ease-in-out infinite",
+          }} />
+          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{
+            background: "radial-gradient(circle, #58dddd 0%, transparent 65%)",
+            filter: "blur(80px)",
+            opacity: 0.15,
+            animation: "float 18s ease-in-out infinite reverse",
+          }} />
         </div>
 
-        {/* Main Content Card */}
-        <Card className="shadow-strong border-border/40 backdrop-blur-sm bg-card/90 animate-fade-in">
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        <div className="relative z-10 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+          {/* Header — matching Analytics pattern */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                <Database className="h-5 w-5 text-primary" />
+              </div>
               <div>
-                <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
-                  <Database className="h-5 w-5 text-primary" />
-                  Contact Database
-                </CardTitle>
-                <CardDescription className="text-base text-muted-foreground mt-1">
-                  Your search results • {allContacts.length.toLocaleString()} contacts • {companies.length} companies
-                </CardDescription>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="border-border/50"
-                    disabled={exporting || allContacts.length === 0}
-                  >
-                    {exporting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4 mr-2" />
-                    )}
-                    Export
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover border-border">
-                  {expandedCompany && (
-                    <DropdownMenuItem onClick={() => exportCompanyToExcel(expandedCompany)}>
-                      <Building2 className="h-4 w-4 mr-2" />
-                      Export "{expandedCompany}"
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={handleExportAll}>
-                    <Database className="h-4 w-4 mr-2" />
-                    {isFiltering ? "Export Filtered Results" : "Export All Contacts"}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Dual Search Bars */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Company Search */}
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by company name..."
-                  value={companySearchQuery}
-                  onChange={(e) => setCompanySearchQuery(e.target.value)}
-                  className="pl-10 pr-10 h-11 bg-muted/30 border-border/50"
-                />
-                {companySearchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClearCompanySearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Person Search */}
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by person name..."
-                  value={personSearchQuery}
-                  onChange={(e) => setPersonSearchQuery(e.target.value)}
-                  className="pl-10 pr-10 h-11 bg-muted/30 border-border/50"
-                />
-                {personSearchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClearPersonSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+                <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">My Database</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {allContacts.length.toLocaleString()} contacts across {companies.length} companies
+                </p>
               </div>
             </div>
-
-            {/* Active Filters Indicator */}
-            {isFiltering && (
-              <div className="mt-3 flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">
-                  Showing {filteredContacts.length} of {allContacts.length} contacts
-                </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  onClick={handleClearAllFilters}
-                  className="h-6 px-2 text-xs"
+                  className="border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50 transition-colors duration-300 text-xs"
+                  disabled={exporting || allContacts.length === 0}
                 >
-                  Clear filters
+                  {exporting ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Export
                 </Button>
-              </div>
-            )}
-          </CardHeader>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover border-border">
+                {expandedCompany && (
+                  <DropdownMenuItem onClick={() => exportCompanyToExcel(expandedCompany)}>
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Export "{expandedCompany}"
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handleExportAll}>
+                  <Database className="h-4 w-4 mr-2" />
+                  {isFiltering ? "Export Filtered Results" : "Export All Contacts"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-          <CardContent>
-            <div className="text-sm font-medium text-muted-foreground mb-3">
-              Companies ({filteredCompanies.length})
-            </div>
-            <ScrollArea className="h-[600px] rounded-md border border-border/40 bg-muted/10">
-              {filteredCompanies.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  {isFiltering ? "No contacts match your search" : "No contacts found in your database"}
-                </div>
-              ) : (
-                <div className="p-2 space-y-1">
-                  {filteredCompanies.map((company) => (
-                    <Collapsible
-                      key={company.organization}
-                      open={expandedCompany === company.organization}
-                      onOpenChange={() => handleCompanyToggle(company.organization)}
+          {/* Search Filters Card */}
+          <Card className="border-border/40 bg-gradient-to-br from-card to-card/80 animate-fade-in" style={{ animationDelay: "0.03s" }}>
+            <CardContent className="p-4 md:p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Company Search */}
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                  <Input
+                    placeholder="Search by company name..."
+                    value={companySearchQuery}
+                    onChange={(e) => setCompanySearchQuery(e.target.value)}
+                    className="pl-10 pr-10 h-10 bg-muted/20 border-border/40"
+                  />
+                  {companySearchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearCompanySearch}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
                     >
-                      <CollapsibleTrigger className="w-full">
-                        <div
-                          className={`flex items-center justify-between p-4 rounded-lg text-left transition-colors ${
-                            expandedCompany === company.organization
-                              ? "bg-primary/10 border border-primary/30"
-                              : "hover:bg-muted/50 border border-transparent"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <Building2 className="h-5 w-5 text-muted-foreground shrink-0" />
-                            <span className="text-sm font-medium text-foreground truncate">
-                              {company.organization}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 shrink-0">
-                            <Badge variant="secondary" className="text-xs">
-                              {company.contact_count} {company.contact_count === 1 ? "contact" : "contacts"}
-                            </Badge>
-                            <ChevronDown
-                              className={`h-4 w-4 text-muted-foreground transition-transform ${
-                                expandedCompany === company.organization ? "rotate-180" : ""
-                              }`}
-                            />
-                          </div>
-                        </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-2 mx-4 mb-4 rounded-lg border border-border/40 overflow-hidden bg-background/50">
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow className="bg-muted/30">
-                                  <TableHead className="font-semibold">Name</TableHead>
-                                  <TableHead className="font-semibold">Title</TableHead>
-                                  <TableHead className="font-semibold">Email</TableHead>
-                                  <TableHead className="font-semibold">Phone</TableHead>
-                                  <TableHead className="font-semibold">LinkedIn</TableHead>
-                                  <TableHead className="font-semibold">Last Updated</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {getCompanyContacts(company.organization).length === 0 ? (
-                                  <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                      No contacts found
-                                    </TableCell>
-                                  </TableRow>
-                                ) : (
-                                  getCompanyContacts(company.organization).map((contact) => (
-                                    <TableRow key={contact.id} className="hover:bg-muted/20">
-                                      <TableCell className="font-medium">
-                                        {contact.first_name || ""} {contact.last_name || ""}
-                                      </TableCell>
-                                      <TableCell className="text-muted-foreground">
-                                        {contact.title || "-"}
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex flex-col">
-                                          {contact.email && (
-                                            <span className="text-sm">{contact.email}</span>
-                                          )}
-                                          {contact.email_2 && (
-                                            <span className="text-xs text-muted-foreground">{contact.email_2}</span>
-                                          )}
-                                          {!contact.email && !contact.email_2 && "-"}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex flex-col">
-                                          {contact.phone_1 && (
-                                            <span className="text-sm">{contact.phone_1}</span>
-                                          )}
-                                          {contact.phone_2 && (
-                                            <span className="text-xs text-muted-foreground">{contact.phone_2}</span>
-                                          )}
-                                          {!contact.phone_1 && !contact.phone_2 && "-"}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        {contact.linkedin ? (
-                                          <a
-                                            href={contact.linkedin}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-primary hover:underline flex items-center gap-1"
-                                          >
-                                            <ExternalLink className="h-3 w-3" />
-                                            View
-                                          </a>
-                                        ) : (
-                                          "-"
-                                        )}
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                          <Clock className="h-3 w-3" />
-                                          {format(new Date(contact.last_updated_at), "MMM d, yyyy")}
-                                        </div>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))
-                                )}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ))}
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Person Search */}
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                  <Input
+                    placeholder="Search by person name..."
+                    value={personSearchQuery}
+                    onChange={(e) => setPersonSearchQuery(e.target.value)}
+                    className="pl-10 pr-10 h-10 bg-muted/20 border-border/40"
+                  />
+                  {personSearchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearPersonSearch}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Filters Indicator */}
+              {isFiltering && (
+                <div className="mt-3 flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">
+                    Showing {filteredContacts.length} of {allContacts.length} contacts
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearAllFilters}
+                    className="h-5 px-2 text-[10px] text-primary hover:text-primary"
+                  >
+                    Clear filters
+                  </Button>
                 </div>
               )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Companies List Card */}
+          <Card className="border-border/40 bg-gradient-to-br from-card to-card/80 animate-fade-in" style={{ animationDelay: "0.06s" }}>
+            <CardContent className="p-0">
+              <div className="px-5 py-3.5 border-b border-border/30 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Companies ({filteredCompanies.length})
+                </span>
+              </div>
+
+              <ScrollArea className="h-[calc(100vh-340px)] min-h-[400px]">
+                {filteredCompanies.length === 0 ? (
+                  <div className="p-12 text-center text-muted-foreground">
+                    {isFiltering ? "No contacts match your search" : "No contacts found in your database"}
+                  </div>
+                ) : (
+                  <div className="p-2 space-y-0.5">
+                    {filteredCompanies.map((company) => (
+                      <Collapsible
+                        key={company.organization}
+                        open={expandedCompany === company.organization}
+                        onOpenChange={() => handleCompanyToggle(company.organization)}
+                      >
+                        <CollapsibleTrigger className="w-full">
+                          <div
+                            className={`flex items-center justify-between p-3 md:p-3.5 rounded-lg text-left transition-colors duration-200 ${
+                              expandedCompany === company.organization
+                                ? "bg-primary/10 border border-primary/20"
+                                : "hover:bg-muted/30 border border-transparent"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Building2 className={`h-4 w-4 shrink-0 ${
+                                expandedCompany === company.organization ? "text-primary" : "text-muted-foreground/60"
+                              }`} />
+                              <span className="text-sm font-medium text-foreground truncate">
+                                {company.organization}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="text-[11px] text-muted-foreground tabular-nums">
+                                {company.contact_count} {company.contact_count === 1 ? "contact" : "contacts"}
+                              </span>
+                              <ChevronDown
+                                className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-200 ${
+                                  expandedCompany === company.organization ? "rotate-180" : ""
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="mt-1 mx-2 mb-2 rounded-lg border border-border/30 overflow-hidden bg-background/30">
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="bg-muted/20 border-b border-border/30">
+                                    <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Name</TableHead>
+                                    <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Title</TableHead>
+                                    <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Email</TableHead>
+                                    <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Phone</TableHead>
+                                    <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">LinkedIn</TableHead>
+                                    <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Last Updated</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {getCompanyContacts(company.organization).length === 0 ? (
+                                    <TableRow>
+                                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                        No contacts found
+                                      </TableCell>
+                                    </TableRow>
+                                  ) : (
+                                    getCompanyContacts(company.organization).map((contact) => (
+                                      <TableRow key={contact.id} className="hover:bg-muted/15 border-b border-border/20">
+                                        <TableCell className="font-medium text-sm">
+                                          {contact.first_name || ""} {contact.last_name || ""}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">
+                                          {contact.title || "-"}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex flex-col">
+                                            {contact.email && (
+                                              <span className="text-sm">{contact.email}</span>
+                                            )}
+                                            {contact.email_2 && (
+                                              <span className="text-xs text-muted-foreground">{contact.email_2}</span>
+                                            )}
+                                            {!contact.email && !contact.email_2 && <span className="text-muted-foreground/40">-</span>}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex flex-col">
+                                            {contact.phone_1 && (
+                                              <span className="text-sm">{contact.phone_1}</span>
+                                            )}
+                                            {contact.phone_2 && (
+                                              <span className="text-xs text-muted-foreground">{contact.phone_2}</span>
+                                            )}
+                                            {!contact.phone_1 && !contact.phone_2 && <span className="text-muted-foreground/40">-</span>}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          {contact.linkedin ? (
+                                            <a
+                                              href={contact.linkedin}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-primary hover:text-primary/80 flex items-center gap-1 text-sm transition-colors"
+                                            >
+                                              <ExternalLink className="h-3 w-3" />
+                                              View
+                                            </a>
+                                          ) : (
+                                            <span className="text-muted-foreground/40">-</span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <Clock className="h-3 w-3" />
+                                            {format(new Date(contact.last_updated_at), "MMM d, yyyy")}
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       </main>
 
       {/* Large Export Warning Dialog */}
