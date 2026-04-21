@@ -228,7 +228,7 @@ const Dashboard = () => {
       case "bulk":
         return <ExcelUpload userId={user?.id || ""} userEmail={user?.email || ""} />;
       case "people_enrichment":
-        return <BulkPeopleEnrichment userId={user?.id || ""} />;
+        return <BulkPeopleEnrichment userId={user?.id || ""} userEmail={user?.email || ""} />;
       default:
         return null;
     }

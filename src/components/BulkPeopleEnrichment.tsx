@@ -1,20 +1,23 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Download, Upload, Loader2, FileSpreadsheet, ExternalLink, Check, Info, AlertTriangle,
-  Link2, CircleCheck, XCircle, ChevronDown, ChevronUp,
+  Link2, CircleCheck, XCircle, ChevronDown, ChevronUp, Table2,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as XLSX from 'xlsx';
 import { fixMojibakeDeep } from "@/lib/utils";
+import { PeopleEnrichmentGrid, type PEGridRow, type PEGridHandle } from "./PeopleEnrichmentGrid";
+import { PESheetsManager } from "./PESheetsManager";
 
 // Expected headers for People Enrichment template
 const EXPECTED_HEADERS = ['Sr No', 'Record Id', 'First Name', 'Last Name', 'Organization Domain', 'LinkedIn URL'];
 
 interface BulkPeopleEnrichmentProps {
   userId: string;
+  userEmail?: string;
 }
 
 interface ValidationError {
@@ -35,13 +38,55 @@ const PROCESSING_STEPS: { key: ProcessingStep; label: string; progress: number }
 
 const GOOGLE_SHEET_COPY_URL = "https://docs.google.com/spreadsheets/d/1Uxe1sT6QTRR2VAq7EIjvE8xMT0rYPm0XSC_4_-3zGIA/copy";
 
-export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
+type ActiveMode = "excel" | "sheets-url" | "spreadsheet";
+
+export const BulkPeopleEnrichment = ({ userId, userEmail = "" }: BulkPeopleEnrichmentProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [currentStep, setCurrentStep] = useState<ProcessingStep>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Spreadsheet mode state ──────────────────────────────────────────────────
+  const [activeMode, setActiveMode] = useState<ActiveMode>("spreadsheet");
+  const [sheetView, setSheetView] = useState<"grid" | "manager">("grid");
+  const [pendingLoad, setPendingLoad] = useState<{ rows: PEGridRow[]; draftId?: string; name: string } | null>(null);
+  const gridRef = useRef<PEGridHandle>(null);
+
+  useEffect(() => {
+    if (sheetView === "grid" && pendingLoad) {
+      gridRef.current?.loadRows(pendingLoad.rows, pendingLoad.draftId ?? null, pendingLoad.name);
+      setPendingLoad(null);
+    }
+  }, [sheetView, pendingLoad]);
+
+  const handleOpenManager = () => setSheetView("manager");
+
+  const handleLoadFromManager = (rows: PEGridRow[], meta: { draftId?: string; name: string }) => {
+    const hasDirty = gridRef.current?.hasUnsavedData();
+    if (hasDirty && !window.confirm("You have unsaved data in the worksheet. Load this sheet anyway?")) return;
+    setPendingLoad({ rows, draftId: meta.draftId, name: meta.name });
+    setSheetView("grid");
+  };
+
+  const handleDraftDeleted = (id: string) => {
+    gridRef.current?.notifyDraftDeleted(id);
+  };
+
+  const handleNewSheetFromManager = () => {
+    const hasDirty = gridRef.current?.hasUnsavedData();
+    if (hasDirty && !window.confirm("You have unsaved data. Start a new sheet?")) return;
+    setPendingLoad({ rows: [], name: "Untitled Draft" });
+    setSheetView("grid");
+  };
+
+  const cardClass = (mode: ActiveMode) =>
+    `p-4 rounded-xl border transition-all duration-200 cursor-pointer group ${
+      activeMode === mode
+        ? "border-[#009da5]/60 bg-[#009da5]/8 shadow-[0_0_0_1px_rgba(0,157,165,0.2)]"
+        : "border-[#1e4040]/60 bg-[#0a1818] hover:border-[#009da5]/30"
+    }`;
 
   // ── Google Sheets URL import state ──────────────────────────────────────────
   const [sheetsUrl,            setSheetsUrl]            = useState("");
@@ -435,19 +480,19 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
   return (
     <div className="rounded-2xl overflow-hidden border border-[#1e4040]/60 shadow-[0_12px_56px_rgba(0,0,0,0.6),0_0_0_1px_rgba(0,157,165,0.06)]">
 
-      {/* ── SECTION 01: Template Options ──────────────────────────────────────── */}
+      {/* ── SECTION 01: Input Method ──────────────────────────────────────── */}
       <div className="bg-[#0c1d1d] px-7 pt-8 pb-8 border-b border-[#1e4040]/55">
         <div className="flex items-center gap-3 mb-5">
           <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">01</span>
-          <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Template</span>
+          <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Input Method</span>
           <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
         </div>
 
-        <p className="text-[14px] text-[#3d7070] font-medium mb-6">Download a template, fill it with your contacts, then upload below</p>
+        <p className="text-[14px] text-[#3d7070] font-medium mb-6">Choose how to provide your contacts for enrichment</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Microsoft Excel */}
-          <div className="p-4 rounded-xl border border-[#1e4040]/60 bg-[#0a1818] hover:border-[#009da5]/30 transition-all duration-200 group">
+          <div className={cardClass("excel")} onClick={() => setActiveMode("excel")}>
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
                 <FileSpreadsheet className="h-5 w-5 text-[#009da5]" />
@@ -458,7 +503,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
               </div>
             </div>
             <button
-              onClick={handleDownloadTemplate}
+              onClick={(e) => { e.stopPropagation(); handleDownloadTemplate(); }}
               className="w-full h-9 rounded-lg border border-[#254848] bg-transparent text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download className="h-3.5 w-3.5" />
@@ -467,7 +512,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
           </div>
 
           {/* Google Sheets */}
-          <div className="p-4 rounded-xl border border-[#1e4040]/60 bg-[#0a1818] hover:border-[#009da5]/30 transition-all duration-200 group">
+          <div className={cardClass("sheets-url")} onClick={() => setActiveMode("sheets-url")}>
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
                 <svg className="h-5 w-5 text-[#009da5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -483,41 +528,93 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
               </div>
             </div>
             <button
-              onClick={handleGoogleSheetCopy}
+              onClick={(e) => { e.stopPropagation(); handleGoogleSheetCopy(); }}
               className="w-full h-9 rounded-lg border border-[#254848] bg-transparent text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Make a Copy
             </button>
           </div>
-        </div>
 
-        {/* Required fields note */}
-        <div className="mt-5 p-3 rounded-lg bg-[#0a1818] border border-[#1e4040]/40 space-y-2">
-          <p className="text-[13px] text-[#5e9898]">
-            <span className="font-semibold text-white">Required fields:</span> First Name, Last Name, Organization Domain
-            <br />
-            <span className="font-semibold text-white">Optional:</span> Record ID
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="inline-block h-3.5 w-3.5 ml-1 text-[#3d7070] cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>Option to include a unique identifier to track original data with enriched contacts</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            , LinkedIn URL
-          </p>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <p className="text-[12px] text-[#5e9898]">Important: Keep headers unchanged for a successful upload.</p>
+          {/* Spreadsheet (Recommended) */}
+          <div className={cardClass("spreadsheet")} onClick={() => setActiveMode("spreadsheet")}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
+                <Table2 className="h-5 w-5 text-[#009da5]" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-semibold text-white">Spreadsheet</h3>
+                <p className="text-[11px] text-[#3d7070]">Paste from Excel directly</p>
+              </div>
+            </div>
+            <div className="w-full h-9 rounded-lg bg-[#009da5]/10 border border-[#009da5]/25 flex items-center justify-center gap-2">
+              <Check className="h-3.5 w-3.5 text-[#009da5]" />
+              <span className="text-[12px] font-semibold text-[#58dddd]">Recommended</span>
+            </div>
           </div>
         </div>
+
+        {/* Required fields note — only for Excel/Sheets URL modes */}
+        {activeMode !== "spreadsheet" && (
+          <div className="mt-5 p-3 rounded-lg bg-[#0a1818] border border-[#1e4040]/40 space-y-2">
+            <p className="text-[13px] text-[#5e9898]">
+              <span className="font-semibold text-white">Required fields:</span> First Name, Last Name, Organization Domain
+              <br />
+              <span className="font-semibold text-white">Optional:</span> Record ID
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="inline-block h-3.5 w-3.5 ml-1 text-[#3d7070] cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Option to include a unique identifier to track original data with enriched contacts</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              , LinkedIn URL
+            </p>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <p className="text-[12px] text-[#5e9898]">Important: Keep headers unchanged for a successful upload.</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── SECTION 02: Import Data ──────────────────────────────────────────── */}
+      {/* ── SECTION 02: Spreadsheet Grid / Manager ─────────────────────────── */}
+      {activeMode === "spreadsheet" && (
+        <div className="bg-[#080f0f] px-7 pt-8 pb-8">
+          {sheetView === "manager" ? (
+            <PESheetsManager
+              userId={userId}
+              currentDraftId={gridRef.current?.getCurrentDraftId() ?? null}
+              onBack={() => setSheetView("grid")}
+              onLoad={handleLoadFromManager}
+              onDraftDeleted={handleDraftDeleted}
+              onNewSheet={handleNewSheetFromManager}
+            />
+          ) : (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
+                <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Enter Contacts</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+              </div>
+              <div className="overflow-x-auto">
+                <PeopleEnrichmentGrid
+                  ref={gridRef}
+                  userId={userId}
+                  userEmail={userEmail}
+                  onOpenManager={handleOpenManager}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── SECTION 02: Import Data (Excel / Sheets URL) ──────────────────── */}
+      {activeMode !== "spreadsheet" && (
       <div className="bg-[#080f0f] px-7 pt-8 pb-8">
         <div className="flex items-center gap-3 mb-5">
           <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
@@ -743,6 +840,7 @@ export const BulkPeopleEnrichment = ({ userId }: BulkPeopleEnrichmentProps) => {
           </form>
         </div>
       </div>
+      )}
     </div>
   );
 };
