@@ -108,3 +108,5 @@ Treat every task for what it actually is before choosing which skill (if any) to
 - Do not use `localStorage` for user data — always use Supabase (multi-user, multi-device)
 - Always add RLS policies when creating new Supabase tables
 - Never show raw API/n8n errors to users — always show friendly messages
+- **Always deploy edge functions with `--no-verify-jwt`** — Supabase migrated to ES256 JWTs which break gateway-level verification. All functions handle auth internally via `getUser(token)` + role checks, which is more secure anyway. Never set `verify_jwt: true`.
+- Use `invokeEdgeFunction()` from `@/integrations/supabase/client` instead of raw `supabase.functions.invoke()` — it refreshes the session and extracts real error messages
