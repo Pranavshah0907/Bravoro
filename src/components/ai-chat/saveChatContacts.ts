@@ -31,22 +31,6 @@ function formatContact(contact: ContactData) {
   };
 }
 
-function formatForSearchResults(contact: ContactData) {
-  const nameParts = (contact.fullName || "").trim().split(/\s+/);
-  return {
-    First_Name: contact.firstName || nameParts[0] || "",
-    Last_Name: contact.lastName || nameParts.slice(1).join(" ") || "",
-    Email: contact.email || "",
-    LinkedIn: contact.linkedinUrl || "",
-    Phone_Number_1: contact.mobilePhone || contact.phone || "",
-    Phone_Number_2: contact.directPhone || "",
-    Organization: contact.companyName || "",
-    Domain: contact.companyDomain || "",
-    Title: contact.jobTitle || "",
-    Provider: contact.source || "",
-    person_id: contact.personId || "",
-  };
-}
 
 function buildCreditPayload(credits: Credits | null, contacts: ContactData[]) {
   const mobileCount = credits?.contacts_with_mobile_phone ?? 0;
@@ -197,31 +181,6 @@ export async function saveChatContacts(
   }
 
   const edgeResult = await edgeRes.json();
-
-  // 3. Append to search_results (group contacts by company domain)
-  const byCompany = new Map<string, ContactData[]>();
-  for (const c of enrichedWithPhone) {
-    const key = (c.companyDomain || c.companyName || "other").toLowerCase();
-    if (!byCompany.has(key)) byCompany.set(key, []);
-    byCompany.get(key)!.push(c);
-  }
-
-  const rows = Array.from(byCompany.entries()).map(([, groupContacts]) => ({
-    search_id: searchId,
-    company_name: groupContacts[0].companyName || groupContacts[0].companyDomain || "Unknown",
-    domain: groupContacts[0].companyDomain || null,
-    contact_data: groupContacts.map(formatForSearchResults),
-    result_type: "enriched",
-  }));
-
-  if (rows.length > 0) {
-    const { error: insertErr } = await supabase
-      .from("search_results")
-      .insert(rows);
-    if (insertErr) {
-      console.error("[saveChatContacts] search_results insert failed:", insertErr);
-    }
-  }
 
   return {
     searchId,
