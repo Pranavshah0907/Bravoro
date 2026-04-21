@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, Search, X, Copy, Phone } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, X, Copy, Phone, Briefcase, ExternalLink, MapPin, Calendar as CalendarIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,17 @@ import {
 } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 
+interface JobResult {
+  job_title: string;
+  job_link?: string;
+  location?: string;
+  last_posted_date?: string;
+  hiring_team_name?: string;
+  hiring_team_linkedin?: string;
+  hiring_team_role?: string;
+  recruiter_phone_number?: string;
+}
+
 interface Contact {
   Record_ID?: string;
   First_Name: string;
@@ -35,6 +46,10 @@ interface Contact {
   LinkedIn: string;
   Phone_Number_1: string;
   Phone_Number_2: string;
+  job_search_result?: {
+    job_search_status?: string;
+    results?: Array<{ jobs?: JobResult[] } | JobResult>;
+  };
 }
 
 interface CompanyResult {
@@ -133,6 +148,64 @@ export const CompanyBrowserDialog = ({
           </Button>
         </Dialog>
       </div>
+    );
+  };
+
+  const CompactJobsPanel = ({ contacts }: { contacts: Contact[] }) => {
+    const uniqueJobs = useMemo<JobResult[]>(() => {
+      const seen = new Set<string>();
+      const jobs: JobResult[] = [];
+      for (const c of contacts) {
+        if (c.job_search_result?.job_search_status === "jobs_found" && Array.isArray(c.job_search_result.results)) {
+          for (const resultGroup of c.job_search_result.results) {
+            const jobList: JobResult[] = Array.isArray((resultGroup as any).jobs)
+              ? (resultGroup as any).jobs
+              : [resultGroup as JobResult];
+            for (const job of jobList) {
+              const key = job.job_link || job.job_title;
+              if (key && !seen.has(key)) { seen.add(key); jobs.push(job); }
+            }
+          }
+        }
+      }
+      return jobs;
+    }, [contacts]);
+
+    if (uniqueJobs.length === 0) return null;
+
+    return (
+      <Collapsible>
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg border border-[#173030] bg-[#06191a] text-left hover:bg-white/[0.03] transition-colors">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-3.5 w-3.5 text-emerald-400/70" />
+              <span className="text-[11px] font-semibold tracking-widest uppercase text-emerald-300/80">Job Openings</span>
+              <span className="text-[10px] font-semibold bg-emerald-400/12 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-400/20">{uniqueJobs.length}</span>
+            </div>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+            {uniqueJobs.map((job, idx) => (
+              <div key={idx} className="rounded-md border border-[#173030] bg-[#081f1f] p-2.5">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <p className="text-xs font-semibold text-[#d0f5ee] leading-snug line-clamp-2 flex-1">{job.job_title}</p>
+                  {job.job_link && (
+                    <a href={job.job_link} target="_blank" rel="noopener noreferrer" className="shrink-0 text-emerald-500/50 hover:text-emerald-300 transition-colors" onClick={(e) => e.stopPropagation()}>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/60">
+                  {job.location && <span className="flex items-center gap-1"><MapPin className="h-2.5 w-2.5" />{job.location}</span>}
+                  {job.last_posted_date && <span className="flex items-center gap-1"><CalendarIcon className="h-2.5 w-2.5" />{job.last_posted_date}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     );
   };
 
@@ -272,6 +345,7 @@ export const CompanyBrowserDialog = ({
                     </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-2">
+                    <CompactJobsPanel contacts={company.contact_data} />
                     {renderContactsTable(company.contact_data)}
                   </CollapsibleContent>
                 </Collapsible>
