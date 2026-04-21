@@ -86,6 +86,25 @@ function rowToPeopleEnrichmentRow(
   };
 }
 
+function rowToPeopleEnrichmentGridRow(
+  row: Record<string, string>,
+  headers: string[],
+): Record<string, string> {
+  const hLow = headers.map((h) => h.toLowerCase());
+  const get = (key: string) => {
+    let idx = hLow.indexOf(key);
+    if (idx === -1) idx = hLow.findIndex(h => h.startsWith(key + " ") || h.startsWith(key + "("));
+    return idx >= 0 ? (row[headers[idx]] ?? "") : "";
+  };
+  return {
+    recordId:    get("record id"),
+    firstName:   get("first name"),
+    lastName:    get("last name"),
+    orgDomain:   get("organization domain"),
+    linkedinUrl: get("linkedin url"),
+  };
+}
+
 // Validate People Enrichment rows: First Name, Last Name, Organization Domain required
 function validatePeopleEnrichmentRows(
   data: Record<string, string>[],
@@ -567,6 +586,31 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ rows: gridRows, rowCount: gridRows.filter((r) => r.orgName?.trim()).length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── ACTION: preview_pe ──────────────────────────────────────────────────
+    if (action === "preview_pe") {
+      let result = await fetchSheetCsv(sheetId, "Main_Data");
+      if (!result.ok) result = await fetchSheetCsv(sheetId, "Sheet1");
+
+      if (!result.ok) {
+        return new Response(JSON.stringify({
+          error: result.error === "not_public"
+            ? "Sheet is not publicly accessible. In Google Sheets, set sharing to 'Anyone with the link can view'."
+            : result.error,
+        }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const { headers, data } = rowsToJson(result.rows!);
+      const gridRows = data.map((row) => rowToPeopleEnrichmentGridRow(row, headers));
+      const filledCount = gridRows.filter((r) =>
+        r.firstName?.trim() || r.lastName?.trim() || r.orgDomain?.trim()
+      ).length;
+
+      return new Response(
+        JSON.stringify({ rows: gridRows, rowCount: filledCount }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
