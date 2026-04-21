@@ -24,7 +24,6 @@ export async function invokeEdgeFunction<T = unknown>(
   functionName: string,
   options?: FunctionInvokeOptions,
 ): Promise<{ data: T | null; error: Error | null }> {
-  // Force session refresh to ensure a valid access token
   const { error: refreshError } = await supabase.auth.refreshSession();
   if (refreshError) {
     return {
@@ -36,11 +35,18 @@ export async function invokeEdgeFunction<T = unknown>(
   const { data, error } = await supabase.functions.invoke(functionName, options);
 
   if (error) {
-    // supabase.functions.invoke returns a generic "Edge Function returned a non-2xx status code"
-    // but data may still contain the real error from the function's JSON response
-    const realMessage = data?.error || data?.message;
-    if (realMessage) {
-      return { data, error: new Error(realMessage) };
+    // FunctionsHttpError stores the raw Response in error.context — parse it for the real message
+    const ctx = (error as any).context;
+    if (ctx && typeof ctx.json === "function") {
+      try {
+        const body = await ctx.json();
+        const realMessage = body?.error || body?.message;
+        if (realMessage) {
+          return { data: body as T, error: new Error(realMessage) };
+        }
+      } catch {
+        // response already consumed or not JSON — fall through
+      }
     }
     return { data, error };
   }
