@@ -122,6 +122,61 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
 
     const selectedContactKeys = useMemo(() => new Set(selectedContacts.keys()), [selectedContacts]);
 
+    // Derive enriched contact keys from loaded messages (survives refresh)
+    useEffect(() => {
+      const msgs = messages[activeId];
+      if (!msgs?.length) return;
+
+      // Collect linkedinUrls from all enriched_contacts messages
+      const enrichedUrls = new Set<string>();
+      for (const msg of msgs) {
+        const meta = msg.metadata as MessageMetadata | undefined;
+        if (meta?.data?.type === "enriched_contacts" && meta.data.contacts) {
+          for (const c of meta.data.contacts) {
+            if (c.linkedinUrl) enrichedUrls.add(c.linkedinUrl.replace(/\?.*$/, "").replace(/\/+$/, "").toLowerCase());
+          }
+        }
+      }
+      if (enrichedUrls.size === 0) return;
+
+      // Match against candidate preview contacts to get their contactKeys
+      const keys = new Set<string>();
+      for (const msg of msgs) {
+        const meta = msg.metadata as MessageMetadata | undefined;
+        if (meta?.data?.type === "candidates" && meta.data.contacts) {
+          for (const c of meta.data.contacts) {
+            if (c.linkedinUrl) {
+              const normalized = c.linkedinUrl.replace(/\?.*$/, "").replace(/\/+$/, "").toLowerCase();
+              if (enrichedUrls.has(normalized)) {
+                keys.add(contactKey(c));
+              }
+            }
+          }
+        }
+      }
+      if (keys.size > 0) {
+        setEnrichedContactKeys((prev) => {
+          const next = new Set(prev);
+          for (const k of keys) next.add(k);
+          return next;
+        });
+        // Also add these to selectedContacts so they show as checked
+        setSelectedContacts((prev) => {
+          const next = new Map(prev);
+          for (const msg of msgs) {
+            const meta = msg.metadata as MessageMetadata | undefined;
+            if (meta?.data?.type === "candidates" && meta.data.contacts) {
+              for (const c of meta.data.contacts) {
+                const k = contactKey(c);
+                if (keys.has(k) && !next.has(k)) next.set(k, c);
+              }
+            }
+          }
+          return next;
+        });
+      }
+    }, [messages[activeId]]);
+
     const handleToggleContact = (contact: ContactData, key: string) => {
       if (enrichedContactKeys.has(key)) return;
       setSelectedContacts((prev) => {

@@ -639,17 +639,12 @@ export function RichMessageContent({
 
   let { intro, outro } = extractConversationalParts(content, true);
 
-  // For enriched contacts, strip the duplicate contact detail lines from text
-  // (the cards already show email/phone/location/linkedin)
+  // For enriched contacts, only keep the first paragraph as intro —
+  // everything else (name, email, phone, location lines) duplicates the cards
   if (data?.type === "enriched_contacts") {
-    const stripDetailLines = (text: string) =>
-      text
-        .replace(/\n*\*{0,2}[\w\s.'-]+\*{0,2}\s*[-–—]\s*[A-Z][\w\s/&()]+at\s+.+/g, "")
-        .replace(/^[-•]\s*(?:📧|📱|📍|🔗|✉️|📞)?\s*(?:Email|Mobile|Phone|Direct|Location|LinkedIn|Seniority|City|Country)\s*:\s*.+$/gim, "")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
-    intro = stripDetailLines(intro);
-    outro = stripDetailLines(outro);
+    const firstBreak = intro.search(/\n\s*\n/);
+    intro = firstBreak > 0 ? intro.slice(0, firstBreak).trim() : intro;
+    outro = "";
   }
 
   // Split contacts into preview (locked) vs enriched (unlocked)
