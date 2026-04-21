@@ -588,28 +588,28 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
       setSearchId(search.id);
       setProcessingStatus("processing");
 
-      const searchData: Record<string, unknown> = {
-        search_id: search.id,
-        company_name: companyName.trim(),
-        domain: domain.trim(),
-        functions: selectedFunctions,
-        seniority: selectedSeniority,
-        person_job_titles: personJobTitles,
-        geography,
-        results_per_function: resultsPerFunction,
-        user_id: userId,
-        search_type: "manual",
-        job_search_enabled: includeJobSearch,
-      };
+      const datePostedDays = !includeJobSearch ? 0
+        : datePosted === "past_24h" ? 1
+        : datePosted === "past_week" ? 7
+        : datePosted === "past_month" ? 30
+        : datePosted === "custom" ? customDays
+        : 0;
 
-      if (includeJobSearch) {
-        searchData.job_search = {
-          job_titles: jobTitles,
-          seniority: jobSeniority,
-          date_posted: datePosted,
-          ...(datePosted === "custom" && { custom_days: customDays }),
-        };
-      }
+      const searchData: Record<string, unknown> = {
+        "Sr No": 1,
+        "Organization Name": companyName.trim(),
+        "Organization Locations": geography,
+        "Organization Domains": domain.trim(),
+        "Person Functions": selectedFunctions.join(", "),
+        "Person Seniorities": selectedSeniority.join(", "),
+        "Person Job Title": personJobTitles.join(", "),
+        "Results per Function": resultsPerFunction,
+        "Toggle job search": includeJobSearch ? "Yes" : "No",
+        "Job Title": includeJobSearch ? jobTitles.join(", ") : "",
+        "Job Seniority": includeJobSearch ? jobSeniority : [],
+        "Date Posted": datePostedDays,
+        search_type: "manual",
+      };
 
       const { data: { session } } = await supabase.auth.getSession();
       const { error: fnError } = await supabase.functions.invoke("trigger-n8n-webhook", {
