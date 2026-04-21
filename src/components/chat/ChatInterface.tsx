@@ -127,55 +127,69 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
       const msgs = messages[activeId];
       if (!msgs?.length) return;
 
-      // Collect linkedinUrls from all enriched_contacts messages
+      // Robust LinkedIn URL normalizer: strip protocol, subdomain, query, trailing slash → just path
+      const normLinkedin = (url: string) =>
+        url.replace(/^https?:\/\//, "").replace(/^[^/]*linkedin\.com/, "").replace(/\?.*$/, "").replace(/\/+$/, "").toLowerCase();
+
+      // Collect normalized linkedinUrls from all enriched_contacts messages
       const enrichedUrls = new Set<string>();
+      const enrichedNames = new Set<string>();
       for (const msg of msgs) {
-        const meta = msg.metadata as MessageMetadata | undefined;
-        if (meta?.data?.type === "enriched_contacts" && meta.data.contacts) {
-          for (const c of meta.data.contacts) {
-            if (c.linkedinUrl) enrichedUrls.add(c.linkedinUrl.replace(/\?.*$/, "").replace(/\/+$/, "").toLowerCase());
+        const meta = msg.metadata as Record<string, unknown> | undefined;
+        const d = meta?.data as Record<string, unknown> | undefined;
+        if (d?.type === "enriched_contacts" && Array.isArray(d.contacts)) {
+          for (const c of d.contacts as Array<Record<string, unknown>>) {
+            const url = c.linkedinUrl as string | undefined;
+            if (url) enrichedUrls.add(normLinkedin(url));
+            const name = (c.fullName as string || "").toLowerCase().trim();
+            if (name) enrichedNames.add(name);
           }
         }
       }
-      if (enrichedUrls.size === 0) return;
+      console.log("[enrich-derive] msgs:", msgs.length, "enrichedUrls:", enrichedUrls.size, "enrichedNames:", enrichedNames.size, [...enrichedUrls].slice(0, 3), [...enrichedNames].slice(0, 3));
+      if (enrichedUrls.size === 0 && enrichedNames.size === 0) return;
 
-      // Match against candidate preview contacts to get their contactKeys
+      // Match against candidate preview contacts to build contactKeys + selections
       const keys = new Set<string>();
+      const contactsToSelect = new Map<string, ContactData>();
       for (const msg of msgs) {
-        const meta = msg.metadata as MessageMetadata | undefined;
-        if (meta?.data?.type === "candidates" && meta.data.contacts) {
-          for (const c of meta.data.contacts) {
-            if (c.linkedinUrl) {
-              const normalized = c.linkedinUrl.replace(/\?.*$/, "").replace(/\/+$/, "").toLowerCase();
-              if (enrichedUrls.has(normalized)) {
-                keys.add(contactKey(c));
-              }
+        const meta = msg.metadata as Record<string, unknown> | undefined;
+        const d = meta?.data as Record<string, unknown> | undefined;
+        const type = d?.type as string | undefined;
+        if ((type === "candidates" || !type) && Array.isArray(d?.contacts)) {
+          for (const raw of d.contacts as ContactData[]) {
+            let matched = false;
+            if (raw.linkedinUrl && enrichedUrls.has(normLinkedin(raw.linkedinUrl))) {
+              matched = true;
+            }
+            // Fallback: match by fullName if LinkedIn URLs didn't match
+            if (!matched && raw.fullName && enrichedNames.has(raw.fullName.toLowerCase().trim())) {
+              matched = true;
+            }
+            if (matched) {
+              const k = contactKey(raw);
+              keys.add(k);
+              contactsToSelect.set(k, raw);
             }
           }
         }
       }
+      console.log("[enrich-derive] matched keys:", keys.size, [...keys].slice(0, 3));
       if (keys.size > 0) {
         setEnrichedContactKeys((prev) => {
           const next = new Set(prev);
           for (const k of keys) next.add(k);
           return next;
         });
-        // Also add these to selectedContacts so they show as checked
         setSelectedContacts((prev) => {
           const next = new Map(prev);
-          for (const msg of msgs) {
-            const meta = msg.metadata as MessageMetadata | undefined;
-            if (meta?.data?.type === "candidates" && meta.data.contacts) {
-              for (const c of meta.data.contacts) {
-                const k = contactKey(c);
-                if (keys.has(k) && !next.has(k)) next.set(k, c);
-              }
-            }
+          for (const [k, c] of contactsToSelect) {
+            if (!next.has(k)) next.set(k, c);
           }
           return next;
         });
       }
-    }, [messages[activeId]]);
+    }, [activeId, messages]);
 
     const handleToggleContact = (contact: ContactData, key: string) => {
       if (enrichedContactKeys.has(key)) return;
@@ -264,9 +278,15 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
         .eq("conversation_id", convId)
         .order("created_at", { ascending: true });
 
+      const loaded = (data as Message[]) ?? [];
+      console.log("[loadMessages]", convId, "msgs:", loaded.length, "with metadata:", loaded.filter(m => m.metadata).map(m => {
+        const meta = m.metadata as Record<string, unknown>;
+        const d = meta?.data as Record<string, unknown> | undefined;
+        return { type: d?.type, contactCount: Array.isArray(d?.contacts) ? (d.contacts as unknown[]).length : 0 };
+      }));
       setMessages((prev) => ({
         ...prev,
-        [convId]: (data as Message[]) ?? [],
+        [convId]: loaded,
       }));
       setLoadingMsgs(false);
     };
