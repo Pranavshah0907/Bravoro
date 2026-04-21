@@ -233,12 +233,15 @@ const TagDropdownInput = ({
   tagVariant?: "teal" | "violet";
   // true = items stay in list with checkmark (Functions); false = items vanish when selected (Seniority)
   keepSelectedInList?: boolean;
+  // false = only allow selection from suggestions, no free-text entry
+  allowCustom?: boolean;
 }) => {
   const [input, setInput] = useState("");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const canTypeCustom = allowCustom !== false;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -258,7 +261,13 @@ const TagDropdownInput = ({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if ((e.key === "Enter" || e.key === ",") && input.trim()) {
-      e.preventDefault(); addTag(input);
+      e.preventDefault();
+      if (canTypeCustom) {
+        addTag(input);
+      } else {
+        const match = suggestions.find(s => s.toLowerCase() === input.trim().toLowerCase());
+        if (match) addTag(match);
+      }
     } else if (e.key === "Backspace" && !input && selected.length > 0) {
       onRemove(selected[selected.length - 1]);
     } else if (e.key === "Escape") {
@@ -287,13 +296,10 @@ const TagDropdownInput = ({
           onKeyDown={handleKeyDown}
           onFocus={() => setOpen(true)}
           onBlur={e => {
-            // Auto-commit pending text only if focus is leaving the whole dropdown component.
-            // Note: relatedTarget is null in Safari when clicking non-focusable elements,
-            // but onMouseDown preventDefault on all dropdown buttons prevents this blur from
-            // firing at all in that case. This branch only runs on true focus-away events.
             const relatedTarget = e.relatedTarget as Node | null;
             if (!relatedTarget || (dropdownRef.current && !dropdownRef.current.contains(relatedTarget))) {
-              if (input.trim()) addTag(input);
+              if (input.trim() && canTypeCustom) addTag(input);
+              if (!canTypeCustom) { setInput(""); setSearch(""); }
               setOpen(false);
             }
           }}
@@ -331,7 +337,7 @@ const TagDropdownInput = ({
           <div className="max-h-44 overflow-y-auto py-1 px-1.5">
             {filtered.length === 0 ? (
               <p className="px-3 py-4 text-xs text-center text-[#5a9090]">
-                {search ? `No match — press Enter to add "${search}"` : "All suggestions selected"}
+                {search ? (canTypeCustom ? `No match — press Enter to add "${search}"` : "No matching option") : "All suggestions selected"}
               </p>
             ) : (
               filtered.map(item => {
@@ -508,6 +514,11 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   // Seniority state
   const [selectedSeniority, setSelectedSeniority] = useState<string[]>([]);
 
+  // Person Job Title state (free-text tags)
+  const [personJobTitles, setPersonJobTitles] = useState<string[]>([]);
+  const [personJobTitleInput, setPersonJobTitleInput] = useState("");
+  const personJobTitleInputRef = useRef<HTMLInputElement>(null);
+
   // Job search state
   const [includeJobSearch, setIncludeJobSearch] = useState(false);
   const [jobTitles, setJobTitles] = useState<string[]>([]);
@@ -583,6 +594,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         domain: domain.trim(),
         functions: selectedFunctions,
         seniority: selectedSeniority,
+        person_job_titles: personJobTitles,
         geography,
         results_per_function: resultsPerFunction,
         user_id: userId,
@@ -624,6 +636,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
 
   const handleReset = () => {
     setCompanyName(""); setDomain(""); setSelectedFunctions([]); setSelectedSeniority([]);
+    setPersonJobTitles([]); setPersonJobTitleInput("");
     setGeography(""); setResultsPerFunction(10); setSearchId(null); setProcessingStatus(null);
     setIncludeJobSearch(false); setJobTitles([]); setJobSeniority([]); setDatePosted("anytime"); setCustomDays(7);
     setSearchSummary(null);
@@ -739,8 +752,45 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                 placeholder="Search or pick a seniority level…"
                 suggestions={SENIORITY_LEVELS}
                 keepSelectedInList={true}
+                allowCustom={false}
               />
               <HintLine>Pick from dropdown · <Kbd>⌫</Kbd> removes last</HintLine>
+            </div>
+
+            <PaneDivider />
+
+            {/* Person Job Title */}
+            <div>
+              <FieldLabel hint="optional">Person Job Title</FieldLabel>
+              <TagBox onClick={() => personJobTitleInputRef.current?.focus()}>
+                {personJobTitles.map(tag => <Tag key={tag} label={tag} onRemove={() => setPersonJobTitles(p => p.filter(t => t !== tag))} />)}
+                <input
+                  ref={personJobTitleInputRef}
+                  type="text"
+                  value={personJobTitleInput}
+                  onChange={e => setPersonJobTitleInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && personJobTitleInput.trim()) {
+                      e.preventDefault();
+                      const v = personJobTitleInput.trim();
+                      if (!personJobTitles.includes(v)) setPersonJobTitles(p => [...p, v]);
+                      setPersonJobTitleInput("");
+                    } else if (e.key === "Backspace" && !personJobTitleInput && personJobTitles.length > 0) {
+                      setPersonJobTitles(p => p.slice(0, -1));
+                    }
+                  }}
+                  onBlur={() => {
+                    if (personJobTitleInput.trim()) {
+                      const v = personJobTitleInput.trim();
+                      if (!personJobTitles.includes(v)) setPersonJobTitles(p => [...p, v]);
+                      setPersonJobTitleInput("");
+                    }
+                  }}
+                  placeholder={personJobTitles.length === 0 ? "e.g. Software Engineer, Product Manager…" : "Add more…"}
+                  className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-white outline-none py-0.5"
+                />
+              </TagBox>
+              <HintLine>Type a title & press <Kbd>Enter</Kbd> · <Kbd>⌫</Kbd> removes last</HintLine>
             </div>
 
             <PaneDivider />
