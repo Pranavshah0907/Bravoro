@@ -106,7 +106,7 @@ function getWelcomeEmailHtml(fullName: string, email: string, tempPassword: stri
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 8px 0 32px 0;">
                 <tr>
                   <td>
-                    <a href="https://app.bravoro.com/auth" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
+                    <a href="https://app.bravoro.com/?logout=true" style="display: inline-block; padding: 16px 32px; background-color: #00686d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
                       Log In Now
                     </a>
                   </td>

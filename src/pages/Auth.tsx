@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogIn, Loader2, Mail, Lock, X, PhoneCall, Eye, EyeOff } from "lucide-react";
@@ -41,6 +41,7 @@ type AnimPhase = "idle" | "exit" | "enter";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -51,10 +52,19 @@ const Auth = () => {
   const [animPhase, setAnimPhase] = useState<AnimPhase>("idle");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleSession = async () => {
+      if (searchParams.get("logout") === "true") {
+        await supabase.auth.signOut();
+        searchParams.delete("logout");
+        setSearchParams(searchParams, { replace: true });
+        setShowLogin(true);
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) navigate("/dashboard");
-    });
-  }, [navigate]);
+    };
+    handleSession();
+  }, [navigate, searchParams, setSearchParams]);
 
   // Rotating word — exit → swap → enter
   useEffect(() => {
