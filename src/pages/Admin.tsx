@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, invokeEdgeFunction } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -543,11 +543,10 @@ const Admin = () => {
   const handleDeleteUser = async (userId: string, userEmail: string) => {
     if (!confirm(`Are you sure you want to delete user ${userEmail}? This action cannot be undone.`)) return;
     try {
-      const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { userId } });
+      const { data, error } = await invokeEdgeFunction("admin-delete-user", { body: { userId } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({ title: "User Deleted", description: `User ${userEmail} has been deleted successfully` });
-      // If currently viewing this user, go to overview
       if (selectedView.type === "user" && selectedView.id === userId) {
         setSelectedView({ type: "overview" });
       }
@@ -570,7 +569,7 @@ const Admin = () => {
 
       const workspaceId = newUserWorkspaceId === INDEPENDENT_USER_VALUE ? null : newUserWorkspaceId;
 
-      const { data, error: createError } = await supabase.functions.invoke("admin-create-user", {
+      const { data, error: createError } = await invokeEdgeFunction("admin-create-user", {
         body: {
           email: newUserEmail.trim(),
           fullName: newUserFullName.trim(),
@@ -580,17 +579,12 @@ const Admin = () => {
         },
       });
 
-      // supabase.functions.invoke sets createError for non-2xx but data still has response body
-      const errorMsg = data?.error || (createError?.message !== "Edge Function returned a non-2xx status code" ? createError?.message : null);
-
       if (createError || !data?.success) {
-        if (errorMsg) {
-          if (errorMsg.includes("already been registered")) {
-            throw new Error("This email address is already registered. Please use a different email or contact support if you believe this is an error.");
-          }
-          throw new Error(errorMsg);
+        const errorMsg = data?.error || createError?.message;
+        if (errorMsg?.includes("already been registered")) {
+          throw new Error("This email address is already registered. Please use a different email or contact support if you believe this is an error.");
         }
-        throw new Error("Failed to create user");
+        throw new Error(errorMsg || "Failed to create user");
       }
 
       // User created — check if email had issues
