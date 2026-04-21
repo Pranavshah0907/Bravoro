@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 import fs from "fs";
 
 // Plugin: writes public/version.json at build/dev start so the app can detect new deployments
@@ -25,8 +24,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     versionPlugin(),
     react(),
-    mode === "development" && componentTagger(),
-  ].filter(Boolean),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

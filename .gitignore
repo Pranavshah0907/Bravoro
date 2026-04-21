@@ -38,8 +38,6 @@ dist-ssr
 # MCP server config (contains API keys)
 .mcp.json
 
-# Lovable IDE metadata
-.lovable/
 
 # Temporary screenshots (generated files)
 temporary screenshots/
