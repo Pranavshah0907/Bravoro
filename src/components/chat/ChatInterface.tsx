@@ -1,12 +1,22 @@
 import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
   Send,
   Loader2,
   X,
   UserCheck,
   ArrowUpFromLine,
   Check,
+  AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
@@ -46,6 +56,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
     // Contacts that have already been enriched — shown as checked+disabled
     const [enrichedContactKeys, setEnrichedContactKeys] = useState<Set<string>>(new Set());
     const [syncing, setSyncing] = useState(false);
+    const [showCreditsDialog, setShowCreditsDialog] = useState(false);
 
     const { toast } = useToast();
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -379,6 +390,29 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
     const sendMessage = async (overrideContent?: string) => {
       const content = overrideContent?.trim() || input.trim();
       if (!content || sending || !activeId) return;
+
+      // Check workspace credit balance before sending
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("workspace_id")
+          .eq("id", userId)
+          .maybeSingle();
+        if (profile?.workspace_id) {
+          const { data: ws } = await supabase
+            .from("workspaces")
+            .select("credits_balance")
+            .eq("id", profile.workspace_id)
+            .maybeSingle();
+          if (ws && ws.credits_balance <= 0) {
+            setShowCreditsDialog(true);
+            return;
+          }
+        }
+      } catch {
+        // Non-blocking — proceed if check fails
+      }
+
       setInput("");
       setSending(true);
       if (inputRef.current) inputRef.current.style.height = "auto";
@@ -487,8 +521,9 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           if (hasApiCost) replyMetadata.apiCost = parsed.apiCost!;
         }
 
-        // Auto-rename conversation from chatName
-        if (parsed.chatName) {
+        // Auto-rename conversation only if it still has the default "Chat N" title
+        const currentTitle = conversations.find(c => c.id === activeId)?.title ?? "";
+        if (parsed.chatName && /^Chat \d+$/.test(currentTitle)) {
           await handleRenameConv(activeId, parsed.chatName);
         }
       } catch (err) {
@@ -501,7 +536,8 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
         const lines = replyContent.split("\n");
         const chatName = lines[0].replace(/^chatname:\s*/i, "").trim();
         replyContent = lines.slice(1).join("\n").trimStart();
-        if (chatName) {
+        const currTitle = conversations.find(c => c.id === activeId)?.title ?? "";
+        if (chatName && /^Chat \d+$/.test(currTitle)) {
           await handleRenameConv(activeId, chatName);
         }
       }
@@ -630,6 +666,29 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
     }
 
     return (
+      <>
+      <AlertDialog open={showCreditsDialog} onOpenChange={setShowCreditsDialog}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 rounded-full bg-red-500/10">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-foreground">No Credits Remaining</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-muted-foreground leading-relaxed">
+              Your workspace has used all available credits. Searches and enrichments
+              are paused until credits are replenished. Please reach out to your
+              workspace administrator to request a top-up.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction className="bg-primary hover:bg-primary/90">
+              Understood
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border/30 shrink-0 bg-card/30 backdrop-blur-sm">
@@ -929,6 +988,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           </div>
         )}
       </div>
+      </>
     );
   }
 );
