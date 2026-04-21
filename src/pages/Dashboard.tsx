@@ -369,7 +369,7 @@ const Dashboard = () => {
 
               {/* Form Area — full width now that nav is in sidebar */}
               <div className="p-5 lg:p-8 xl:p-10 2xl:p-12 pt-3 lg:pt-8">
-                <div className={selectedType === "bulk" ? "max-w-full" : "max-w-4xl mx-auto"}>
+                <div className={selectedType === "bulk" || selectedType === "people_enrichment" ? "max-w-full" : "max-w-4xl mx-auto"}>
                   {/* Page header */}
                   <div className="mb-6 lg:mb-8 animate-fade-in">
                     <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#009da5]/70 mb-2">
