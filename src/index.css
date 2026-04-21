@@ -424,3 +424,21 @@
     background-position: 200% 0;
   }
 }
+
+/* Docs content typography */
+.docs-content h2 {
+  scroll-margin-top: 6rem;
+}
+.docs-content h3 {
+  scroll-margin-top: 6rem;
+}
+.docs-content p {
+  line-height: 1.7;
+}
+.docs-content a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.docs-content code {
+  font-size: 0.85em;
+}
