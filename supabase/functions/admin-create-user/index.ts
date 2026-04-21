@@ -60,11 +60,15 @@ Deno.serve(async (req) => {
       .single();
 
     if (roleError) {
-      console.error(`[${requestId}] Role check error:`, roleError);
+      console.error(`[${requestId}] Role check error for user ${user.id}:`, roleError);
+      return new Response(
+        JSON.stringify({ error: `Role check failed: ${roleError.message}`, request_id: requestId }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     if (roleData?.role !== 'admin') {
-      console.error(`[${requestId}] User is not an admin`);
+      console.error(`[${requestId}] User ${user.id} is not an admin, role: ${roleData?.role}`);
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions', request_id: requestId }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

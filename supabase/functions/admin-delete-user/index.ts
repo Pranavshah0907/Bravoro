@@ -55,13 +55,19 @@ Deno.serve(async (req) => {
       .single();
 
     if (roleError) {
-      console.error('Error fetching user role:', roleError);
-      throw new Error('Failed to verify admin status');
+      console.error('Role check error for user', user.id, ':', roleError);
+      return new Response(
+        JSON.stringify({ error: `Role check failed: ${roleError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     if (!roleData || roleData.role !== 'admin') {
       console.error('User is not an admin:', user.id, 'role:', roleData?.role);
-      throw new Error('Insufficient permissions: Admin role required');
+      return new Response(
+        JSON.stringify({ error: 'Insufficient permissions' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     console.log('Admin verified:', user.id);
