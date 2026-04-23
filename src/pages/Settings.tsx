@@ -9,7 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { User as UserIcon, Lock, BarChart3, Loader2, CreditCard } from "lucide-react";
+import { User as UserIcon, Lock, BarChart3, Loader2, CreditCard, Plug } from "lucide-react";
+import { IntegrationsPanel } from "@/components/integrations/IntegrationsPanel";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
@@ -245,6 +246,10 @@ const Settings = () => {
                 <BarChart3 className="h-4 w-4" />
                 Usage
               </TabsTrigger>
+              <TabsTrigger value="integrations" className="gap-2">
+                <Plug className="h-4 w-4" />
+                Integrations
+              </TabsTrigger>
             </TabsList>
 
             {/* ── Profile Tab ── */}
@@ -408,6 +413,10 @@ const Settings = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="integrations" className="animate-in fade-in-50 duration-300">
+              <IntegrationsPanel />
             </TabsContent>
           </Tabs>
         </div>
