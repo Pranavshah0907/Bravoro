@@ -17,7 +17,7 @@ import {
   UserPlus, Loader2, Shield, Users, Shuffle, Target,
   BarChart3, CalendarIcon, Activity, Search, Database, Building2, ChevronDown,
   ChevronRight, Plus, MapPin, Phone, Mail, User as UserIcon, FolderOpen,
-  Trash2,
+  Trash2, Receipt,
 } from "lucide-react";
 import MasterDatabaseTab from "@/components/MasterDatabaseTab";
 import WorkspaceSearches from "@/components/WorkspaceSearches";
@@ -1130,7 +1130,28 @@ const Admin = () => {
                     </CardContent>
                   </Card>
 
-                  <div>
+                  {/* ── Section Nav ── */}
+                  <div className="flex gap-2">
+                    {[
+                      { id: "ws-users", label: "Users", icon: Users, count: wsUsers.length },
+                      { id: "ws-searches", label: "Searches", icon: Search, count: null },
+                      { id: "ws-transactions", label: "Credit Transactions", icon: Receipt, count: transactionHistory.length },
+                    ].map((sec) => (
+                      <button
+                        key={sec.id}
+                        onClick={() => document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        className="group flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border/30 bg-card/60 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-colors cursor-pointer"
+                      >
+                        <sec.icon className="h-4 w-4 text-muted-foreground group-hover:text-emerald-400 transition-colors" />
+                        <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{sec.label}</span>
+                        {sec.count != null && (
+                          <span className="text-xs font-bold text-primary ml-0.5">{sec.count}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div id="ws-users">
                     <div className="flex items-center gap-2 mb-3">
                       <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Users</h3>
                       <span className="text-xs font-bold text-primary">{wsUsers.length}</span>
@@ -1147,10 +1168,12 @@ const Admin = () => {
                   </div>
 
                   {/* ── Workspace Searches ── */}
-                  <WorkspaceSearches userIds={wsUsers.map(u => u.id)} />
+                  <div id="ws-searches">
+                    <WorkspaceSearches userIds={wsUsers.map(u => u.id)} />
+                  </div>
 
                   {/* ── Transaction History ── */}
-                  <div>
+                  <div id="ws-transactions">
                     <div className="flex items-center gap-2 mb-3">
                       <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Credit Transactions</h3>
                       <span className="text-xs font-bold text-primary">{transactionHistory.length}</span>
