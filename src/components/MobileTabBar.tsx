@@ -61,7 +61,7 @@ export function MobileTabBar({ isAdmin = false, isDeveloper = false }: MobileTab
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 flex-1 h-full",
                   "transition-colors duration-200",
-                  active ? "text-emerald-400" : "text-muted-foreground"
+                  active ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <tab.icon className="h-5 w-5" />
@@ -89,7 +89,7 @@ export function MobileTabBar({ isAdmin = false, isDeveloper = false }: MobileTab
                   "flex items-center gap-3 px-4 py-3 rounded-lg text-left",
                   "transition-colors duration-200",
                   location.pathname === item.path
-                    ? "bg-emerald-500/10 text-emerald-400"
+                    ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted/30"
                 )}
               >
