@@ -707,7 +707,7 @@ const Admin = () => {
                     <Button
                       variant="ghost" size="sm"
                       onClick={() => { setAssigningUser(u); setAssignTargetWorkspaceId(""); setAssignDialogOpen(true); }}
-                      className="h-7 px-2 text-xs text-muted-foreground hover:text-emerald-400 hover:bg-emerald-400/10"
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10"
                     >
                       <Building2 className="h-3.5 w-3.5 mr-1" />Assign
                     </Button>
@@ -896,9 +896,9 @@ const Admin = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
                     { label: "Workspaces", value: workspaces.length, icon: <Building2 className="h-5 w-5" />, color: "text-primary" },
-                    { label: "Total Users", value: users.length, icon: <Users className="h-5 w-5" />, color: "text-emerald-400" },
-                    { label: "Active Users", value: users.filter((u) => !u.requires_password_reset).length, icon: <Activity className="h-5 w-5" />, color: "text-green-400" },
-                    { label: "Pending Login", value: users.filter((u) => u.requires_password_reset).length, icon: <UserIcon className="h-5 w-5" />, color: "text-amber-400" },
+                    { label: "Total Users", value: users.length, icon: <Users className="h-5 w-5" />, color: "text-primary" },
+                    { label: "Active Users", value: users.filter((u) => !u.requires_password_reset).length, icon: <Activity className="h-5 w-5" />, color: "text-green-700 dark:text-green-400" },
+                    { label: "Pending Login", value: users.filter((u) => u.requires_password_reset).length, icon: <UserIcon className="h-5 w-5" />, color: "text-amber-700 dark:text-amber-400" },
                   ].map(({ label, value, icon, color }) => (
                     <Card key={label} className="border-border/40 bg-card/90 backdrop-blur-sm">
                       <CardContent className="p-5">
@@ -1009,7 +1009,7 @@ const Admin = () => {
                           setTopUpNote("");
                           setTopUpDialogOpen(true);
                         }}
-                        className="h-7 px-3 text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
+                        className="h-7 px-3 text-xs bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
                       >
                         <Plus className="h-3 w-3 mr-1" />Top Up Credits
                       </Button>
@@ -1024,19 +1024,19 @@ const Admin = () => {
                   </div>
 
                   {/* Credit Balance */}
-                  <Card className="border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-card to-card/90">
+                  <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card/90">
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">Credit Balance</p>
                           <p className="text-3xl font-bold text-foreground tabular-nums">{(ws.credits_balance ?? 0).toLocaleString()}</p>
                         </div>
-                        <div className="p-3 rounded-xl bg-emerald-500/10">
-                          <Target className="h-6 w-6 text-emerald-400" />
+                        <div className="p-3 rounded-xl bg-primary/10">
+                          <Target className="h-6 w-6 text-primary" />
                         </div>
                       </div>
                       {ws.low_credit_threshold > 0 && (ws.credits_balance ?? 0) <= ws.low_credit_threshold && (
-                        <p className="text-xs text-amber-400 mt-2">Low credit balance — below threshold of {ws.low_credit_threshold.toLocaleString()}</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">Low credit balance — below threshold of {ws.low_credit_threshold.toLocaleString()}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -1056,14 +1056,14 @@ const Admin = () => {
                           className={cn(
                             "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
                             active
-                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm shadow-emerald-500/5"
+                              ? "bg-primary/15 text-primary border border-primary/30 shadow-sm shadow-primary/5"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/20 border border-transparent"
                           )}
                         >
-                          <tab.icon className={cn("h-4 w-4", active ? "text-emerald-400" : "text-muted-foreground")} />
+                          <tab.icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
                           {tab.label}
                           {tab.count != null && (
-                            <span className={cn("text-xs font-bold ml-0.5", active ? "text-emerald-400" : "text-primary")}>{tab.count}</span>
+                            <span className={cn("text-xs font-bold ml-0.5", active ? "text-primary" : "text-primary")}>{tab.count}</span>
                           )}
                         </button>
                       );
@@ -1131,16 +1131,16 @@ const Admin = () => {
                                   <TableCell>
                                     <Badge
                                       className={cn("text-[10px]", {
-                                        "bg-emerald-500/10 text-emerald-400 border-emerald-500/20": tx.type === "topup" || tx.type === "initial",
-                                        "bg-red-500/10 text-red-400 border-red-500/20": tx.type === "deduction",
-                                        "bg-amber-500/10 text-amber-400 border-amber-500/20": tx.type === "adjustment",
+                                        "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20": tx.type === "topup" || tx.type === "initial",
+                                        "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20": tx.type === "deduction",
+                                        "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20": tx.type === "adjustment",
                                         "bg-muted text-muted-foreground border-border/30": !["topup", "initial", "deduction", "adjustment"].includes(tx.type),
                                       })}
                                     >
                                       {tx.type}
                                     </Badge>
                                   </TableCell>
-                                  <TableCell className={cn("text-sm font-medium text-right tabular-nums", tx.amount >= 0 ? "text-emerald-400" : "text-red-400")}>
+                                  <TableCell className={cn("text-sm font-medium text-right tabular-nums", tx.amount >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400")}>
                                     {tx.amount >= 0 ? "+" : ""}{tx.amount.toLocaleString()}
                                   </TableCell>
                                   <TableCell className="text-sm text-foreground text-right tabular-nums">
@@ -1934,7 +1934,7 @@ const Admin = () => {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setTopUpDialogOpen(false)} className="text-muted-foreground">Cancel</Button>
             <Button onClick={handleTopUp} disabled={toppingUp || topUpAmount <= 0}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {toppingUp ? "Adding..." : `Add ${topUpAmount > 0 ? topUpAmount.toLocaleString() : 0} Credits`}
             </Button>
           </DialogFooter>
