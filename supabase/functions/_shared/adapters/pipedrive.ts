@@ -32,13 +32,29 @@ export class PipedriveAdapter implements CrmAdapter {
     }
   }
 
-  async fetchFieldMetadata(_token: string): Promise<FieldMetadata> {
-    throw new Error('Not implemented yet — see Task 6');
+  async fetchFieldMetadata(token: string): Promise<FieldMetadata> {
+    const [personRes, orgRes] = await Promise.all([
+      fetchJson(`https://api.pipedrive.com/v1/personFields?api_token=${encodeURIComponent(token)}&limit=500`),
+      fetchJson(`https://api.pipedrive.com/v1/organizationFields?api_token=${encodeURIComponent(token)}&limit=500`),
+    ]);
+    return {
+      person: (personRes.data ?? []).map(normalizeField),
+      org: (orgRes.data ?? []).map(normalizeField),
+    };
   }
 
   autoMapCustomFields(_metadata: FieldMetadata): CustomFieldMappings {
     throw new Error('Not implemented yet — see Task 7');
   }
+}
+
+function normalizeField(raw: any): FieldDef {
+  return {
+    key: raw.key,
+    label: raw.name,
+    type: raw.field_type,
+    isCustom: raw.edit_flag === true,
+  };
 }
 
 async function fetchJson(url: string, attempt = 1): Promise<any> {
