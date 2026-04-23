@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -12,31 +11,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -263,6 +237,114 @@ export type Database = {
             columns: ["search_id"]
             isOneToOne: false
             referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_field_metadata: {
+        Row: {
+          fields_json: Json
+          integration_id: string
+          object_type: string
+          refreshed_at: string
+        }
+        Insert: {
+          fields_json: Json
+          integration_id: string
+          object_type: string
+          refreshed_at?: string
+        }
+        Update: {
+          fields_json?: Json
+          integration_id?: string
+          object_type?: string
+          refreshed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_field_metadata_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_secrets: {
+        Row: {
+          created_at: string
+          integration_id: string
+          vault_secret_id: string
+        }
+        Insert: {
+          created_at?: string
+          integration_id: string
+          vault_secret_id: string
+        }
+        Update: {
+          created_at?: string
+          integration_id?: string
+          vault_secret_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_secrets_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: true
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          account_display_name: string
+          account_identifier: string
+          connected_by_user_id: string | null
+          created_at: string
+          crm_type: string
+          custom_field_mappings: Json
+          id: string
+          last_checked_at: string
+          last_error: string | null
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          account_display_name: string
+          account_identifier: string
+          connected_by_user_id?: string | null
+          created_at?: string
+          crm_type: string
+          custom_field_mappings?: Json
+          id?: string
+          last_checked_at?: string
+          last_error?: string | null
+          status: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          account_display_name?: string
+          account_identifier?: string
+          connected_by_user_id?: string | null
+          created_at?: string
+          crm_type?: string
+          custom_field_mappings?: Json
+          id?: string
+          last_checked_at?: string
+          last_error?: string | null
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -494,6 +576,36 @@ export type Database = {
           },
         ]
       }
+      people_enrichment_drafts: {
+        Row: {
+          created_at: string | null
+          grid_data: Json
+          id: string
+          name: string
+          row_count: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -503,6 +615,7 @@ export type Database = {
           id: string
           last_name: string | null
           requires_password_reset: boolean | null
+          theme_preference: string
           updated_at: string | null
           workspace_id: string | null
         }
@@ -514,6 +627,7 @@ export type Database = {
           id: string
           last_name?: string | null
           requires_password_reset?: boolean | null
+          theme_preference?: string
           updated_at?: string | null
           workspace_id?: string | null
         }
@@ -525,6 +639,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           requires_password_reset?: boolean | null
+          theme_preference?: string
           updated_at?: string | null
           workspace_id?: string | null
         }
@@ -868,6 +983,10 @@ export type Database = {
         }
         Returns: Json
       }
+      decrypt_integration_token: {
+        Args: { p_integration_id: string }
+        Returns: string
+      }
       deduct_workspace_credits: {
         Args: {
           p_amount: number
@@ -876,6 +995,28 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: Json
+      }
+      delete_integration_cascade: {
+        Args: { p_integration_id: string }
+        Returns: undefined
+      }
+      encrypt_integration_token: {
+        Args: { p_integration_id: string; p_token: string }
+        Returns: string
+      }
+      finalize_crm_connection: {
+        Args: {
+          p_account_display_name: string
+          p_account_identifier: string
+          p_connected_by_user_id: string
+          p_crm_type: string
+          p_custom_field_mappings: Json
+          p_org_fields: Json
+          p_person_fields: Json
+          p_token: string
+          p_workspace_id: string
+        }
+        Returns: string
       }
       get_queue_position: { Args: { p_search_id: string }; Returns: number }
       get_user_enriched_contact: {
@@ -902,6 +1043,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      refresh_crm_metadata: {
+        Args: {
+          p_custom_field_mappings: Json
+          p_integration_id: string
+          p_org_fields: Json
+          p_person_fields: Json
+        }
+        Returns: undefined
       }
       release_api_slot: {
         Args: { p_search_id: string; p_slot_name: string }
@@ -1047,14 +1197,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["admin", "user"],
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.90.0 (currently installed v2.75.0)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
