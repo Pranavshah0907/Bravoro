@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.crm-test-connection]
 verify_jwt = false
+
+[functions.crm-refresh-metadata]
+verify_jwt = false
