@@ -58,7 +58,33 @@ Per `memory/feedback_review_pattern.md`:
 
 - **Implementers stay as subagents.** The one-task-per-fresh-subagent pattern is working — keep it.
 - **Reviewers become controller self-review.** Skip the reviewer subagent dispatch. The controller (main session) reads the diff directly, does spec-compliance and code-quality review inline. Saves context budget and cost per task.
-- **Codex as second opinion on high-risk tasks.** The user mentioned installing "the codex plugin" for dual-model review. The exact integration (OpenAI Codex CLI? Codex-wrapping MCP server? other?) is unresolved. Ask them at the top of the next session to clarify which flavor they meant, then install and validate before relying on it. Use for: migrations, security-sensitive edge functions, auth changes. Don't over-apply.
+- **Codex as second opinion on high-risk tasks.** The plugin is **`openai/codex-plugin-cc`** (Apache-2.0, official OpenAI, 15.6k stars, [github.com/openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc)). Install at the top of the next session:
+  ```
+  /plugin marketplace add openai/codex-plugin-cc
+  /plugin install codex@openai-codex
+  /reload-plugins
+  /codex:setup
+  ```
+  **Requires** ChatGPT subscription (any tier, incl. Free) OR OpenAI API key. Billing runs through OpenAI Codex usage quota, not Anthropic. **Confirm the user has this before installing.**
+
+  **Which command to use:** `/codex:adversarial-review --base <prev-sha> --background <focus text>` — the steerable variant that pressure-tests design decisions with custom focus text. The non-adversarial `/codex:review` is useful too but less targeted.
+
+  **When to invoke (high-risk tasks only, roughly 5–6 of the remaining 18):**
+  - Task 2 (types regen) — skip, trivial.
+  - Tasks 3–7 (adapter framework + Pipedrive adapter) — skip for pure-TypeScript tasks, run on Task 5 (first Pipedrive HTTP integration).
+  - Task 8 (`crm-test-connection`) — **yes**, handles auth + Vault decryption.
+  - Task 9 (`crm-refresh-metadata`) — skip if Task 8 review was clean and this just mirrors the pattern.
+  - Task 10 (`crm-disconnect`) — **yes**, destructive + Vault cleanup.
+  - Task 11 (`crm-health-check`) — **yes**, new auth mode (header shared secret) + cron-exposed endpoint.
+  - Tasks 12–17 (frontend) — skip for pure UI, maybe on Task 17 (toast watcher has security implications around localStorage + navigation).
+  - Task 18 (n8n cron workflow) — skip, no code.
+  - Task 19 (final acceptance) — **yes**, whole-branch adversarial review before opening PR.
+
+  Example call for the Task 8 review:
+  ```
+  /codex:adversarial-review --base <task7-sha> --background \
+    focus on JWT verification edge cases, token handling through the Vault RPC, whether workspace scoping is enforced correctly, and any path where the Pipedrive token could leak into logs or response bodies
+  ```
 
 ## Pipedrive test token — not yet provided
 
