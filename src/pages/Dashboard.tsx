@@ -280,13 +280,13 @@ const Dashboard = () => {
         )}>
           {/* Top-center teal corona */}
           <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-30" style={{
-            background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
+            background: "radial-gradient(ellipse, hsl(var(--primary)) 0%, transparent 65%)",
             filter: "blur(60px)",
             animation: "float 22s ease-in-out infinite",
           }} />
           {/* Bottom-right secondary glow */}
           <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full opacity-15" style={{
-            background: "radial-gradient(circle, #58dddd 0%, transparent 65%)",
+            background: "radial-gradient(circle, hsl(var(--accent)) 0%, transparent 65%)",
             filter: "blur(80px)",
             animation: "float 18s ease-in-out infinite reverse",
           }} />
@@ -326,18 +326,18 @@ const Dashboard = () => {
             /* ── Home: Welcome view ── */
             <div className="min-h-screen flex flex-col items-center justify-center px-8 py-16">
               <div className="text-center mb-14 animate-fade-in">
-                <p className="text-xs font-bold tracking-[0.2em] uppercase text-[#009da5] mb-4 opacity-80">
+                <p className="text-xs font-bold tracking-[0.2em] uppercase text-primary mb-4 opacity-80">
                   Lead Enrichment Platform
                 </p>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-none tracking-tight" style={{
-                  background: "linear-gradient(135deg, #ffffff 30%, #58dddd 75%, #009da5 100%)",
+                  background: "linear-gradient(135deg, hsl(var(--foreground)) 30%, hsl(var(--accent)) 75%, hsl(var(--primary)) 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                 }}>
                   Welcome back
                 </h1>
-                <p className="text-base lg:text-lg text-[#3d8080] max-w-lg mx-auto font-medium">
+                <p className="text-base lg:text-lg text-muted-foreground max-w-lg mx-auto font-medium">
                   Select an enrichment method to get started
                 </p>
               </div>
@@ -372,16 +372,16 @@ const Dashboard = () => {
                 <div className={selectedType === "bulk" || selectedType === "people_enrichment" ? "max-w-full" : "max-w-4xl mx-auto"}>
                   {/* Page header */}
                   <div className="mb-6 lg:mb-8 animate-fade-in">
-                    <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#009da5]/70 mb-2">
+                    <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-primary/70 mb-2">
                       Enrichment
                     </p>
-                    <h1 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-white tracking-tight mb-2">
+                    <h1 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-foreground tracking-tight mb-2">
                       {ENRICHMENT_OPTIONS.find(o => o.type === selectedType)?.title}
                     </h1>
-                    <p className="text-sm lg:text-base text-[#3d7070] font-medium">
+                    <p className="text-sm lg:text-base text-muted-foreground font-medium">
                       {ENRICHMENT_OPTIONS.find(o => o.type === selectedType)?.description}
                     </p>
-                    <div className="mt-4 h-px w-16 bg-gradient-to-r from-[#009da5] to-transparent rounded-full" />
+                    <div className="mt-4 h-px w-16 bg-gradient-to-r from-primary to-transparent rounded-full" />
                   </div>
 
                   <div className="animate-slide-up">
