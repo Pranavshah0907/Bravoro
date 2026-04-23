@@ -43,8 +43,21 @@ export class PipedriveAdapter implements CrmAdapter {
     };
   }
 
-  autoMapCustomFields(_metadata: FieldMetadata): CustomFieldMappings {
-    throw new Error('Not implemented yet — see Task 7');
+  autoMapCustomFields(metadata: FieldMetadata): CustomFieldMappings {
+    const mapping: CustomFieldMappings = {
+      person: { websiteField: [], linkedinField: [] },
+      org: { websiteField: [], practiceType: [] },
+    };
+    for (const f of metadata.person) {
+      if (!f.isCustom) continue;
+      if (labelMatches(f.label, WEBSITE_KEYWORDS))  mapping.person.websiteField.push(f.key);
+      if (labelMatches(f.label, LINKEDIN_KEYWORDS)) mapping.person.linkedinField.push(f.key);
+    }
+    for (const f of metadata.org) {
+      if (!f.isCustom) continue;
+      if (labelMatches(f.label, WEBSITE_KEYWORDS)) mapping.org.websiteField.push(f.key);
+    }
+    return mapping;
   }
 }
 
@@ -55,6 +68,11 @@ function normalizeField(raw: any): FieldDef {
     type: raw.field_type,
     isCustom: raw.edit_flag === true,
   };
+}
+
+function labelMatches(label: string, keywords: string[]): boolean {
+  const lbl = label.toLowerCase();
+  return keywords.some(k => lbl.includes(k));
 }
 
 async function fetchJson(url: string, attempt = 1): Promise<any> {
