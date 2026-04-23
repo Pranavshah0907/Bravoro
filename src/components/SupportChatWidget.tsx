@@ -228,7 +228,7 @@ export function SupportChatWidget() {
   };
 
   return (
-    <div ref={widgetRef}>
+    <div ref={widgetRef} className="dark">
       {/* Floating bubble */}
       <button
         onClick={() => setIsOpen((o) => !o)}
