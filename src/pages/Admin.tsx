@@ -121,6 +121,7 @@ const Admin = () => {
 
   // Navigation
   const [selectedView, setSelectedView] = useState<SelectedView>({ type: "overview" });
+  const [wsDetailTab, setWsDetailTab] = useState<"users" | "searches" | "transactions">("users");
 
   // Workspace state
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -1130,109 +1131,122 @@ const Admin = () => {
                     </CardContent>
                   </Card>
 
-                  {/* ── Section Nav ── */}
-                  <div className="flex gap-2">
-                    {[
-                      { id: "ws-users", label: "Users", icon: Users, count: wsUsers.length },
-                      { id: "ws-searches", label: "Searches", icon: Search, count: null },
-                      { id: "ws-transactions", label: "Credit Transactions", icon: Receipt, count: transactionHistory.length },
-                    ].map((sec) => (
-                      <button
-                        key={sec.id}
-                        onClick={() => document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                        className="group flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border/30 bg-card/60 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-colors cursor-pointer"
-                      >
-                        <sec.icon className="h-4 w-4 text-muted-foreground group-hover:text-emerald-400 transition-colors" />
-                        <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{sec.label}</span>
-                        {sec.count != null && (
-                          <span className="text-xs font-bold text-primary ml-0.5">{sec.count}</span>
-                        )}
-                      </button>
-                    ))}
+                  {/* ── Section Tabs ── */}
+                  <div className="flex gap-1.5 p-1 rounded-xl bg-muted/15 border border-border/20">
+                    {([
+                      { id: "users" as const, label: "Users", icon: Users, count: wsUsers.length },
+                      { id: "searches" as const, label: "Searches", icon: Search, count: null },
+                      { id: "transactions" as const, label: "Credit Transactions", icon: Receipt, count: transactionHistory.length },
+                    ]).map((tab) => {
+                      const active = wsDetailTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setWsDetailTab(tab.id)}
+                          className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                            active
+                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm shadow-emerald-500/5"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/20 border border-transparent"
+                          )}
+                        >
+                          <tab.icon className={cn("h-4 w-4", active ? "text-emerald-400" : "text-muted-foreground")} />
+                          {tab.label}
+                          {tab.count != null && (
+                            <span className={cn("text-xs font-bold ml-0.5", active ? "text-emerald-400" : "text-primary")}>{tab.count}</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div id="ws-users">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Users</h3>
-                      <span className="text-xs font-bold text-primary">{wsUsers.length}</span>
-                    </div>
-                    {wsUsers.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-14 border border-dashed border-border/40 rounded-lg text-muted-foreground">
-                        <Users className="h-8 w-8 mb-2 opacity-30" />
-                        <p className="text-sm">No users in this workspace yet</p>
-                        <p className="text-xs mt-1 opacity-60">Create a user and assign them to this workspace</p>
+                  {/* ── Users Tab ── */}
+                  {wsDetailTab === "users" && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Users</h3>
+                        <span className="text-xs font-bold text-primary">{wsUsers.length}</span>
                       </div>
-                    ) : (
-                      renderDetailTable(wsUsers, false)
-                    )}
-                  </div>
+                      {wsUsers.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-14 border border-dashed border-border/40 rounded-lg text-muted-foreground">
+                          <Users className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No users in this workspace yet</p>
+                          <p className="text-xs mt-1 opacity-60">Create a user and assign them to this workspace</p>
+                        </div>
+                      ) : (
+                        renderDetailTable(wsUsers, false)
+                      )}
+                    </div>
+                  )}
 
-                  {/* ── Workspace Searches ── */}
-                  <div id="ws-searches">
+                  {/* ── Searches Tab ── */}
+                  {wsDetailTab === "searches" && (
                     <WorkspaceSearches userIds={wsUsers.map(u => u.id)} />
-                  </div>
+                  )}
 
-                  {/* ── Transaction History ── */}
-                  <div id="ws-transactions">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Credit Transactions</h3>
-                      <span className="text-xs font-bold text-primary">{transactionHistory.length}</span>
-                    </div>
-                    {loadingTransactions ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  {/* ── Credit Transactions Tab ── */}
+                  {wsDetailTab === "transactions" && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Credit Transactions</h3>
+                        <span className="text-xs font-bold text-primary">{transactionHistory.length}</span>
                       </div>
-                    ) : transactionHistory.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/40 rounded-lg text-muted-foreground">
-                        <Activity className="h-8 w-8 mb-2 opacity-30" />
-                        <p className="text-sm">No transactions yet</p>
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-border/30 overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/20 border-border/30 hover:bg-muted/30">
-                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</TableHead>
-                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Type</TableHead>
-                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Amount</TableHead>
-                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Balance</TableHead>
-                              <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Note</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {transactionHistory.map((tx) => (
-                              <TableRow key={tx.id} className="hover:bg-muted/10 transition-colors border-border/20">
-                                <TableCell className="text-sm text-foreground">
-                                  {new Date(tx.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    className={cn("text-[10px]", {
-                                      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20": tx.type === "topup" || tx.type === "initial",
-                                      "bg-red-500/10 text-red-400 border-red-500/20": tx.type === "deduction",
-                                      "bg-amber-500/10 text-amber-400 border-amber-500/20": tx.type === "adjustment",
-                                      "bg-muted text-muted-foreground border-border/30": !["topup", "initial", "deduction", "adjustment"].includes(tx.type),
-                                    })}
-                                  >
-                                    {tx.type}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className={cn("text-sm font-medium text-right tabular-nums", tx.amount >= 0 ? "text-emerald-400" : "text-red-400")}>
-                                  {tx.amount >= 0 ? "+" : ""}{tx.amount.toLocaleString()}
-                                </TableCell>
-                                <TableCell className="text-sm text-foreground text-right tabular-nums">
-                                  {tx.balance_after?.toLocaleString() ?? "—"}
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                                  {tx.note || "—"}
-                                </TableCell>
+                      {loadingTransactions ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : transactionHistory.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 border border-dashed border-border/40 rounded-lg text-muted-foreground">
+                          <Activity className="h-8 w-8 mb-2 opacity-30" />
+                          <p className="text-sm">No transactions yet</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-border/30 overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/20 border-border/30 hover:bg-muted/30">
+                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</TableHead>
+                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Type</TableHead>
+                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Amount</TableHead>
+                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Balance</TableHead>
+                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Note</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </div>
+                            </TableHeader>
+                            <TableBody>
+                              {transactionHistory.map((tx) => (
+                                <TableRow key={tx.id} className="hover:bg-muted/10 transition-colors border-border/20">
+                                  <TableCell className="text-sm text-foreground">
+                                    {new Date(tx.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      className={cn("text-[10px]", {
+                                        "bg-emerald-500/10 text-emerald-400 border-emerald-500/20": tx.type === "topup" || tx.type === "initial",
+                                        "bg-red-500/10 text-red-400 border-red-500/20": tx.type === "deduction",
+                                        "bg-amber-500/10 text-amber-400 border-amber-500/20": tx.type === "adjustment",
+                                        "bg-muted text-muted-foreground border-border/30": !["topup", "initial", "deduction", "adjustment"].includes(tx.type),
+                                      })}
+                                    >
+                                      {tx.type}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className={cn("text-sm font-medium text-right tabular-nums", tx.amount >= 0 ? "text-emerald-400" : "text-red-400")}>
+                                    {tx.amount >= 0 ? "+" : ""}{tx.amount.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-foreground text-right tabular-nums">
+                                    {tx.balance_after?.toLocaleString() ?? "—"}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                                    {tx.note || "—"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })()}
