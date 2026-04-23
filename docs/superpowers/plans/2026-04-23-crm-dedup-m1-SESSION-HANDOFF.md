@@ -58,29 +58,32 @@ Per `memory/feedback_review_pattern.md`:
 
 - **Implementers stay as subagents.** The one-task-per-fresh-subagent pattern is working — keep it.
 - **Reviewers become controller self-review.** Skip the reviewer subagent dispatch. The controller (main session) reads the diff directly, does spec-compliance and code-quality review inline. Saves context budget and cost per task.
-- **Codex as second opinion on high-risk tasks.** The plugin is **`openai/codex-plugin-cc`** (Apache-2.0, official OpenAI, 15.6k stars, [github.com/openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc)). Install at the top of the next session:
+- **Codex as second opinion on high-risk tasks — USER DECISION LOCKED: run Codex on exactly 4 tasks, Claude-only review on the rest.** Plugin is **`openai/codex-plugin-cc`** (Apache-2.0, official OpenAI, 15.6k stars, [github.com/openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc)). User has an OpenAI login — confirmed 2026-04-23.
+
+  **Install at the top of the next session (before Task 2):**
   ```
   /plugin marketplace add openai/codex-plugin-cc
   /plugin install codex@openai-codex
   /reload-plugins
   /codex:setup
   ```
-  **Requires** ChatGPT subscription (any tier, incl. Free) OR OpenAI API key. Billing runs through OpenAI Codex usage quota, not Anthropic. **Confirm the user has this before installing.**
 
-  **Which command to use:** `/codex:adversarial-review --base <prev-sha> --background <focus text>` — the steerable variant that pressure-tests design decisions with custom focus text. The non-adversarial `/codex:review` is useful too but less targeted.
+  **The 4 tasks that get Codex adversarial-review (and ONLY these):**
 
-  **When to invoke (high-risk tasks only, roughly 5–6 of the remaining 18):**
-  - Task 2 (types regen) — skip, trivial.
-  - Tasks 3–7 (adapter framework + Pipedrive adapter) — skip for pure-TypeScript tasks, run on Task 5 (first Pipedrive HTTP integration).
-  - Task 8 (`crm-test-connection`) — **yes**, handles auth + Vault decryption.
-  - Task 9 (`crm-refresh-metadata`) — skip if Task 8 review was clean and this just mirrors the pattern.
-  - Task 10 (`crm-disconnect`) — **yes**, destructive + Vault cleanup.
-  - Task 11 (`crm-health-check`) — **yes**, new auth mode (header shared secret) + cron-exposed endpoint.
-  - Tasks 12–17 (frontend) — skip for pure UI, maybe on Task 17 (toast watcher has security implications around localStorage + navigation).
-  - Task 18 (n8n cron workflow) — skip, no code.
-  - Task 19 (final acceptance) — **yes**, whole-branch adversarial review before opening PR.
+  | Task | Reason it's high-risk |
+  |---|---|
+  | **Task 8** (`crm-test-connection`) | First edge function handling the Pipedrive token. Sets the auth + token-handling pattern all other edge functions copy. |
+  | **Task 10** (`crm-disconnect`) | Destructive. Vault secret cleanup. Bugs here leak encrypted tokens users think were deleted. |
+  | **Task 11** (`crm-health-check`) | New auth boundary (header shared secret, not JWT). Exposed to cron callers. Batch operation across all workspaces. |
+  | **Task 19** (final acceptance) | Whole-branch adversarial review before opening the PR. One "before-ship" sanity check across everything. |
 
-  Example call for the Task 8 review:
+  **Claude self-review only (no Codex) on:** Tasks 2, 3, 4, 5, 6, 7, 9, 12, 13, 14, 15, 16, 17, 18.
+
+  **Why not more tasks:** today's session already proved Claude review catches real bugs (found the Critical orphan-vault-secret issue). Adding Codex adds a modest second opinion — worth it on auth/security boundaries, overkill on pure UI or mechanical type-gen work.
+
+  **Canonical command form:** `/codex:adversarial-review --base <prev-sha> --background <focus text>`. Use `--background` so review runs async while you keep working. Check results with `/codex:status` then `/codex:result`.
+
+  **Example invocation for Task 8:**
   ```
   /codex:adversarial-review --base <task7-sha> --background \
     focus on JWT verification edge cases, token handling through the Vault RPC, whether workspace scoping is enforced correctly, and any path where the Pipedrive token could leak into logs or response bodies
