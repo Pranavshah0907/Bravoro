@@ -63,3 +63,9 @@ InputFiles/*.json
 # Session handoff docs (high-risk: chat transcripts with env dumps, keep local only)
 docs/superpowers/plans/*-SESSION-HANDOFF.md
 
+# Tool-output directories (may capture session state, tokens, or sensitive page snapshots)
+.auth/
+.playwright-mcp/
+.superpowers/
+.vercel/
+
