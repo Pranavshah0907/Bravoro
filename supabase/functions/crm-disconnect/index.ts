@@ -45,11 +45,15 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    const { data: integration } = await supabase
+    const { data: integration, error: lookupErr } = await supabase
       .from('integrations')
       .select('id, workspace_id')
       .eq('id', integration_id)
       .maybeSingle();
+    if (lookupErr) {
+      console.error('disconnect: integration lookup failed', lookupErr);
+      return json({ ok: false, error: 'Failed to load integration. Try again.' }, 500);
+    }
     if (!integration) {
       console.log('disconnect: already gone', integration_id);
       return json({ ok: true });

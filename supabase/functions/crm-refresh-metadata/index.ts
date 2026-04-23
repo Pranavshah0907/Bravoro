@@ -47,11 +47,15 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    const { data: integration } = await supabase
+    const { data: integration, error: lookupErr } = await supabase
       .from('integrations')
       .select('id, crm_type, workspace_id')
       .eq('id', integration_id)
       .maybeSingle();
+    if (lookupErr) {
+      console.error('refresh-metadata: integration lookup failed', lookupErr);
+      return json({ ok: false, error: 'Failed to load integration. Try again.' }, 500);
+    }
     if (!integration) return json({ ok: false, error: 'Integration not found.' }, 404);
 
     const { data: profile } = await supabase
