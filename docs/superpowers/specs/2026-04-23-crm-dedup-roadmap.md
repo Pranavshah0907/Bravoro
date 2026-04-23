@@ -111,6 +111,7 @@ M2 will add an optional `integration_id` field to the payload; n8n routes that i
 - Custom field mapping override UI (manual review of auto-detection).
 - Post-enrichment email-exact dedup (second gate after enrichment).
 - "Coming soon" labels in CRM dropdown when additional adapters are imminent.
+- **Concurrent-first-connect race hardening in `encrypt_integration_token`.** Current implementation can orphan one vault secret if two workspace members click Connect simultaneously for the same workspace+CRM's very first connect. Failure mode is a surfaced PK exception (retriable, not data loss). Fix path: `ON CONFLICT DO NOTHING` on the `integration_secrets` INSERT plus delete of the just-created vault secret in the losing branch. Raised by code review on 2026-04-23 during M1 Task 1.
 
 ### v1.2
 - Zoho, Close adapters.
