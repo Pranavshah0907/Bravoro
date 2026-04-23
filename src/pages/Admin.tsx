@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   UserPlus, Loader2, Shield, Users, Shuffle, Target,
   BarChart3, CalendarIcon, Activity, Search, Database, Building2, ChevronDown,
-  ChevronRight, Plus, MapPin, Phone, Mail, User as UserIcon, FolderOpen,
+  Plus, MapPin, Phone, Mail, User as UserIcon, FolderOpen,
   Trash2, Receipt,
 } from "lucide-react";
 import MasterDatabaseTab from "@/components/MasterDatabaseTab";
@@ -127,8 +127,6 @@ const Admin = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false);
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
-  const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set([INDEPENDENT_USER_VALUE]));
-
   // Create workspace form
   const [newWsName, setNewWsName] = useState("");
   const [newWsAddress, setNewWsAddress] = useState("");
@@ -516,15 +514,6 @@ const Admin = () => {
     return users.filter((u) => u.email.toLowerCase().includes(s) || u.full_name?.toLowerCase().includes(s));
   }, [users, entitySearch]);
 
-  const toggleWorkspace = (id: string) => {
-    setExpandedWorkspaces((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const generateStrongPassword = () => {
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
     let password = "";
@@ -806,66 +795,27 @@ const Admin = () => {
               ) : (
                 workspaces.map((ws) => {
                   const wsUsers = users.filter((u) => u.workspace_id === ws.id);
-                  const isExpanded = expandedWorkspaces.has(ws.id);
                   const isWsSelected = selectedView.type === "workspace" && selectedView.id === ws.id;
                   return (
-                    <div key={ws.id}>
-                      <div className={cn(
-                        "flex items-center rounded-md transition-colors",
+                    <button
+                      key={ws.id}
+                      onClick={() => setSelectedView({ type: "workspace", id: ws.id })}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors",
                         isWsSelected ? "bg-primary/15" : "hover:bg-white/5"
-                      )}>
-                        <button
-                          onClick={() => toggleWorkspace(ws.id)}
-                          className="shrink-0 pl-2 pr-1 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {isExpanded
-                            ? <ChevronDown className="h-3 w-3" />
-                            : <ChevronRight className="h-3 w-3" />
-                          }
-                        </button>
-                        <button
-                          onClick={() => setSelectedView({ type: "workspace", id: ws.id })}
-                          className="flex-1 flex items-center gap-2 pr-3 py-2 text-left min-w-0"
-                        >
-                          <Building2 className={cn("h-3.5 w-3.5 shrink-0", isWsSelected ? "text-primary" : "text-primary/50")} />
-                          <div className="flex-1 min-w-0">
-                            <span className={cn("block truncate text-xs font-medium", isWsSelected ? "text-primary" : "text-foreground")}>
-                              {ws.company_name}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground tabular-nums">
-                              {(ws.credits_balance ?? 0).toLocaleString()} credits
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground/50 shrink-0">{wsUsers.length}</span>
-                        </button>
-                      </div>
-                      {isExpanded && (
-                        <div className="ml-5 mb-0.5">
-                          {wsUsers.length === 0 ? (
-                            <p className="pl-4 py-1 text-[11px] text-muted-foreground/30 italic">empty</p>
-                          ) : (
-                            wsUsers.map((u) => {
-                              const isUserSel = selectedView.type === "user" && selectedView.id === u.id;
-                              return (
-                                <button
-                                  key={u.id}
-                                  onClick={() => setSelectedView({ type: "user", id: u.id })}
-                                  className={cn(
-                                    "w-full flex items-center gap-2 pl-3 pr-2 py-1 rounded-md text-left transition-colors",
-                                    isUserSel
-                                      ? "bg-primary/15 text-primary"
-                                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                                  )}
-                                >
-                                  <div className="h-1.5 w-1.5 rounded-full bg-current shrink-0 opacity-50" />
-                                  <span className="truncate text-[11px]">{u.full_name || u.email.split("@")[0]}</span>
-                                </button>
-                              );
-                            })
-                          )}
-                        </div>
                       )}
-                    </div>
+                    >
+                      <Building2 className={cn("h-3.5 w-3.5 shrink-0", isWsSelected ? "text-primary" : "text-primary/50")} />
+                      <div className="flex-1 min-w-0">
+                        <span className={cn("block truncate text-xs font-medium", isWsSelected ? "text-primary" : "text-foreground")}>
+                          {ws.company_name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {(ws.credits_balance ?? 0).toLocaleString()} credits
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/50 shrink-0">{wsUsers.length}</span>
+                    </button>
                   );
                 })
               )}
@@ -875,61 +825,21 @@ const Admin = () => {
             <div className="mt-3">
               {(() => {
                 const indUsers = users.filter((u) => !u.workspace_id);
-                const isExpanded = expandedWorkspaces.has(INDEPENDENT_USER_VALUE);
                 const isIndSel = selectedView.type === "independent";
                 return (
-                  <div>
-                    <div className={cn(
-                      "flex items-center rounded-md transition-colors",
+                  <button
+                    onClick={() => setSelectedView({ type: "independent" })}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors",
                       isIndSel ? "bg-primary/15" : "hover:bg-white/5"
-                    )}>
-                      <button
-                        onClick={() => toggleWorkspace(INDEPENDENT_USER_VALUE)}
-                        className="shrink-0 pl-2 pr-1 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {isExpanded
-                          ? <ChevronDown className="h-3 w-3" />
-                          : <ChevronRight className="h-3 w-3" />
-                        }
-                      </button>
-                      <button
-                        onClick={() => setSelectedView({ type: "independent" })}
-                        className="flex-1 flex items-center gap-2 pr-3 py-2 text-left min-w-0"
-                      >
-                        <FolderOpen className={cn("h-3.5 w-3.5 shrink-0", isIndSel ? "text-primary" : "text-muted-foreground/60")} />
-                        <span className={cn("flex-1 text-xs font-medium", isIndSel ? "text-primary" : "text-foreground")}>
-                          Independent
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/50 shrink-0">{indUsers.length}</span>
-                      </button>
-                    </div>
-                    {isExpanded && (
-                      <div className="ml-5 mb-0.5">
-                        {indUsers.length === 0 ? (
-                          <p className="pl-4 py-1 text-[11px] text-muted-foreground/30 italic">none</p>
-                        ) : (
-                          indUsers.map((u) => {
-                            const isUserSel = selectedView.type === "user" && selectedView.id === u.id;
-                            return (
-                              <button
-                                key={u.id}
-                                onClick={() => setSelectedView({ type: "user", id: u.id })}
-                                className={cn(
-                                  "w-full flex items-center gap-2 pl-3 pr-2 py-1 rounded-md text-left transition-colors",
-                                  isUserSel
-                                    ? "bg-primary/15 text-primary"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                                )}
-                              >
-                                <div className="h-1.5 w-1.5 rounded-full bg-current shrink-0 opacity-50" />
-                                <span className="truncate text-[11px]">{u.full_name || u.email.split("@")[0]}</span>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
                     )}
-                  </div>
+                  >
+                    <FolderOpen className={cn("h-3.5 w-3.5 shrink-0", isIndSel ? "text-primary" : "text-muted-foreground/60")} />
+                    <span className={cn("flex-1 text-xs font-medium", isIndSel ? "text-primary" : "text-foreground")}>
+                      Independent
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/50 shrink-0">{indUsers.length}</span>
+                  </button>
                 );
               })()}
             </div>
