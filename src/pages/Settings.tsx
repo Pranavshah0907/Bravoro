@@ -252,8 +252,8 @@ const Settings = () => {
               <div className="rounded-xl border border-border/40 bg-card/30 backdrop-blur-sm p-6 md:p-8 space-y-6">
                 {/* Avatar + name display */}
                 <div className="flex items-center gap-5">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
-                    <span className="text-xl font-bold text-white">
+                  <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
+                    <span className="text-xl font-bold text-primary-foreground">
                       {initials}
                     </span>
                   </div>

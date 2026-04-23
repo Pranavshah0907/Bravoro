@@ -112,7 +112,7 @@ export function UserAvatarMenu({ isExpanded, onSignOut, isAdmin = false, isDevel
         >
           {/* Initials circle */}
           <div
-            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold select-none"
+            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold select-none"
           >
             {initials}
           </div>
