@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { DevVersionBadge } from "@/components/DevVersionBadge";
 import { SupportChatWidget } from "@/components/SupportChatWidget";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { useThemeSync } from "@/hooks/useThemeSync";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,37 +26,45 @@ const DocsPage = lazy(() => import("./pages/DocsPage"));
 
 const queryClient = new QueryClient();
 
+function ThemeSyncMount() {
+  useThemeSync();
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <UpdateBanner />
-      {import.meta.env.DEV && <DevVersionBadge />}
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" /></div>}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Navigate to="/" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/dev-tools" element={<DevTools />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/analytics" element={<UsageAnalytics />} />
-            <Route path="/database" element={<UserDatabase />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/google-sheets-guide" element={<GoogleSheetsGuide />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/docs" element={<Navigate to="/docs/overview" replace />} />
-            <Route path="/docs/:sectionSlug" element={<DocsPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-      <SupportChatWidget />
-    </TooltipProvider>
+    <ThemeProvider>
+      <ThemeSyncMount />
+      <TooltipProvider>
+        <UpdateBanner />
+        {import.meta.env.DEV && <DevVersionBadge />}
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Navigate to="/" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/dev-tools" element={<DevTools />} />
+              <Route path="/results" element={<Results />} />
+              <Route path="/analytics" element={<UsageAnalytics />} />
+              <Route path="/database" element={<UserDatabase />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/google-sheets-guide" element={<GoogleSheetsGuide />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/docs" element={<Navigate to="/docs/overview" replace />} />
+              <Route path="/docs/:sectionSlug" element={<DocsPage />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+        <SupportChatWidget />
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
