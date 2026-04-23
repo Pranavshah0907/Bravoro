@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.crm-disconnect]
 verify_jwt = false
+
+[functions.crm-health-check]
+verify_jwt = false
