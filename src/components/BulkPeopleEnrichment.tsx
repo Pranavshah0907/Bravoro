@@ -478,7 +478,7 @@ export const BulkPeopleEnrichment = ({ userId, userEmail = "" }: BulkPeopleEnric
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-[#1e4040]/60 shadow-[0_12px_56px_rgba(0,0,0,0.6),0_0_0_1px_rgba(0,157,165,0.06)]">
+    <div className="dark rounded-2xl overflow-hidden border border-[#1e4040]/60 shadow-[0_12px_56px_rgba(0,0,0,0.6),0_0_0_1px_rgba(0,157,165,0.06)]">
 
       {/* ── SECTION 01: Input Method ──────────────────────────────────────── */}
       <div className="bg-[#0c1d1d] px-7 pt-8 pb-8 border-b border-[#1e4040]/55">

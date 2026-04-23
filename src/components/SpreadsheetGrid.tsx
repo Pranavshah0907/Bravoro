@@ -1268,7 +1268,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <>
+    <div className="dark">
       <style>{`
         .sg-input::placeholder { color: #b0c8c8; }
         .sg-input:focus::placeholder { color: #c5d8d8; }
@@ -1919,7 +1919,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 });
 

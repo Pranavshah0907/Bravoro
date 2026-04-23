@@ -91,7 +91,7 @@ function StatusBadge({
       label: "Stuck",
     },
     completed: {
-      className: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
+      className: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
       icon: <CheckCircle2 className="h-3 w-3 mr-1" />,
       label: "Completed",
     },
@@ -241,8 +241,8 @@ export function WorkspaceSearches({ userIds }: WorkspaceSearchesProps) {
     {
       key: "completed",
       label: "Completed",
-      className: "text-emerald-400/60 bg-emerald-400/5 border border-emerald-400/10",
-      activeClassName: "text-emerald-400 bg-emerald-400/15 border border-emerald-400/20",
+      className: "text-green-700/60 dark:text-green-400/60 bg-green-500/5 border border-green-500/10",
+      activeClassName: "text-green-700 dark:text-green-400 bg-green-500/15 border border-green-500/20",
     },
     {
       key: "error",
@@ -407,7 +407,7 @@ export function WorkspaceSearches({ userIds }: WorkspaceSearchesProps) {
                         <span
                           className={cn(
                             "font-medium tabular-nums",
-                            item.result_count > 0 ? "text-emerald-400" : "text-muted-foreground/50"
+                            item.result_count > 0 ? "text-green-700 dark:text-green-400" : "text-muted-foreground/50"
                           )}
                         >
                           {item.result_count}

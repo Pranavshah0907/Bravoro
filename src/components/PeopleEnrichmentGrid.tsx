@@ -1079,7 +1079,7 @@ export const PeopleEnrichmentGrid = forwardRef<PEGridHandle, PeopleEnrichmentGri
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <>
+    <div className="dark">
       <style>{`
         .sg-input::placeholder { color: #b0c8c8; }
         .sg-input:focus::placeholder { color: #c5d8d8; }
@@ -1630,7 +1630,7 @@ export const PeopleEnrichmentGrid = forwardRef<PEGridHandle, PeopleEnrichmentGri
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 });
 

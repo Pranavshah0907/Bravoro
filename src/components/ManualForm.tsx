@@ -660,7 +660,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const valid = isFormValid();
 
   return (
-    <>
+    <div className="dark">
       <style>{`
         @keyframes tagPop {
           0%   { transform: scale(0.65) translateY(4px); opacity: 0; }
@@ -1029,6 +1029,6 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         </div>
 
       </div>
-    </>
+    </div>
   );
 };

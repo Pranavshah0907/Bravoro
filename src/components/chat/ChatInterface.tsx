@@ -689,7 +689,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <div className="flex flex-col h-full overflow-hidden">
+      <div className="dark flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border/30 shrink-0 bg-card/30 backdrop-blur-sm">
           <div className="flex items-center gap-3">
@@ -716,7 +716,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                 className={cn(
                   "h-8 gap-1.5 text-xs font-medium border-border/50",
                   activeConv?.synced_search_id
-                    ? "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                    ? "text-primary border-primary/30 hover:bg-primary/10"
                     : "hover:bg-muted/50"
                 )}
               >
@@ -850,13 +850,13 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                 if (newCount === 0) return null;
                 return (
                 <div className="flex items-center gap-2 mb-2 px-1">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
                     <UserCheck className="h-3 w-3" />
                     <span>{newCount} contact{newCount > 1 ? "s" : ""} selected</span>
                     <button
                       type="button"
                       onClick={clearSelectedContacts}
-                      className="ml-1 p-0.5 rounded hover:bg-emerald-500/20 transition-colors"
+                      className="ml-1 p-0.5 rounded hover:bg-primary/20 transition-colors"
                       title="Clear selection"
                     >
                       <X className="h-3 w-3" />
@@ -867,7 +867,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
                       onClick={() => {
                         sendMessage(`Enrich these ${newCount} candidate${newCount > 1 ? "s" : ""}`);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-colors"
                     >
                       <ArrowUpFromLine className="h-3 w-3" />
                       Enrich Selected ({newCount})
