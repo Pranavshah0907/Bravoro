@@ -7,8 +7,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, Settings, Shield, Terminal, ChevronUp, BookOpen } from "lucide-react";
+import { LogOut, Settings, Shield, Terminal, ChevronUp, BookOpen, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface UserAvatarMenuProps {
   isExpanded: boolean;
@@ -138,24 +139,24 @@ export function UserAvatarMenu({ isExpanded, onSignOut, isAdmin = false, isDevel
         side="top"
         align="start"
         sideOffset={8}
-        className="w-64 rounded-xl border-sidebar-border/50 bg-[#1a3535] p-0 shadow-xl shadow-black/30"
+        className="w-64 rounded-xl border-border bg-popover p-0 shadow-xl shadow-foreground/10"
       >
         {/* User info section */}
         <div className="px-4 py-3">
-          <p className="text-sm font-medium text-sidebar-foreground truncate">
+          <p className="text-sm font-medium text-popover-foreground truncate">
             {displayName}
           </p>
-          <p className="text-xs text-sidebar-foreground/60 truncate mt-0.5">
+          <p className="text-xs text-muted-foreground truncate mt-0.5">
             {profile.email}
           </p>
           {profile.workspaceName && (
-            <p className="text-xs text-emerald-400/80 truncate mt-1">
+            <p className="text-xs text-primary truncate mt-1">
               {profile.workspaceName}
             </p>
           )}
         </div>
 
-        <Separator className="bg-sidebar-border/30" />
+        <Separator className="bg-border" />
 
         {/* Menu items */}
         <div className="p-1.5">
@@ -165,9 +166,9 @@ export function UserAvatarMenu({ isExpanded, onSignOut, isAdmin = false, isDevel
                 setOpen(false);
                 navigate("/admin");
               }}
-              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors duration-200 hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Shield className="h-4 w-4 text-sidebar-foreground/60" />
+              <Shield className="h-4 w-4 text-muted-foreground" />
               Admin
             </button>
           )}
@@ -177,9 +178,9 @@ export function UserAvatarMenu({ isExpanded, onSignOut, isAdmin = false, isDevel
                 setOpen(false);
                 navigate("/dev-tools");
               }}
-              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors duration-200 hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Terminal className="h-4 w-4 text-sidebar-foreground/60" />
+              <Terminal className="h-4 w-4 text-muted-foreground" />
               Dev Tools
             </button>
           )}
@@ -188,24 +189,29 @@ export function UserAvatarMenu({ isExpanded, onSignOut, isAdmin = false, isDevel
               setOpen(false);
               navigate("/docs");
             }}
-            className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+            className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors duration-200 hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <BookOpen className="h-4 w-4 text-sidebar-foreground/60" />
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
             Documentation
           </button>
+          <div className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-popover-foreground">
+            <Palette className="h-4 w-4 text-muted-foreground" />
+            <span>Theme</span>
+            <ThemeToggle className="ml-auto" />
+          </div>
           <button
             onClick={() => {
               setOpen(false);
               navigate("/settings");
             }}
-            className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors duration-200 hover:bg-sidebar-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+            className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors duration-200 hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Settings className="h-4 w-4 text-sidebar-foreground/60" />
+            <Settings className="h-4 w-4 text-muted-foreground" />
             Settings
           </button>
         </div>
 
-        <Separator className="bg-sidebar-border/30" />
+        <Separator className="bg-border" />
 
         <div className="p-1.5">
           <button
