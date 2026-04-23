@@ -32,18 +32,30 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { data: rows, error } = await supabase
-      .from('integrations')
-      .select('id, crm_type')
-      .eq('status', 'connected');
-    if (error) {
-      console.error('load integrations failed', error);
-      return json({ error: 'query failed' }, 500);
+    // Paginate — a single PostgREST request caps at 1000 rows, so tenants
+    // past that limit would be silently skipped without looping.
+    const PAGE_SIZE = 1000;
+    const integrations: Array<{ id: string; crm_type: string }> = [];
+    let page = 0;
+    while (true) {
+      const { data: pageRows, error } = await supabase
+        .from('integrations')
+        .select('id, crm_type')
+        .eq('status', 'connected')
+        .order('id', { ascending: true })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      if (error) {
+        console.error('load integrations failed', error);
+        return json({ error: 'query failed' }, 500);
+      }
+      if (!pageRows || pageRows.length === 0) break;
+      integrations.push(...pageRows);
+      if (pageRows.length < PAGE_SIZE) break;
+      page += 1;
     }
 
     let stillConnected = 0;
     let newlyError = 0;
-    const integrations = rows ?? [];
 
     for (let i = 0; i < integrations.length; i += BATCH_SIZE) {
       const batch = integrations.slice(i, i + BATCH_SIZE);
