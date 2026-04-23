@@ -50,13 +50,13 @@ const DocsPage = () => {
   const SectionComponent = section.component;
 
   return (
-    <div className="min-h-screen bg-[#06191a] flex">
+    <div className="dark min-h-screen bg-background flex">
       {/* Background effects (matching app pattern) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-[-20%] left-[30%] w-[60%] h-[60%] rounded-full opacity-[0.08]"
           style={{
-            background: "radial-gradient(ellipse, #009da5 0%, transparent 70%)",
+            background: "radial-gradient(ellipse, hsl(var(--primary)) 0%, transparent 70%)",
           }}
         />
       </div>
@@ -78,17 +78,17 @@ const DocsPage = () => {
         </div>
 
         {/* Mobile header */}
-        <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-[#06191a]/90 backdrop-blur-sm border-b border-[#1e4040]">
+        <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-background/90 backdrop-blur-sm border-b border-border">
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[#1a3535] transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-muted transition-colors"
           >
-            <Menu className="w-5 h-5 text-[#9ca3af]" />
+            <Menu className="w-5 h-5 text-muted-foreground" />
           </button>
-          <div className="text-[13px] text-[#9ca3af] truncate">
-            <span className="text-[#6b7280]">Docs</span>
-            <ChevronRight className="w-3 h-3 inline mx-1 text-[#6b7280]" />
-            <span className="text-[#d1d5db]">{section.title}</span>
+          <div className="text-[13px] text-muted-foreground truncate">
+            <span className="text-muted-foreground/70">Docs</span>
+            <ChevronRight className="w-3 h-3 inline mx-1 text-muted-foreground/70" />
+            <span className="text-foreground/80">{section.title}</span>
           </div>
         </div>
 
@@ -97,7 +97,7 @@ const DocsPage = () => {
           {/* Content area */}
           <div ref={contentRef} className="flex-1 min-w-0">
             {/* Breadcrumb — desktop only */}
-            <div className="hidden md:flex items-center gap-1 text-[12px] text-[#6b7280] mb-6">
+            <div className="hidden md:flex items-center gap-1 text-[12px] text-muted-foreground/70 mb-6">
               <span>Docs</span>
               <ChevronRight className="w-3 h-3" />
               {section.group && (
@@ -106,20 +106,20 @@ const DocsPage = () => {
                   <ChevronRight className="w-3 h-3" />
                 </>
               )}
-              <span className="text-[#9ca3af]">{section.title}</span>
+              <span className="text-muted-foreground">{section.title}</span>
             </div>
 
             {/* Title block */}
-            <h1 className="text-[22px] md:text-[26px] font-bold text-[#f3f4f6] tracking-tight mb-2">
+            <h1 className="text-[22px] md:text-[26px] font-bold text-foreground tracking-tight mb-2">
               {section.title}
             </h1>
-            <p className="text-[14px] text-[#9ca3af] mb-8 leading-relaxed">
+            <p className="text-[14px] text-muted-foreground mb-8 leading-relaxed">
               {section.subtitle}
             </p>
 
             {/* Section content */}
             <div className="docs-content prose-dark">
-              <Suspense fallback={<div className="animate-pulse h-40 bg-[#1a3535] rounded-lg" />}>
+              <Suspense fallback={<div className="animate-pulse h-40 bg-muted rounded-lg" />}>
                 <SectionComponent />
               </Suspense>
             </div>
@@ -136,7 +136,7 @@ const DocsPage = () => {
         <div className="max-w-[960px] mx-auto px-4 md:px-8 pb-10">
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-1 text-[12px] text-[#6b7280] hover:text-emerald-400 transition-colors"
+            className="inline-flex items-center gap-1 text-[12px] text-muted-foreground/70 hover:text-primary transition-colors"
           >
             ← Back to Dashboard
           </a>

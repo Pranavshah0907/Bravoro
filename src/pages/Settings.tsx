@@ -187,7 +187,7 @@ const Settings = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -312,7 +312,7 @@ const Settings = () => {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={savingProfile}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {savingProfile && (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -362,7 +362,7 @@ const Settings = () => {
                 <Button
                   onClick={handleUpdatePassword}
                   disabled={updatingPassword || !newPassword || !confirmPassword}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {updatingPassword && (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -377,8 +377,8 @@ const Settings = () => {
               <Card className="border-border/40 bg-gradient-to-br from-card to-card/80">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-lg bg-emerald-500/10">
-                      <CreditCard className="h-5 w-5 text-emerald-400" />
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <CreditCard className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">Workspace Credits</h3>

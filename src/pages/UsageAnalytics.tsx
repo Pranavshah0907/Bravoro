@@ -470,32 +470,32 @@ const UsageAnalytics = () => {
                     <div className="flex items-baseline gap-1.5">
                       <span className={cn(
                         "text-2xl font-bold tabular-nums leading-none",
-                        workspaceCredits.balance <= 0 ? "text-red-400" :
-                        workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-400" :
-                        "text-emerald-400"
+                        workspaceCredits.balance <= 0 ? "text-red-700 dark:text-red-400" :
+                        workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-700 dark:text-yellow-400" :
+                        "text-green-700 dark:text-green-400"
                       )}>
                         {workspaceCredits.balance.toLocaleString()}
                       </span>
                       <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-medium">credits</span>
                     </div>
                     {workspaceCredits.balance <= 0 && (
-                      <p className="text-xs text-red-400 mt-1">Searches are blocked. Contact your admin to top up.</p>
+                      <p className="text-xs text-red-700 dark:text-red-400 mt-1">Searches are blocked. Contact your admin to top up.</p>
                     )}
                     {workspaceCredits.balance > 0 && workspaceCredits.balance <= workspaceCredits.low_threshold && (
-                      <p className="text-xs text-yellow-400 mt-1">Low credits — consider requesting a top-up.</p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">Low credits — consider requesting a top-up.</p>
                     )}
                   </div>
                   <div className={cn(
                     "p-3 rounded-xl",
                     workspaceCredits.balance <= 0 ? "bg-red-500/10" :
                     workspaceCredits.balance <= workspaceCredits.low_threshold ? "bg-yellow-500/10" :
-                    "bg-emerald-500/10"
+                    "bg-green-500/10"
                   )}>
                     <Wallet className={cn(
                       "h-5 w-5",
-                      workspaceCredits.balance <= 0 ? "text-red-400" :
-                      workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-400" :
-                      "text-emerald-400"
+                      workspaceCredits.balance <= 0 ? "text-red-700 dark:text-red-400" :
+                      workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-700 dark:text-yellow-400" :
+                      "text-green-700 dark:text-green-400"
                     )} />
                   </div>
                 </div>

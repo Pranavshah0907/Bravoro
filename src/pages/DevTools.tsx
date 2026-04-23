@@ -715,11 +715,11 @@ const DevTools = () => {
             {/* Status filter chips (horizontal) */}
             <div className="flex items-center gap-2 flex-wrap">
               {([
-                { key: "all" as StatusFilter, label: "All", count: counts.total, color: "text-foreground", activeBg: "bg-white/10" },
-                { key: "processing" as StatusFilter, label: "Processing", count: counts.processing + counts.stuck, color: "text-orange-400", activeBg: "bg-orange-400/15" },
-                { key: "completed" as StatusFilter, label: "Completed", count: counts.completed, color: "text-emerald-400", activeBg: "bg-emerald-400/15" },
-                { key: "error" as StatusFilter, label: "Errored", count: counts.error, color: "text-red-400", activeBg: "bg-red-400/15" },
-                { key: "queued" as StatusFilter, label: "Queued", count: counts.queued, color: "text-sky-400", activeBg: "bg-sky-400/15" },
+                { key: "all" as StatusFilter, label: "All", count: counts.total, color: "text-foreground", activeBg: "bg-foreground/10" },
+                { key: "processing" as StatusFilter, label: "Processing", count: counts.processing + counts.stuck, color: "text-orange-700 dark:text-orange-400", activeBg: "bg-orange-500/15" },
+                { key: "completed" as StatusFilter, label: "Completed", count: counts.completed, color: "text-green-700 dark:text-green-400", activeBg: "bg-green-500/15" },
+                { key: "error" as StatusFilter, label: "Errored", count: counts.error, color: "text-red-700 dark:text-red-400", activeBg: "bg-red-500/15" },
+                { key: "queued" as StatusFilter, label: "Queued", count: counts.queued, color: "text-sky-700 dark:text-sky-400", activeBg: "bg-sky-500/15" },
               ]).map(({ key, label, count, color, activeBg }) => (
                 <button
                   key={key}
@@ -781,7 +781,7 @@ const DevTools = () => {
                   </div>
                   <button onClick={() => copyId(flagItem.search_id)} className="text-xs font-mono text-amber-300/80 hover:text-amber-300 transition-colors" title={flagItem.search_id}>
                     {flagItem.search_id.slice(0, 8)}...
-                    {copiedId === flagItem.search_id && <Check className="inline h-3 w-3 ml-1 text-emerald-400" />}
+                    {copiedId === flagItem.search_id && <Check className="inline h-3 w-3 ml-1 text-green-700 dark:text-green-400" />}
                   </button>
                   <span className="text-sm text-foreground">{flagItem.user_email}</span>
                   <span className="text-xs text-muted-foreground">{flagItem.type_label} / {flagItem.entry_method}</span>
@@ -821,7 +821,7 @@ const DevTools = () => {
                           <td className="px-3 md:px-4 py-3">
                             <button onClick={() => copyId(item.search_id)} className="group flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-primary transition-colors" title={item.search_id}>
                               {item.search_id.slice(0, 8)}
-                              {copiedId === item.search_id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                              {copiedId === item.search_id ? <Check className="h-3 w-3 text-green-700 dark:text-green-400" /> : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />}
                             </button>
                           </td>
                           <td className="px-3 md:px-4 py-3">
@@ -908,7 +908,7 @@ const DevTools = () => {
                                   >
                                     {item.search_id.slice(0, 8)}
                                     {copiedId === item.search_id
-                                      ? <Check className="h-3 w-3 text-emerald-400" />
+                                      ? <Check className="h-3 w-3 text-green-700 dark:text-green-400" />
                                       : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />}
                                   </button>
                                 </td>
@@ -934,7 +934,7 @@ const DevTools = () => {
 
                                 <td className="px-3 md:px-4 py-3">
                                   {item.result_count > 0 ? (
-                                    <span className="text-sm font-medium text-emerald-400">{item.result_count}</span>
+                                    <span className="text-sm font-medium text-green-700 dark:text-green-400">{item.result_count}</span>
                                   ) : (
                                     <span className="text-sm text-muted-foreground/50">0</span>
                                   )}
@@ -1086,7 +1086,7 @@ const StatusBadge = ({ status, item, onToggleError }: {
   const config = {
     processing: { bg: "bg-orange-400/10 text-orange-400 border-orange-400/20", icon: null, label: "Processing" },
     stuck: { bg: "bg-red-400/10 text-red-400 border-red-400/20", icon: <AlertTriangle className="h-3 w-3 mr-1" />, label: "Stuck" },
-    completed: { bg: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20", icon: <CheckCircle2 className="h-3 w-3 mr-1" />, label: "Completed" },
+    completed: { bg: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20", icon: <CheckCircle2 className="h-3 w-3 mr-1" />, label: "Completed" },
     error: { bg: "bg-red-400/10 text-red-400 border-red-400/20", icon: <XCircle className="h-3 w-3 mr-1" />, label: item.status === "cancelled" ? "Cancelled" : "Error" },
   };
   const c = config[status];
