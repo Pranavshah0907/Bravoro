@@ -494,6 +494,36 @@ export type Database = {
           },
         ]
       }
+      people_enrichment_drafts: {
+        Row: {
+          created_at: string | null
+          grid_data: Json
+          id: string
+          name: string
+          row_count: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -503,6 +533,7 @@ export type Database = {
           id: string
           last_name: string | null
           requires_password_reset: boolean | null
+          theme_preference: string
           updated_at: string | null
           workspace_id: string | null
         }
@@ -514,6 +545,7 @@ export type Database = {
           id: string
           last_name?: string | null
           requires_password_reset?: boolean | null
+          theme_preference?: string
           updated_at?: string | null
           workspace_id?: string | null
         }
@@ -525,6 +557,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           requires_password_reset?: boolean | null
+          theme_preference?: string
           updated_at?: string | null
           workspace_id?: string | null
         }
