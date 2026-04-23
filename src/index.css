@@ -98,74 +98,119 @@
     --sidebar-muted: 183 20% 8%;        /* #0d1818 */
   }
 
-  .light {
-    /* Bright Pearl Background */
-    --background: 210 33% 97%;
-    --foreground: 196 5% 25%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 196 5% 25%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 196 5% 25%;
-
-    /* Ocean Blue - Primary */
+  /* ── .dark mirrors :root so nested-dark wrappers (auth pages) work
+       even when the global theme is light ── */
+  .dark {
+    --background: 180 20% 4%;
+    --foreground: 180 22% 93%;
+    --card: 183 20% 6%;
+    --card-foreground: 180 22% 93%;
+    --popover: 183 18% 8%;
+    --popover-foreground: 180 22% 93%;
     --primary: 183 100% 32%;
     --primary-foreground: 0 0% 100%;
-
-    /* Blue Grass - Secondary */
     --secondary: 191 55% 34%;
     --secondary-foreground: 0 0% 100%;
-
-    /* Muted */
-    --muted: 176 40% 92%;
-    --muted-foreground: 180 2% 44%;
-
-    /* Cardinal Blue - Accent */
+    --muted: 183 18% 10%;
+    --muted-foreground: 176 30% 55%;
     --accent: 180 66% 61%;
-    --accent-foreground: 196 5% 25%;
-
-    /* Caretta Green */
+    --accent-foreground: 183 20% 6%;
     --caretta: 183 100% 21%;
     --caretta-foreground: 0 0% 100%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 176 25% 85%;
-    --input: 176 40% 92%;
-    --ring: 183 100% 32%;
-    
-    /* Light gradients */
+    --border: 183 30% 13%;
+    --input: 183 25% 11%;
+    --ring: 180 66% 61%;
     --gradient-primary: linear-gradient(135deg, hsl(183 100% 32%), hsl(180 66% 61%));
     --gradient-secondary: linear-gradient(135deg, hsl(191 55% 34%), hsl(183 100% 32%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(176 40% 97%));
-    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(180 66% 61% / 0.1), transparent 60%);
-    
-    /* Light shadows */
-    --shadow-soft: 0 4px 20px hsl(191 55% 34% / 0.08);
-    --shadow-medium: 0 8px 32px hsl(191 55% 34% / 0.12);
-    --shadow-strong: 0 16px 48px hsl(191 55% 34% / 0.16);
+    --gradient-card: linear-gradient(145deg, hsl(183 20% 6%), hsl(183 18% 8%));
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(180 66% 61% / 0.12), transparent 60%);
+    --shadow-soft: 0 4px 20px hsl(183 100% 10% / 0.5);
+    --shadow-medium: 0 8px 32px hsl(183 100% 10% / 0.6);
+    --shadow-strong: 0 16px 48px hsl(183 100% 10% / 0.7);
     --shadow-glow: 0 0 40px hsl(180 66% 61% / 0.2);
-    --shadow-card: 0 4px 24px hsl(191 55% 34% / 0.1);
+    --shadow-card: 0 4px 24px hsl(183 100% 3% / 0.8);
+    --chart-1: 183 100% 40%;
+    --chart-2: 280 65% 60%;
+    --chart-3: 45 90% 55%;
+    --chart-4: 340 70% 55%;
+    --chart-5: 145 60% 45%;
+    --sidebar-background: 183 22% 3%;
+    --sidebar-foreground: 180 22% 92%;
+    --sidebar-primary: 183 100% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 183 100% 21%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 183 30% 11%;
+    --sidebar-ring: 180 66% 61%;
+    --sidebar-muted: 183 20% 8%;
+  }
 
-    /* Chart colors light */
-    --chart-1: 183 100% 32%;
+  /* ── Warm Cream — paper-like surfaces, deep harmonious teal accents ── */
+  .light {
+    --background: 35 43% 97%;          /* #fbf8f3 — warm cream */
+    --foreground: 30 11% 9%;           /* #1a1714 — warm near-black */
+
+    --card: 0 0% 100%;                 /* pure white surfaces */
+    --card-foreground: 30 11% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 11% 9%;
+
+    /* Deep harmonious teal — Bravoro brand recoloured for cream */
+    --primary: 184 86% 16%;            /* #06464a */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 184 100% 27%;         /* #00868c */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 35 30% 94%;               /* #f1ebe0 — cream tone */
+    --muted-foreground: 35 14% 38%;    /* #6e6253 — warm gray */
+
+    --accent: 184 100% 27%;            /* #00868c — mid teal for cream contrast */
+    --accent-foreground: 0 0% 100%;
+
+    --caretta: 184 86% 16%;
+    --caretta-foreground: 0 0% 100%;
+
+    --destructive: 0 73% 51%;          /* #dc2626 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 36% 88%;              /* #ece4d4 — cream-tinted */
+    --input: 35 43% 97%;               /* matches background */
+    --ring: 184 86% 16%;
+
+    /* Gradients tuned for cream */
+    --gradient-primary: linear-gradient(135deg, hsl(184 86% 16%), hsl(184 100% 27%));
+    --gradient-secondary: linear-gradient(135deg, hsl(184 100% 27%), hsl(184 86% 16%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(35 38% 96%));
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(184 86% 16% / 0.06), transparent 60%);
+
+    /* Warm shadows — tinted with the cream's brown undertone */
+    --shadow-soft: 0 4px 20px hsl(35 30% 25% / 0.06);
+    --shadow-medium: 0 8px 32px hsl(35 30% 25% / 0.10);
+    --shadow-strong: 0 16px 48px hsl(35 30% 25% / 0.14);
+    --shadow-glow: 0 0 40px hsl(180 50% 50% / 0.15);
+    --shadow-card: 0 2px 8px hsl(35 30% 25% / 0.06);
+
+    /* Chart colours — content, kept perceptually similar across themes */
+    --chart-1: 184 86% 30%;
     --chart-2: 280 60% 50%;
     --chart-3: 40 85% 50%;
     --chart-4: 340 65% 50%;
     --chart-5: 145 55% 40%;
 
-    /* Sidebar light */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 196 5% 25%;
-    --sidebar-primary: 183 100% 32%;
+    /* Sidebar — slightly warmer than body, gives navigation its own surface */
+    --sidebar-background: 36 41% 93%;  /* #f5f1e8 */
+    --sidebar-foreground: 30 11% 9%;
+    --sidebar-primary: 184 86% 16%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 176 40% 94%;
-    --sidebar-accent-foreground: 196 5% 25%;
-    --sidebar-border: 176 25% 88%;
-    --sidebar-ring: 183 100% 32%;
-    --sidebar-muted: 176 40% 95%;
+    --sidebar-accent: 35 30% 88%;      /* #e9e0cd */
+    --sidebar-accent-foreground: 30 11% 9%;
+    --sidebar-border: 36 36% 86%;
+    --sidebar-ring: 184 86% 16%;
+    --sidebar-muted: 35 30% 92%;
   }
 }
 
