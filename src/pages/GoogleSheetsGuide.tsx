@@ -816,7 +816,7 @@ const GoogleSheetsGuide = () => {
   useAuthGuard();
 
   return (
-    <div className="min-h-screen bg-[#060f0f] text-white">
+    <div className="dark min-h-screen bg-[#060f0f] text-white">
       {/* Sticky header */}
       <header className="sticky top-0 z-50 border-b border-[#1e4040] bg-[#060f0f]/95 backdrop-blur">
         <div className="max-w-5xl mx-auto flex items-center h-14 px-5 gap-3">
