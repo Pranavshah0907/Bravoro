@@ -140,7 +140,7 @@ const ResetPassword = () => {
   // Loading state
   if (validating) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      <div className="dark min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
         
@@ -157,7 +157,7 @@ const ResetPassword = () => {
   // Invalid token state
   if (!tokenValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      <div className="dark min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
         
@@ -190,7 +190,7 @@ const ResetPassword = () => {
   // Reset complete state
   if (resetComplete) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      <div className="dark min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
         
@@ -222,7 +222,7 @@ const ResetPassword = () => {
 
   // Password reset form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+    <div className="dark min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl" style={{ animation: "float 6s ease-in-out infinite" }} />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl" style={{ animation: "float 8s ease-in-out infinite reverse" }} />
       

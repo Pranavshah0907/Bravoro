@@ -23,7 +23,8 @@ export const ForgotPasswordDialog = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    e.stopPropagation();
+
     if (!email.trim()) {
       toast({
         title: "Email Required",
@@ -84,7 +85,7 @@ export const ForgotPasswordDialog = () => {
           Forgot password?
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-card border-border/40">
+      <DialogContent className="dark sm:max-w-md bg-card border-border/40">
         <DialogHeader className="text-center space-y-4">
           <div className="mx-auto w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
             <KeyRound className="h-6 w-6 text-primary" />

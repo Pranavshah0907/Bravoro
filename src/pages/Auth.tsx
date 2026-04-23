@@ -103,7 +103,7 @@ const Auth = () => {
   };
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden" }}>
+    <div className="dark" style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden" }}>
 
       {/* Static background gradient — same colors as canvas drew */}
       <div style={{
