@@ -350,7 +350,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_conversations_user_chat_type
 
 ```bash
 curl -s -X POST "https://api.supabase.com/v1/projects/ggvhwxpaovfvoyvzixqw/database/query" \
-  -H "Authorization: Bearer sbp_4d707aa7db21dda95ee17e1552897e0a2dce2283" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"query": "ALTER TABLE ai_chat_conversations ADD COLUMN IF NOT EXISTS chat_type text NOT NULL DEFAULT '\''ai_staffing'\''; ALTER TABLE ai_chat_conversations ADD CONSTRAINT ai_chat_conversations_chat_type_check CHECK (chat_type IN ('\''ai_staffing'\'', '\''recruiting'\'')); CREATE INDEX IF NOT EXISTS idx_ai_chat_conversations_user_chat_type ON ai_chat_conversations (user_id, chat_type);"}'
 ```
@@ -359,7 +359,7 @@ curl -s -X POST "https://api.supabase.com/v1/projects/ggvhwxpaovfvoyvzixqw/datab
 
 ```bash
 curl -s -X POST "https://api.supabase.com/v1/projects/ggvhwxpaovfvoyvzixqw/database/query" \
-  -H "Authorization: Bearer sbp_4d707aa7db21dda95ee17e1552897e0a2dce2283" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"query": "SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name = '\''ai_chat_conversations'\'' AND column_name = '\''chat_type'\''"}'
 ```
@@ -369,7 +369,7 @@ Expected: `chat_type`, `text`, `'ai_staffing'::text`
 - [ ] **Step 4: Regenerate Supabase types**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_4d707aa7db21dda95ee17e1552897e0a2dce2283 \
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN \
   /c/Users/prana/scoop/shims/supabase.exe gen types typescript \
   --project-id ggvhwxpaovfvoyvzixqw > src/integrations/supabase/types.ts
 ```

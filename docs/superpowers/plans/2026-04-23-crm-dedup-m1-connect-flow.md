@@ -22,7 +22,7 @@ This feature will live on a new branch `feat/crm-dedup-m1`. Do not merge M1 into
 
 Run:
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT extname FROM pg_extension WHERE extname = 'supabase_vault';"
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT extname FROM pg_extension WHERE extname = 'supabase_vault';"
 ```
 Expected: returns one row with `supabase_vault`. If empty, either run `CREATE EXTENSION supabase_vault CASCADE;` via dashboard SQL editor, or confirm the extension is available and the migration in Task 1 will handle it.
 
@@ -293,14 +293,14 @@ GRANT EXECUTE ON FUNCTION public.refresh_crm_metadata(uuid, jsonb, jsonb, jsonb)
 - [ ] **Step 2: Apply the migration against the linked Supabase project**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe db push --linked
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe db push --linked
 ```
 Expected: output ends with "Finished supabase db push" with no errors. If any error references a missing `update_updated_at_column` or `workspaces` table, stop and report — base schema is not as expected.
 
 - [ ] **Step 3: Smoke-test Vault via the RPC pair**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT public.encrypt_integration_token('00000000-0000-0000-0000-000000000001'::uuid, 'test-token-plaintext');"
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT public.encrypt_integration_token('00000000-0000-0000-0000-000000000001'::uuid, 'test-token-plaintext');"
 ```
 This will fail with a foreign-key error because integration id doesn't exist — and that's the point. We expect the failure signature `violates foreign key constraint "integration_secrets_integration_id_fkey"`. Any other error (e.g., "function vault.create_secret does not exist") means Vault isn't wired up correctly.
 
@@ -325,7 +325,7 @@ token encryption/decryption, cascade-delete, and atomic connect/refresh."
 - [ ] **Step 1: Regenerate types**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe gen types typescript --linked > src/integrations/supabase/types.ts
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe gen types typescript --linked > src/integrations/supabase/types.ts
 ```
 
 - [ ] **Step 2: Verify the file contains the new tables**
@@ -864,7 +864,7 @@ serve(async (req) => {
 - [ ] **Step 2: Deploy the function**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-test-connection --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-test-connection --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
 ```
 Expected: "Deployed Functions on project..." with no errors.
 
@@ -881,7 +881,7 @@ Expected: `{"ok":true,"integrationId":"<uuid>","accountDisplayName":"<name> (<do
 
 Verify via SQL:
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT id, crm_type, status, account_display_name, jsonb_pretty(custom_field_mappings) FROM public.integrations;"
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT id, crm_type, status, account_display_name, jsonb_pretty(custom_field_mappings) FROM public.integrations;"
 ```
 Expected: one row, `status='connected'`, populated `custom_field_mappings` JSON.
 
@@ -1040,7 +1040,7 @@ serve(async (req) => {
 - [ ] **Step 2: Deploy**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-refresh-metadata --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-refresh-metadata --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
 ```
 
 - [ ] **Step 3: Manual test**
@@ -1166,7 +1166,7 @@ serve(async (req) => {
 - [ ] **Step 2: Deploy**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-disconnect --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-disconnect --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
 ```
 
 - [ ] **Step 3: Manual test — successful disconnect**
@@ -1181,7 +1181,7 @@ Expected: `{"ok":true}`.
 
 Verify row AND Vault secret are gone:
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT count(*) FROM public.integrations; SELECT count(*) FROM vault.secrets WHERE name LIKE 'integration_%';"
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe db query --linked "SELECT count(*) FROM public.integrations; SELECT count(*) FROM vault.secrets WHERE name LIKE 'integration_%';"
 ```
 Expected: both counts = 0.
 
@@ -1211,7 +1211,7 @@ openssl rand -hex 32
 ```
 Copy the output. Store it as edge function secret:
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe secrets set CRM_HEALTH_CHECK_SECRET=<HEX_STRING> --project-ref ggvhwxpaovfvoyvzixqw
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe secrets set CRM_HEALTH_CHECK_SECRET=<HEX_STRING> --project-ref ggvhwxpaovfvoyvzixqw
 ```
 Save the same value locally (in a note) — we'll paste it into n8n in Task 19.
 
@@ -1312,7 +1312,7 @@ serve(async (req) => {
 - [ ] **Step 3: Deploy**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-health-check --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe functions deploy crm-health-check --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
 ```
 
 - [ ] **Step 4: Manual test — first create a connection, then trigger the cron**
@@ -2204,7 +2204,7 @@ Scenarios in summary (full details in spec §9):
 - [ ] **Step 2: Grep for token leaks**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe functions logs crm-test-connection --project-ref ggvhwxpaovfvoyvzixqw | grep -iE "token|api_token"
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe functions logs crm-test-connection --project-ref ggvhwxpaovfvoyvzixqw | grep -iE "token|api_token"
 ```
 Expected: no hits (the word "token" may appear in error messages; verify none contain actual token values). Repeat for each new edge function.
 
