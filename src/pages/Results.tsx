@@ -238,18 +238,18 @@ const CompanyJobsPanel = ({ contacts }: { contacts: Contact[] }) => {
   if (uniqueJobs.length === 0) return null;
 
   return (
-    <div className="mb-3 rounded-lg border border-[#173030] bg-[#06191a] overflow-hidden">
+    <div className="mb-3 rounded-lg border border-border bg-muted/40 overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-white/[0.03] transition-colors group"
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-muted/60 transition-colors group"
       >
         <div className="flex items-center gap-2">
-          <Briefcase className="h-3.5 w-3.5 text-emerald-400/70" />
-          <span className="text-[11px] font-semibold tracking-widest uppercase text-emerald-300/80">
+          <Briefcase className="h-3.5 w-3.5 text-primary/70" />
+          <span className="text-[11px] font-semibold tracking-widest uppercase text-primary/80">
             Active Job Openings
           </span>
-          <span className="text-[10px] font-semibold bg-emerald-400/12 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-400/20">
+          <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full border border-primary/20">
             {uniqueJobs.length}
           </span>
         </div>
@@ -266,18 +266,18 @@ const CompanyJobsPanel = ({ contacts }: { contacts: Contact[] }) => {
           {uniqueJobs.map((job, idx) => (
             <div
               key={idx}
-              className="rounded-md border border-[#173030] bg-[#081f1f] p-3 hover:border-emerald-900/50 transition-colors"
+              className="rounded-md border border-border bg-card p-3 hover:border-primary/30 transition-colors"
             >
               {/* Title + open link */}
               <div className="flex items-start justify-between gap-2 mb-2">
-                <p className="text-xs font-semibold text-[#d0f5ee] leading-snug line-clamp-2 flex-1">
+                <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2 flex-1">
                   {job.job_title}
                 </p>
                 <a
                   href={job.job_link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 text-emerald-500/50 hover:text-emerald-300 transition-colors mt-0.5"
+                  className="shrink-0 text-primary/50 hover:text-primary transition-colors mt-0.5"
                   title="View job posting"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -304,25 +304,25 @@ const CompanyJobsPanel = ({ contacts }: { contacts: Contact[] }) => {
               {/* Hiring manager — only if present */}
               {job.hiring_team_name && (
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
-                  <span className="text-emerald-400/40">Hiring:</span>
+                  <span className="text-primary/40">Hiring:</span>
                   {job.hiring_team_linkedin ? (
                     <a
                       href={job.hiring_team_linkedin}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-emerald-400/80 hover:text-emerald-300 transition-colors underline underline-offset-2 decoration-emerald-400/30"
+                      className="text-primary/80 hover:text-primary transition-colors underline underline-offset-2 decoration-primary/30"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {job.hiring_team_name}
                     </a>
                   ) : (
-                    <span className="text-emerald-400/80">{job.hiring_team_name}</span>
+                    <span className="text-primary/80">{job.hiring_team_name}</span>
                   )}
                   {job.hiring_team_role && (
                     <span className="text-muted-foreground/40">· {job.hiring_team_role}</span>
                   )}
                   {job.recruiter_phone_number && (
-                    <span className="text-emerald-400/60">· {job.recruiter_phone_number}</span>
+                    <span className="text-primary/60">· {job.recruiter_phone_number}</span>
                   )}
                 </div>
               )}
@@ -927,7 +927,7 @@ const Results = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => handleExportAdminPDF(search.id)}
-                    className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                    className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
                     title="Usage Analytics Report"
                   >
                     <FileText className="h-4 w-4 mr-2" />
@@ -999,7 +999,7 @@ const Results = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleExportAdminPDF(search.id)}
-                  className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
                   title="Usage Analytics Report"
                 >
                   <FileText className="h-4 w-4 mr-2" />
@@ -1161,7 +1161,7 @@ const Results = () => {
                 size="sm"
                 variant="outline"
                 onClick={() => handleExportAdminPDF(search.id)}
-                className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
                 title="Usage Analytics Report"
               >
                 <FileText className="h-4 w-4 mr-2" />
@@ -1677,8 +1677,8 @@ const Results = () => {
                                 "font-medium",
                                 search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" :
                                 search.search_type === "bulk_people_enrichment" ? "border-accent text-accent" :
-                                search.search_type === "ai_chat" && search.domain === "recruiting" ? "border-cyan-500/40 text-cyan-400" :
-                                search.search_type === "ai_chat" ? "border-emerald-500/40 text-emerald-400" :
+                                search.search_type === "ai_chat" && search.domain === "recruiting" ? "border-cyan-500/40 text-cyan-700 dark:text-cyan-400" :
+                                search.search_type === "ai_chat" ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-400" :
                                 "bg-muted text-muted-foreground"
                               )}
                             >
