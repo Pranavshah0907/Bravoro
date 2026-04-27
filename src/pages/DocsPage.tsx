@@ -6,7 +6,7 @@ import { DOC_SECTIONS, getSectionBySlug, getAdjacentSections } from "@/data/docs
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { DocsRightRail } from "@/components/docs/DocsRightRail";
 import { DocsNavFooter } from "@/components/docs/DocsNavFooter";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { BravoroWordmark } from "@/components/BravoroWordmark";
 
 function useAuthGuard() {
   const nav = useNavigate();
@@ -50,7 +50,7 @@ const DocsPage = () => {
   const SectionComponent = section.component;
 
   return (
-    <div className="dark min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex">
       {/* Background effects (matching app pattern) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
@@ -74,7 +74,7 @@ const DocsPage = () => {
       <div className="flex-1 min-w-0 relative z-10">
         {/* Fixed logo top-right */}
         <div className="fixed top-6 right-6 md:top-8 md:right-8 z-40 pointer-events-none">
-          <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
+          <BravoroWordmark className="h-6 md:h-7 w-auto text-foreground" />
         </div>
 
         {/* Mobile header */}

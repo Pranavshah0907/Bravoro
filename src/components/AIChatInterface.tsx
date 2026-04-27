@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import bravoroIcon from "@/assets/Logo_icon_final.png";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { BravoroWordmark } from "@/components/BravoroWordmark";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { parseN8nResponse } from "./ai-chat/parseMessage";
@@ -512,7 +512,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
     }
 
     return (
-      <div className="dark flex flex-col h-full overflow-hidden">
+      <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 md:gap-3 px-3 md:px-5 py-3 md:py-4 border-b border-border/30 shrink-0 bg-card/30 backdrop-blur-sm">
           <div className="flex items-center gap-3">
@@ -553,7 +553,7 @@ export const AIChatInterface = forwardRef<AIChatHandle, AIChatInterfaceProps>(
                 <span className="hidden md:inline">{syncing ? "Syncing..." : activeConv?.synced_search_id ? "Synced" : "Sync to Results"}</span>
               </Button>
             )}
-            <img src={bravoroLogo} alt="Bravoro" className="h-5 w-auto shrink-0 self-center opacity-80" />
+            <BravoroWordmark className="h-5 w-auto shrink-0 self-center opacity-80 text-foreground" />
           </div>
         </div>
 

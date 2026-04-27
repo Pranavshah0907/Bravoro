@@ -21,7 +21,7 @@ import {
   XCircle, ArrowUpDown, ChevronUp, ChevronDown, Lock,
   MoreHorizontal, Download, FileText,
 } from "lucide-react";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { BravoroWordmark } from "@/components/BravoroWordmark";
 import { differenceInHours, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
@@ -675,11 +675,11 @@ const DevTools = () => {
       <div className="flex-1 ml-0 md:ml-16 flex flex-col h-screen overflow-hidden pt-14 pb-20 md:pt-0 md:pb-0">
 
         {/* Header */}
-        <header className="shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 px-4 md:px-8 py-3 md:py-4 border-b border-border/30" style={{ background: "#060f10" }}>
+        <header className="shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 px-4 md:px-8 py-3 md:py-4 border-b border-border/40 bg-card/40 backdrop-blur">
           <div className="flex items-center gap-3">
             <Terminal className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold text-foreground tracking-tight">Developer Tools</span>
-            <img src={bravoroLogo} alt="Bravoro" className="ml-2 h-4 w-auto opacity-30 hidden md:block" />
+            <BravoroWordmark className="ml-2 h-4 w-auto opacity-30 hidden md:block text-foreground" />
           </div>
 
           <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
@@ -734,7 +734,7 @@ const DevTools = () => {
                   {label}
                   <span className={cn(
                     "text-xs font-bold tabular-nums px-1.5 py-0.5 rounded-md",
-                    statusFilter === key ? "bg-white/10" : "bg-white/5"
+                    statusFilter === key ? "bg-foreground/10" : "bg-foreground/5"
                   )}>
                     {count}
                   </span>
@@ -803,7 +803,7 @@ const DevTools = () => {
                 <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
                   Queue ({filteredQueued.length})
                 </h2>
-                <div className="rounded-xl border border-border/30 overflow-x-auto" style={{ background: "#0c1d1d" }}>
+                <div className="rounded-xl border border-border/30 overflow-x-auto" style={{ background: "hsl(var(--card))" }}>
                   <table className="w-full min-w-[600px]">
                     <thead>
                       <tr className="border-b border-border/30">
@@ -816,7 +816,7 @@ const DevTools = () => {
                     </thead>
                     <tbody>
                       {filteredQueued.map((item, idx) => (
-                        <tr key={item.id} className={cn("hover:bg-white/[0.02] transition-colors", idx > 0 && "border-t border-border/10")}>
+                        <tr key={item.id} className={cn("hover:bg-foreground/[0.04] transition-colors", idx > 0 && "border-t border-border/10")}>
                           <td className="px-3 md:px-4 py-3 text-xs font-mono text-muted-foreground">#{idx + 1}</td>
                           <td className="px-3 md:px-4 py-3">
                             <button onClick={() => copyId(item.search_id)} className="group flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-primary transition-colors" title={item.search_id}>
@@ -860,7 +860,7 @@ const DevTools = () => {
                 </h2>
 
                 {filteredSearches.length > 0 ? (
-                  <div className="rounded-xl border border-border/30 overflow-x-auto" style={{ background: "#0c1d1d" }}>
+                  <div className="rounded-xl border border-border/30 overflow-x-auto" style={{ background: "hsl(var(--card))" }}>
                     <table className="w-full min-w-[700px]">
                       <thead>
                         <tr className="border-b border-border/30">
@@ -893,7 +893,7 @@ const DevTools = () => {
                               <tr
                                 key={item.search_id}
                                 className={cn(
-                                  "hover:bg-white/[0.02] transition-colors",
+                                  "hover:bg-foreground/[0.04] transition-colors",
                                   idx > 0 && "border-t border-border/10",
                                   item.is_flag_locked && "bg-amber-500/[0.03]"
                                 )}
@@ -953,13 +953,13 @@ const DevTools = () => {
                                 <td className="px-3 md:px-4 py-3">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                      <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+                                      <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors">
                                         {exporting === item.search_id
                                           ? <Loader2 className="h-4 w-4 animate-spin" />
                                           : <MoreHorizontal className="h-4 w-4" />}
                                       </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-48" style={{ background: "#0c1d1d", border: "1px solid rgba(255,255,255,0.1)" }}>
+                                    <DropdownMenuContent align="end" className="w-48" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
                                       <DropdownMenuItem
                                         onClick={() => handleExportExcel(item)}
                                         className="text-xs gap-2 cursor-pointer"
@@ -1005,7 +1005,7 @@ const DevTools = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-border/30 px-6 py-8 flex items-center justify-center gap-3 text-muted-foreground" style={{ background: "#0c1d1d" }}>
+                  <div className="rounded-xl border border-border/30 px-6 py-8 flex items-center justify-center gap-3 text-muted-foreground" style={{ background: "hsl(var(--card))" }}>
                     <Inbox className="h-5 w-5" />
                     <span className="text-sm">
                       {searches.length > 0 ? "No searches match current filters" : "No searches found"}
@@ -1021,7 +1021,7 @@ const DevTools = () => {
 
       {/* ── Stop dialog ───────────────────────────────────────────────────────── */}
       <Dialog open={!!stopTarget} onOpenChange={(open) => { if (!open && !stopping) { setStopTarget(null); setStopNote(""); } }}>
-        <DialogContent className="max-w-md" style={{ background: "#0c1d1d", border: "1px solid rgba(255,255,255,0.07)" }}>
+        <DialogContent className="max-w-md" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
           <DialogHeader>
             <DialogTitle className="text-foreground text-base">Stop this search?</DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
@@ -1053,7 +1053,7 @@ const DevTools = () => {
 
       {/* ── Delete dialog ─────────────────────────────────────────────────────── */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open && !deleting) setDeleteTarget(null); }}>
-        <DialogContent className="max-w-md" style={{ background: "#0c1d1d", border: "1px solid rgba(255,255,255,0.07)" }}>
+        <DialogContent className="max-w-md" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
           <DialogHeader>
             <DialogTitle className="text-foreground text-base">Remove from queue?</DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm leading-relaxed">

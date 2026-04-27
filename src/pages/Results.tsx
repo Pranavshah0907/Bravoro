@@ -85,7 +85,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { BravoroWordmark } from "@/components/BravoroWordmark";
 import { exportEnrichmentPdf } from "@/lib/exportPdf";
 import { CompanyBrowserDialog } from "@/components/CompanyBrowserDialog";
 
@@ -1481,9 +1481,9 @@ const Results = () => {
                 </h1>
                 <p className="text-muted-foreground mt-1">Track your enrichment requests and download results</p>
               </div>
-              <img src={bravoroLogo} alt="Bravoro" className="h-6 w-auto hidden md:block lg:hidden" />
+              <BravoroWordmark className="h-6 w-auto hidden md:block lg:hidden text-foreground" />
             </div>
-            <img src={bravoroLogo} alt="Bravoro" className="h-6 w-auto hidden lg:block" />
+            <BravoroWordmark className="h-6 w-auto hidden lg:block text-foreground" />
             
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2 animate-fade-in">

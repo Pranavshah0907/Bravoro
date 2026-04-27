@@ -26,7 +26,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { DesktopRecommendedBanner } from "@/components/DesktopRecommendedBanner";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { BravoroWordmark } from "@/components/BravoroWordmark";
 import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, endOfDay, startOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -739,15 +739,15 @@ const Admin = () => {
 
         {/* ────────────────── LEFT TREE PANE ────────────────── */}
         <aside
-          className="flex-shrink-0 flex flex-col border-r border-border/20 overflow-hidden"
-          style={{ width: 256, background: "#060f10" }}
+          className="flex-shrink-0 flex flex-col border-r border-border bg-sidebar-background overflow-hidden"
+          style={{ width: 256 }}
         >
           {/* Pane header */}
           <div className="px-4 pt-5 pb-4 border-b border-border/15 shrink-0">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-4 w-4 text-primary shrink-0" />
               <span className="text-sm font-bold text-foreground tracking-tight">Admin</span>
-              <img src={bravoroLogo} alt="Bravoro" className="ml-auto h-4 w-auto opacity-40" />
+              <BravoroWordmark className="ml-auto h-4 w-auto opacity-40 text-foreground" />
             </div>
             <div className="flex gap-2">
               <Button
@@ -778,7 +778,7 @@ const Admin = () => {
                 "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors",
                 selectedView.type === "overview"
                   ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
               )}
             >
               <BarChart3 className="h-3.5 w-3.5 shrink-0" />
@@ -802,7 +802,7 @@ const Admin = () => {
                       onClick={() => setSelectedView({ type: "workspace", id: ws.id })}
                       className={cn(
                         "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors",
-                        isWsSelected ? "bg-primary/15" : "hover:bg-white/5"
+                        isWsSelected ? "bg-primary/15" : "hover:bg-foreground/5"
                       )}
                     >
                       <Building2 className={cn("h-3.5 w-3.5 shrink-0", isWsSelected ? "text-primary" : "text-primary/50")} />
@@ -831,7 +831,7 @@ const Admin = () => {
                     onClick={() => setSelectedView({ type: "independent" })}
                     className={cn(
                       "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left transition-colors",
-                      isIndSel ? "bg-primary/15" : "hover:bg-white/5"
+                      isIndSel ? "bg-primary/15" : "hover:bg-foreground/5"
                     )}
                   >
                     <FolderOpen className={cn("h-3.5 w-3.5 shrink-0", isIndSel ? "text-primary" : "text-muted-foreground/60")} />
@@ -853,7 +853,7 @@ const Admin = () => {
                 "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors",
                 selectedView.type === "analytics"
                   ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
               )}
             >
               <Activity className="h-3.5 w-3.5 shrink-0" />
@@ -865,7 +865,7 @@ const Admin = () => {
                 "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors",
                 selectedView.type === "master-database"
                   ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
               )}
             >
               <Database className="h-3.5 w-3.5 shrink-0" />

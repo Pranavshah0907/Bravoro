@@ -18,7 +18,7 @@ import { EnrichmentCard } from "@/components/EnrichmentCard";
 import { DesktopRecommendedBanner } from "@/components/DesktopRecommendedBanner";
 import { Search, Upload, Users, Bot, UserSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { BravoroWordmark } from "@/components/BravoroWordmark";
 
 type EnrichmentType = "manual" | "bulk" | "people_enrichment" | "ai_staffing" | "recruiting_chat" | null;
 
@@ -278,15 +278,15 @@ const Dashboard = () => {
           "ml-0 md:ml-16",
           isSidebarPinned && "md:ml-56"
         )}>
-          {/* Top-center teal corona */}
-          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-30" style={{
-            background: "radial-gradient(ellipse, hsl(var(--primary)) 0%, transparent 65%)",
+          {/* Top-center teal corona — uses accent (cyan in dark, mid-teal in light) at theme-aware intensity */}
+          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full" style={{
+            background: "radial-gradient(ellipse, hsl(var(--accent) / var(--glow-strength, 0.30)) 0%, transparent 65%)",
             filter: "blur(60px)",
             animation: "float 22s ease-in-out infinite",
           }} />
           {/* Bottom-right secondary glow */}
-          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full opacity-15" style={{
-            background: "radial-gradient(circle, hsl(var(--accent)) 0%, transparent 65%)",
+          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{
+            background: "radial-gradient(circle, hsl(var(--accent) / var(--glow-strength-soft, 0.15)) 0%, transparent 65%)",
             filter: "blur(80px)",
             animation: "float 18s ease-in-out infinite reverse",
           }} />
@@ -297,7 +297,7 @@ const Dashboard = () => {
           {/* Logo in top right — hidden when AI staffing active (shown in chat header instead) */}
           {selectedType !== "ai_staffing" && selectedType !== "recruiting_chat" && (
             <div className="fixed top-6 right-6 md:top-8 md:right-8 z-40 pointer-events-none">
-              <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
+              <BravoroWordmark className="h-6 md:h-7 w-auto text-foreground" />
             </div>
           )}
 
@@ -329,12 +329,7 @@ const Dashboard = () => {
                 <p className="text-xs font-bold tracking-[0.2em] uppercase text-primary mb-4 opacity-80">
                   Lead Enrichment Platform
                 </p>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-none tracking-tight" style={{
-                  background: "linear-gradient(135deg, hsl(var(--foreground)) 30%, hsl(var(--accent)) 75%, hsl(var(--primary)) 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}>
+                <h1 className="hero-gradient text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-none tracking-tight">
                   Welcome back
                 </h1>
                 <p className="text-base lg:text-lg text-muted-foreground max-w-lg mx-auto font-medium">

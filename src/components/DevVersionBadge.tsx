@@ -24,10 +24,10 @@ export function DevVersionBadge() {
     diff === null ? "unknown" : diff === 0 ? "synced" : diff > 0 ? "ahead" : "behind";
 
   const colors = {
-    synced:  { bg: "rgba(0,157,165,0.15)", border: "rgba(0,157,165,0.4)", dot: "#00d4de" },
-    ahead:   { bg: "rgba(234,179,8,0.12)", border: "rgba(234,179,8,0.4)",  dot: "#eab308" },
-    behind:  { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.4)",  dot: "#ef4444" },
-    unknown: { bg: "rgba(100,100,100,0.12)", border: "rgba(100,100,100,0.3)", dot: "#666" },
+    synced:  { bg: "hsl(var(--accent) / 0.10)",  border: "hsl(var(--accent) / 0.32)",  dot: "hsl(var(--accent))" },
+    ahead:   { bg: "rgba(234,179,8,0.10)",       border: "rgba(234,179,8,0.32)",       dot: "#eab308" },
+    behind:  { bg: "rgba(239,68,68,0.10)",       border: "rgba(239,68,68,0.32)",       dot: "#ef4444" },
+    unknown: { bg: "hsl(var(--muted) / 0.6)",    border: "hsl(var(--border))",         dot: "hsl(var(--muted-foreground))" },
   }[status];
 
   return (
@@ -43,7 +43,7 @@ export function DevVersionBadge() {
         padding: "5px 10px",
         fontSize: 11,
         fontFamily: "monospace",
-        color: "#ccc",
+        color: "hsl(var(--muted-foreground))",
         display: "flex",
         alignItems: "center",
         gap: 8,
@@ -53,8 +53,8 @@ export function DevVersionBadge() {
     >
       <span style={{ color: colors.dot, fontSize: 8 }}>●</span>
       <span>
-        <span style={{ color: "#fff", fontWeight: 600 }}>Local v{localVersion}</span>
-        <span style={{ color: "#555", margin: "0 5px" }}>|</span>
+        <span style={{ color: "hsl(var(--foreground))", fontWeight: 600 }}>Local v{localVersion}</span>
+        <span style={{ color: "hsl(var(--muted-foreground) / 0.6)", margin: "0 5px" }}>|</span>
         <span>
           Live{" "}
           {fetching

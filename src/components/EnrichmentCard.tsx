@@ -68,16 +68,27 @@ export const EnrichmentCard = ({
       spotlightColor="rgba(88, 221, 221, 0.09)"
       className={cn(
         "group h-56 w-full rounded-2xl cursor-pointer",
-        "bg-gradient-to-br", gradient,
+        // Surface: in dark we keep the tinted gradient; in light we use a clean white card
+        // and let the gradient act as a top-bleed accent only.
+        "bg-card dark:bg-gradient-to-br",
+        // Gradient classes only render meaningfully on dark thanks to the modifier above
+        gradient,
         "border backdrop-blur-sm",
-        "transition-all duration-500 ease-out",
-        "hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/15",
+        "shadow-sm dark:shadow-none",
+        "transition-[transform,box-shadow,border-color] duration-500 ease-out",
+        "hover:scale-[1.02] hover:shadow-xl hover:shadow-accent/15",
         isSelected
           ? "border-primary/50 shadow-lg shadow-primary/15"
-          : "border-border/40 hover:border-primary/40"
+          : "border-border hover:border-accent/50"
       )}
       onClick={onClick}
     >
+      {/* Light-mode top-bleed accent — keeps the dark-mode gradient feel without flooding the card */}
+      <div
+        aria-hidden
+        className="dark:hidden absolute top-0 left-0 right-0 h-20 rounded-t-2xl bg-gradient-to-br pointer-events-none opacity-40"
+        style={{ backgroundImage: `linear-gradient(to bottom right, hsl(var(--accent) / 0.18), hsl(var(--primary) / 0.10), transparent)` }}
+      />
       {/* Top accent line */}
       <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 

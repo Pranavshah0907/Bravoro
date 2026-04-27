@@ -36,20 +36,20 @@ function useInView(threshold = 0.2) {
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 const ColBadge = ({ col, active }: { col: string; active?: boolean }) => (
   <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-bold border transition-colors
-    ${active ? "bg-[#009da5]/30 border-[#009da5] text-[#58dddd]" : "bg-[#0e2a2a] border-[#1e4040] text-[#58dddd]"}`}>
+    ${active ? "bg-accent/30 border-accent text-accent" : "bg-card border-border text-accent"}`}>
     {col}
   </span>
 );
 
 const StepBadge = ({ n }: { n: number }) => (
-  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#009da5]/15 border border-[#009da5]/40 flex items-center justify-center text-[13px] font-bold text-[#58dddd]">
+  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/15 border border-accent/40 flex items-center justify-center text-[13px] font-bold text-accent">
     {n}
   </div>
 );
 
 const Tip = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex gap-3 p-3 rounded-lg border border-[#009da5]/25 bg-[#009da5]/5 text-[13px] text-[#3d9090]">
-    <Lightbulb className="w-4 h-4 text-[#58dddd] shrink-0 mt-0.5" />
+  <div className="flex gap-3 p-3 rounded-lg border border-accent/25 bg-accent/5 text-[13px] text-muted-foreground">
+    <Lightbulb className="w-4 h-4 text-accent shrink-0 mt-0.5" />
     <span>{children}</span>
   </div>
 );
@@ -63,10 +63,10 @@ const Warn = ({ children }: { children: React.ReactNode }) => (
 
 const SectionHeading = ({ id, icon: Icon, label }: { id: string; icon: React.ElementType; label: string }) => (
   <div id={id} className="flex items-center gap-3 mb-6 scroll-mt-24">
-    <div className="p-2 rounded-lg bg-[#009da5]/10 border border-[#009da5]/20">
-      <Icon className="w-4 h-4 text-[#58dddd]" />
+    <div className="p-2 rounded-lg bg-accent/10 border border-accent/20">
+      <Icon className="w-4 h-4 text-accent" />
     </div>
-    <h2 className="text-[18px] font-semibold text-white">{label}</h2>
+    <h2 className="text-[18px] font-semibold text-foreground">{label}</h2>
   </div>
 );
 
@@ -75,7 +75,7 @@ function ScreenshotCard({ src, alt, maxWidth, className }: {
   src: string; alt: string; maxWidth?: string; className?: string;
 }) {
   return (
-    <div className={`mx-auto rounded-xl overflow-hidden border border-[#1e4040] shadow-xl shadow-black/40 ${className ?? ""}`}
+    <div className={`mx-auto rounded-xl overflow-hidden border border-border shadow-xl shadow-foreground/10 ${className ?? ""}`}
       style={{ maxWidth: maxWidth ?? "100%" }}>
       <img src={src} alt={alt} className="w-full h-auto block" />
     </div>
@@ -207,14 +207,14 @@ function SidebarAnimationDemo({ title, colLetter, options, result }: {
     <div className="mx-auto" style={{ maxWidth: 460 }}>
       <div
         ref={ref}
-        className="relative rounded-xl border border-[#1e4040] bg-[#060f0f] overflow-hidden"
+        className="relative rounded-xl border border-border bg-background overflow-hidden"
         style={{ padding: DEMO_PAD, minHeight: 240 }}
       >
         {/* Status label */}
         <div className="font-medium" style={{ height: 14, marginBottom: 12, fontSize: 11, color: "#3d7070" }}>
           Live demo — {title} picker
           <span className="ml-2 inline-flex items-center gap-1" style={{ color: "#58dddd" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#58dddd] animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             playing
           </span>
         </div>
@@ -325,13 +325,13 @@ function SidebarAnimationDemo({ title, colLetter, options, result }: {
                 <div style={{ display: "flex", gap: 4 }}>
                   <div className="flex-1 rounded border border-[#ddd] bg-[#fafafa] flex items-center px-1.5"
                     style={{ height: 20, fontSize: 9, color: "#bbb" }}>Custom…</div>
-                  <div className="rounded border border-[#009da5]/40 bg-[#e0f7f4] flex items-center px-1.5"
+                  <div className="rounded border border-accent/40 bg-[#e0f7f4] flex items-center px-1.5"
                     style={{ height: 20, fontSize: 9, color: "#009da5" }}>Add</div>
                 </div>
                 {/* Confirm / Clear */}
                 <div style={{ display: "flex", gap: 4 }}>
                   <button
-                    className="flex-1 rounded font-bold text-white"
+                    className="flex-1 rounded font-bold text-foreground"
                     style={{
                       height: 24, fontSize: 9,
                       background: confirmActive ? "#166a49" : "#1a7f5a",
@@ -479,13 +479,13 @@ function JobSeniorityDemo() {
     <div className="mx-auto" style={{ maxWidth: 500 }}>
       <div
         ref={ref}
-        className="relative rounded-xl border border-[#1e4040] bg-[#060f0f] overflow-hidden"
+        className="relative rounded-xl border border-border bg-background overflow-hidden"
         style={{ padding: DEMO_PAD, minHeight: 260 }}
       >
         <div className="font-medium" style={{ height: 14, marginBottom: 12, fontSize: 11, color: "#3d7070" }}>
           Live demo — Job Seniority picker
           <span className="ml-2 inline-flex items-center gap-1" style={{ color: "#58dddd" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#58dddd] animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             playing
           </span>
         </div>
@@ -595,7 +595,7 @@ function JobSeniorityDemo() {
                 {/* Confirm / Clear */}
                 <div style={{ display: "flex", gap: 4 }}>
                   <button
-                    className="flex-1 rounded font-bold text-white"
+                    className="flex-1 rounded font-bold text-foreground"
                     style={{
                       height: 24, fontSize: 9,
                       background: confirmActive ? "#166a49" : "#1a7f5a",
@@ -721,13 +721,13 @@ function ToggleDemo() {
     <div className="mx-auto" style={{ maxWidth: 420 }}>
       <div
         ref={ref}
-        className="relative rounded-xl border border-[#1e4040] bg-[#060f0f] overflow-hidden"
+        className="relative rounded-xl border border-border bg-background overflow-hidden"
         style={{ padding: DEMO_PAD, minHeight: 220 }}
       >
         <div className="font-medium" style={{ height: 14, marginBottom: 12, fontSize: 11, color: "#3d7070" }}>
           Live demo — Job search toggle
           <span className="ml-2 inline-flex items-center gap-1" style={{ color: "#58dddd" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#58dddd] animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             playing
           </span>
         </div>
@@ -788,8 +788,8 @@ function ToggleDemo() {
         {/* Status badge */}
         <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold transition-all duration-500
-            ${unlocked ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400" : "bg-[#1e4040] border border-[#1e4040] text-[#3d7070]"}`}>
-            <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${unlocked ? "bg-emerald-400" : "bg-[#3d7070]"}`} />
+            ${unlocked ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400" : "bg-border border border-border text-muted-foreground"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${unlocked ? "bg-emerald-400" : "bg-muted-foreground/40"}`} />
             {unlocked ? "I, J, K unlocked — fill in job details" : "I, J, K locked (grey)"}
           </div>
         </div>
@@ -816,19 +816,19 @@ const GoogleSheetsGuide = () => {
   useAuthGuard();
 
   return (
-    <div className="dark min-h-screen bg-[#060f0f] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Sticky header */}
-      <header className="sticky top-0 z-50 border-b border-[#1e4040] bg-[#060f0f]/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
         <div className="max-w-5xl mx-auto flex items-center h-14 px-5 gap-3">
           <Link to="/dashboard">
-            <Button variant="ghost" size="sm" className="gap-2 text-[#3d7070] hover:text-white h-8 px-3">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground h-8 px-3">
               <ArrowLeft className="h-4 w-4" /> Dashboard
             </Button>
           </Link>
-          <div className="h-4 w-px bg-[#1e4040]" />
-          <div className="flex items-center gap-2 text-[13px] text-[#3d7070]">
-            <BookOpen className="h-4 w-4 text-[#58dddd]" />
-            <span className="text-white font-medium">BulkSearch Sheet — Tutorial</span>
+          <div className="h-4 w-px bg-border" />
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+            <BookOpen className="h-4 w-4 text-accent" />
+            <span className="text-foreground font-medium">BulkSearch Sheet — Tutorial</span>
           </div>
         </div>
       </header>
@@ -837,11 +837,11 @@ const GoogleSheetsGuide = () => {
         {/* Sidebar nav */}
         <aside className="hidden lg:block w-44 shrink-0">
           <div className="sticky top-24 space-y-1">
-            <p className="text-[11px] font-semibold text-[#3d7070] uppercase tracking-wider mb-3">Contents</p>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Contents</p>
             {NAV_ITEMS.map(item => (
               <a key={item.id} href={`#${item.id}`}
-                className="flex items-center gap-2 text-[12px] text-[#3d7070] hover:text-[#58dddd] transition-colors py-1 group">
-                <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 text-[#58dddd] transition-opacity" />
+                className="flex items-center gap-2 text-[12px] text-muted-foreground hover:text-accent transition-colors py-1 group">
+                <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 text-accent transition-opacity" />
                 {item.label}
               </a>
             ))}
@@ -853,11 +853,11 @@ const GoogleSheetsGuide = () => {
 
           {/* Hero */}
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#009da5]/30 bg-[#009da5]/5 text-[12px] text-[#58dddd] mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#58dddd]" /> BulkSearch Template V2
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent/30 bg-accent/5 text-[12px] text-accent mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent" /> BulkSearch Template V2
             </div>
-            <h1 className="text-[28px] font-bold text-white mb-2 leading-tight">How to use the BulkSearch Sheet</h1>
-            <p className="text-[14px] text-[#3d7070] leading-relaxed">
+            <h1 className="text-[28px] font-bold text-foreground mb-2 leading-tight">How to use the BulkSearch Sheet</h1>
+            <p className="text-[14px] text-muted-foreground leading-relaxed">
               Up to 100 companies per upload. Use the sidebar pickers for titles &amp; seniorities, enable job search per row, then export as Excel and submit.
             </p>
           </div>
@@ -872,11 +872,11 @@ const GoogleSheetsGuide = () => {
                 { step: "Spot the BulkSearch menu", desc: "After allowing, a BulkSearch menu appears in the top menu bar with all three pickers." },
                 { step: "Fill rows 3–102", desc: "Rows 1–2 are the frozen header. Your data goes from row 3 downward — 100 rows maximum." },
               ].map((s, i) => (
-                <div key={i} className="flex gap-3 items-start rounded-xl border border-[#1e4040] bg-[#080f0f] p-4">
+                <div key={i} className="flex gap-3 items-start rounded-xl border border-border bg-card/60 p-4">
                   <StepBadge n={i + 1} />
                   <div>
-                    <p className="text-[13px] font-semibold text-white">{s.step}</p>
-                    <p className="text-[12px] text-[#3d9090] mt-0.5">{s.desc}</p>
+                    <p className="text-[13px] font-semibold text-foreground">{s.step}</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">{s.desc}</p>
                   </div>
                 </div>
               ))}
@@ -886,7 +886,7 @@ const GoogleSheetsGuide = () => {
           {/* ── 2. Sheet Layout ─────────────────────────────────────────── */}
           <section>
             <SectionHeading id="layout" icon={Layers} label="2. Sheet Layout" />
-            <p className="text-[13px] text-[#3d7070] mb-4">Every row = one company. Here's what each column does:</p>
+            <p className="text-[13px] text-muted-foreground mb-4">Every row = one company. Here's what each column does:</p>
 
             <ScreenshotCard
               src="/tutorial/overview.png"
@@ -895,14 +895,14 @@ const GoogleSheetsGuide = () => {
               className="mb-5"
             />
 
-            <div className="overflow-x-auto rounded-xl border border-[#1e4040]">
+            <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full text-[12px]">
                 <thead>
-                  <tr className="border-b border-[#1e4040] bg-[#0c1d1d]">
-                    <th className="text-left px-4 py-2 text-[#3d7070] font-semibold">Col</th>
-                    <th className="text-left px-4 py-2 text-[#3d7070] font-semibold">Name</th>
-                    <th className="text-left px-4 py-2 text-[#3d7070] font-semibold">How to fill</th>
-                    <th className="text-left px-4 py-2 text-[#3d7070] font-semibold">Required</th>
+                  <tr className="border-b border-border bg-card">
+                    <th className="text-left px-4 py-2 text-muted-foreground font-semibold">Col</th>
+                    <th className="text-left px-4 py-2 text-muted-foreground font-semibold">Name</th>
+                    <th className="text-left px-4 py-2 text-muted-foreground font-semibold">How to fill</th>
+                    <th className="text-left px-4 py-2 text-muted-foreground font-semibold">Required</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -919,14 +919,14 @@ const GoogleSheetsGuide = () => {
                     ["J","Job Seniority","Sidebar picker (H = Yes)","–"],
                     ["K","Date Posted","Max age in days (H = Yes)","–"],
                   ].map(([col, name, note, req], i) => (
-                    <tr key={col as string} className={`border-b border-[#1e4040]/60 ${i % 2 === 0 ? "bg-[#060f0f]" : "bg-[#080f0f]"}`}>
+                    <tr key={col as string} className={`border-b border-border/60 ${i % 2 === 0 ? "bg-background" : "bg-card/60"}`}>
                       <td className="px-4 py-2"><ColBadge col={col as string} /></td>
-                      <td className="px-4 py-2 text-white font-medium">{name as string}</td>
-                      <td className="px-4 py-2 text-[#3d9090]">{note as string}</td>
+                      <td className="px-4 py-2 text-foreground font-medium">{name as string}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{note as string}</td>
                       <td className="px-4 py-2">
                         {req === "✓"
-                          ? <span className="px-2 py-0.5 rounded-full bg-[#009da5]/10 border border-[#009da5]/30 text-[#58dddd] text-[11px]">Required</span>
-                          : <span className="text-[#2a4a4a] text-[11px]">Optional</span>}
+                          ? <span className="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/30 text-accent text-[11px]">Required</span>
+                          : <span className="text-muted-foreground/60 text-[11px]">Optional</span>}
                       </td>
                     </tr>
                   ))}
@@ -946,12 +946,12 @@ const GoogleSheetsGuide = () => {
               className="mb-5"
             />
 
-            <ul className="space-y-2 text-[13px] text-[#3d9090] mb-5">
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">1.</span>Click the <strong className="text-white">Person Titles Picker</strong> button in the column header (or via BulkSearch menu).</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">2.</span>The sidebar opens. Now click any cell in <ColBadge col="E" /> for the row you want to edit — the sidebar loads that row instantly.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">3.</span>Type in the filter box to narrow — e.g. "eng" → only Engineering shows.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">4.</span>Tick the categories. Add a custom one by typing in the top box and pressing <kbd className="px-1.5 py-0.5 rounded bg-[#0e2a2a] border border-[#1e4040] text-[#58dddd] text-[11px]">Enter</kbd> or clicking Add.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">5.</span>Click <strong className="text-white">Confirm</strong> — selected titles are written to col E as comma-separated list.</li>
+            <ul className="space-y-2 text-[13px] text-muted-foreground mb-5">
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">1.</span>Click the <strong className="text-foreground">Person Titles Picker</strong> button in the column header (or via BulkSearch menu).</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">2.</span>The sidebar opens. Now click any cell in <ColBadge col="E" /> for the row you want to edit — the sidebar loads that row instantly.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">3.</span>Type in the filter box to narrow — e.g. "eng" → only Engineering shows.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">4.</span>Tick the categories. Add a custom one by typing in the top box and pressing <kbd className="px-1.5 py-0.5 rounded bg-card border border-border text-accent text-[11px]">Enter</kbd> or clicking Add.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">5.</span>Click <strong className="text-foreground">Confirm</strong> — selected titles are written to col E as comma-separated list.</li>
             </ul>
 
             <SidebarAnimationDemo
@@ -977,10 +977,10 @@ const GoogleSheetsGuide = () => {
               className="mb-5"
             />
 
-            <ul className="space-y-2 text-[13px] text-[#3d9090] mb-5">
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">1.</span>Click the <strong className="text-white">Person Seniorities Picker</strong> button, then click a cell in <ColBadge col="F" />.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">2.</span>15 standard levels: Owner, Partner, C-Suite, VP, SVP, EVP, Director, Senior Manager, Manager, Team Lead, Senior, Mid-Level, Entry Level, Intern, Training.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">3.</span>Filter, tick, or add a custom level. Click <strong className="text-white">Confirm</strong>.</li>
+            <ul className="space-y-2 text-[13px] text-muted-foreground mb-5">
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">1.</span>Click the <strong className="text-foreground">Person Seniorities Picker</strong> button, then click a cell in <ColBadge col="F" />.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">2.</span>15 standard levels: Owner, Partner, C-Suite, VP, SVP, EVP, Director, Senior Manager, Manager, Team Lead, Senior, Mid-Level, Entry Level, Intern, Training.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">3.</span>Filter, tick, or add a custom level. Click <strong className="text-foreground">Confirm</strong>.</li>
             </ul>
 
             <SidebarAnimationDemo
@@ -1006,21 +1006,21 @@ const GoogleSheetsGuide = () => {
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[12px] font-bold text-emerald-400">YES</div>
-                  <span className="text-[13px] text-white font-medium">Job search on</span>
+                  <span className="text-[13px] text-foreground font-medium">Job search on</span>
                 </div>
-                <ul className="space-y-1.5 text-[12px] text-[#3d9090]">
+                <ul className="space-y-1.5 text-[12px] text-muted-foreground">
                   <li>• Cols I, J, K unlock (white)</li>
                   <li>• Type job titles in <ColBadge col="I" /> — comma separated</li>
                   <li>• Pick job seniority via <ColBadge col="J" /> sidebar</li>
                   <li>• Enter max post age in days in <ColBadge col="K" /></li>
                 </ul>
               </div>
-              <div className="rounded-xl border border-[#1e4040] bg-[#080f0f] p-4">
+              <div className="rounded-xl border border-border bg-card/60 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-[12px] font-bold text-red-400">NO / Empty</div>
-                  <span className="text-[13px] text-white font-medium">Job search off</span>
+                  <span className="text-[13px] text-foreground font-medium">Job search off</span>
                 </div>
-                <ul className="space-y-1.5 text-[12px] text-[#3d9090]">
+                <ul className="space-y-1.5 text-[12px] text-muted-foreground">
                   <li>• Cols I, J, K grey — cleared and locked</li>
                   <li>• Enrichment runs without job filter</li>
                 </ul>
@@ -1045,11 +1045,11 @@ const GoogleSheetsGuide = () => {
               className="mb-5"
             />
 
-            <ul className="space-y-2 text-[13px] text-[#3d9090] mb-5">
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">1.</span>Col H must be <strong className="text-emerald-400">Yes</strong> first — otherwise col J is grey and the sidebar will show an error.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">2.</span>Click the <strong className="text-white">Seniority Picker</strong> button in the J header, then click a cell in <ColBadge col="J" />.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">3.</span>6 fixed levels: Internship, Entry level, Associate, Mid-Senior level, Director, Executive.</li>
-              <li className="flex gap-2"><span className="text-[#58dddd] font-bold shrink-0">4.</span>Tick one or more, then click <strong className="text-white">Confirm</strong>.</li>
+            <ul className="space-y-2 text-[13px] text-muted-foreground mb-5">
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">1.</span>Col H must be <strong className="text-emerald-400">Yes</strong> first — otherwise col J is grey and the sidebar will show an error.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">2.</span>Click the <strong className="text-foreground">Seniority Picker</strong> button in the J header, then click a cell in <ColBadge col="J" />.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">3.</span>6 fixed levels: Internship, Entry level, Associate, Mid-Senior level, Director, Executive.</li>
+              <li className="flex gap-2"><span className="text-accent font-bold shrink-0">4.</span>Tick one or more, then click <strong className="text-foreground">Confirm</strong>.</li>
             </ul>
 
             <JobSeniorityDemo />
@@ -1065,11 +1065,11 @@ const GoogleSheetsGuide = () => {
                 { step: "Upload the file", desc: "Drag and drop or click to select your .xlsx file." },
                 { step: "Submit", desc: "Click Submit for Enrichment. Track progress on the dashboard." },
               ].map((s, i) => (
-                <div key={i} className="flex gap-3 items-center rounded-xl border border-[#1e4040] bg-[#080f0f] p-4">
+                <div key={i} className="flex gap-3 items-center rounded-xl border border-border bg-card/60 p-4">
                   <StepBadge n={i + 1} />
                   <div>
-                    <p className="text-[13px] font-semibold text-white">{s.step}</p>
-                    <p className="text-[12px] text-[#3d9090] mt-0.5">{s.desc}</p>
+                    <p className="text-[13px] font-semibold text-foreground">{s.step}</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">{s.desc}</p>
                   </div>
                   {i === 3 && <CheckCircle2 className="w-5 h-5 text-emerald-400 ml-auto shrink-0" />}
                 </div>
@@ -1081,13 +1081,13 @@ const GoogleSheetsGuide = () => {
           </section>
 
           {/* Footer */}
-          <div className="pt-6 border-t border-[#1e4040] flex justify-between items-center">
+          <div className="pt-6 border-t border-border flex justify-between items-center">
             <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-2 text-[#3d7070] hover:text-white">
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="h-4 w-4" /> Back to Dashboard
               </Button>
             </Link>
-            <span className="text-[11px] text-[#2a4a4a]">BulkSearch Template V2</span>
+            <span className="text-[11px] text-muted-foreground/60">BulkSearch Template V2</span>
           </div>
         </main>
       </div>

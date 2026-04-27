@@ -13,7 +13,7 @@ import { User as UserIcon, Lock, BarChart3, Loader2, CreditCard } from "lucide-r
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
-import bravoroLogo from "@/assets/bravoro-logo.svg";
+import { BravoroWordmark } from "@/components/BravoroWordmark";
 
 const DEVELOPER_EMAIL = "pranavshah0907@gmail.com";
 
@@ -223,7 +223,7 @@ const Settings = () => {
         <div className="relative z-10">
           {/* Bravoro logo top-right */}
           <div className="fixed top-6 right-6 md:top-8 md:right-8 z-40 pointer-events-none">
-            <img src={bravoroLogo} alt="Bravoro" className="h-6 md:h-7 w-auto" />
+            <BravoroWordmark className="h-6 md:h-7 w-auto text-foreground" />
           </div>
 
           <div className="p-4 md:p-12 max-w-3xl mx-auto w-full">

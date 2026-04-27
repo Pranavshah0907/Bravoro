@@ -86,6 +86,11 @@
     --chart-4: 340 70% 55%;
     --chart-5: 145 60% 45%;
 
+    /* Atmospheric glow intensity (used by Dashboard background coronas, etc.) */
+    --glow-strength: 0.30;
+    --glow-strength-soft: 0.15;
+    --hero-gradient: linear-gradient(135deg, hsl(var(--foreground)) 30%, hsl(var(--accent)) 75%, hsl(var(--primary)) 100%);
+
     /* Sidebar — deepest black */
     --sidebar-background: 183 22% 3%;   /* #060c0c */
     --sidebar-foreground: 180 22% 92%;
@@ -145,6 +150,10 @@
     --sidebar-border: 183 30% 11%;
     --sidebar-ring: 180 66% 61%;
     --sidebar-muted: 183 20% 8%;
+
+    --glow-strength: 0.30;
+    --glow-strength-soft: 0.15;
+    --hero-gradient: linear-gradient(135deg, hsl(var(--foreground)) 30%, hsl(var(--accent)) 75%, hsl(var(--primary)) 100%);
   }
 
   /* ── Warm Cream — paper-like surfaces, deep harmonious teal accents ── */
@@ -166,7 +175,7 @@
     --secondary-foreground: 0 0% 100%;
 
     --muted: 35 30% 94%;               /* #f1ebe0 — cream tone */
-    --muted-foreground: 35 14% 38%;    /* #6e6253 — warm gray */
+    --muted-foreground: 35 16% 32%;    /* #5a4f43 — stronger contrast for readability */
 
     --accent: 184 100% 27%;            /* #00868c — mid teal for cream contrast */
     --accent-foreground: 0 0% 100%;
@@ -177,22 +186,22 @@
     --destructive: 0 73% 51%;          /* #dc2626 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 36 36% 88%;              /* #ece4d4 — cream-tinted */
-    --input: 35 43% 97%;               /* matches background */
+    --border: 36 30% 84%;              /* #e2d8c5 — visible separation on cream */
+    --input: 0 0% 100%;                /* white inputs read as fields, not bg */
     --ring: 184 86% 16%;
 
     /* Gradients tuned for cream */
     --gradient-primary: linear-gradient(135deg, hsl(184 86% 16%), hsl(184 100% 27%));
     --gradient-secondary: linear-gradient(135deg, hsl(184 100% 27%), hsl(184 86% 16%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(35 38% 96%));
-    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(184 86% 16% / 0.06), transparent 60%);
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(184 70% 40% / 0.08), transparent 60%);
 
-    /* Warm shadows — tinted with the cream's brown undertone */
-    --shadow-soft: 0 4px 20px hsl(35 30% 25% / 0.06);
-    --shadow-medium: 0 8px 32px hsl(35 30% 25% / 0.10);
-    --shadow-strong: 0 16px 48px hsl(35 30% 25% / 0.14);
-    --shadow-glow: 0 0 40px hsl(180 50% 50% / 0.15);
-    --shadow-card: 0 2px 8px hsl(35 30% 25% / 0.06);
+    /* Warm shadows — soft brown undertone, layered for depth on cream */
+    --shadow-soft: 0 2px 8px hsl(35 30% 25% / 0.05), 0 8px 24px hsl(35 30% 25% / 0.06);
+    --shadow-medium: 0 4px 12px hsl(35 30% 25% / 0.07), 0 12px 36px hsl(35 30% 25% / 0.10);
+    --shadow-strong: 0 8px 24px hsl(35 30% 25% / 0.10), 0 24px 56px hsl(35 30% 25% / 0.14);
+    --shadow-glow: 0 0 40px hsl(184 70% 40% / 0.12);
+    --shadow-card: 0 1px 3px hsl(35 30% 25% / 0.06), 0 4px 12px hsl(35 30% 25% / 0.04);
 
     /* Chart colours — content, kept perceptually similar across themes */
     --chart-1: 184 86% 30%;
@@ -201,16 +210,22 @@
     --chart-4: 340 65% 50%;
     --chart-5: 145 55% 40%;
 
-    /* Sidebar — slightly warmer than body, gives navigation its own surface */
-    --sidebar-background: 36 41% 93%;  /* #f5f1e8 */
+    /* Sidebar — distinctly warmer than body so its surface reads as navigation */
+    --sidebar-background: 36 38% 90%;  /* #ebe2d2 — visible warm tint */
     --sidebar-foreground: 30 11% 9%;
     --sidebar-primary: 184 86% 16%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 35 30% 88%;      /* #e9e0cd */
-    --sidebar-accent-foreground: 30 11% 9%;
-    --sidebar-border: 36 36% 86%;
+    --sidebar-accent: 35 28% 84%;      /* #ddd0b8 — hover/active state */
+    --sidebar-accent-foreground: 184 86% 16%;
+    --sidebar-border: 36 28% 80%;      /* #d0c2a9 — visible right edge */
     --sidebar-ring: 184 86% 16%;
     --sidebar-muted: 35 30% 92%;
+
+    /* Atmospheric glows are softer in light — accent on cream is darker, less is more */
+    --glow-strength: 0.14;
+    --glow-strength-soft: 0.08;
+    /* Hero gradient: foreground dark → mid-teal → vivid teal — gives drama on cream where the dark-mode stops collapse */
+    --hero-gradient: linear-gradient(135deg, hsl(var(--foreground)) 25%, hsl(184 100% 27%) 65%, hsl(184 86% 16%) 100%);
   }
 }
 
@@ -312,6 +327,14 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* Hero heading gradient — uses --hero-gradient which is themed below */
+  .hero-gradient {
+    background-image: var(--hero-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .gradient-border {
