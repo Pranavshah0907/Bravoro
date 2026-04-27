@@ -5,12 +5,12 @@ interface DocsTableProps {
 
 export function DocsTable({ headers, rows }: DocsTableProps) {
   return (
-    <div className="my-4 rounded-lg border border-[#1e4040] overflow-hidden">
+    <div className="my-4 rounded-lg border border-border overflow-hidden">
       <table className="w-full text-[13px]">
         <thead>
-          <tr className="bg-[#1a3535]">
+          <tr className="bg-muted">
             {headers.map((h) => (
-              <th key={h} className="px-4 py-2.5 text-left font-semibold text-[#9ca3af]">
+              <th key={h} className="px-4 py-2.5 text-left font-semibold text-muted-foreground">
                 {h}
               </th>
             ))}
@@ -18,9 +18,9 @@ export function DocsTable({ headers, rows }: DocsTableProps) {
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="border-t border-[#1e4040]">
+            <tr key={i} className="border-t border-border">
               {row.map((cell, j) => (
-                <td key={j} className="px-4 py-2.5 text-[#d1d5db]">
+                <td key={j} className="px-4 py-2.5 text-foreground">
                   {cell}
                 </td>
               ))}

@@ -9,15 +9,15 @@ interface DocsNavFooterProps {
 
 export function DocsNavFooter({ prev, next }: DocsNavFooterProps) {
   return (
-    <div className="flex items-center justify-between mt-12 pt-6 border-t border-[#1e4040]">
+    <div className="flex items-center justify-between mt-12 pt-6 border-t border-border">
       {prev ? (
         <Link
           to={`/docs/${prev.slug}`}
-          className="flex items-center gap-2 text-[13px] text-[#9ca3af] hover:text-emerald-400 transition-colors"
+          className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-accent transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           <div>
-            <div className="text-[11px] text-[#6b7280]">Previous</div>
+            <div className="text-[11px] text-muted-foreground">Previous</div>
             <div className="font-medium">{prev.title}</div>
           </div>
         </Link>
@@ -25,10 +25,10 @@ export function DocsNavFooter({ prev, next }: DocsNavFooterProps) {
       {next ? (
         <Link
           to={`/docs/${next.slug}`}
-          className="flex items-center gap-2 text-[13px] text-[#9ca3af] hover:text-emerald-400 transition-colors text-right"
+          className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-accent transition-colors text-right"
         >
           <div>
-            <div className="text-[11px] text-[#6b7280]">Next</div>
+            <div className="text-[11px] text-muted-foreground">Next</div>
             <div className="font-medium">{next.title}</div>
           </div>
           <ChevronRight className="w-4 h-4" />

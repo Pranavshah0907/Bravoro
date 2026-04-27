@@ -58,7 +58,7 @@ export function DocsRightRail({ contentRef, sectionSlug }: DocsRightRailProps) {
 
   return (
     <aside className="hidden xl:block w-[140px] flex-shrink-0 sticky top-8 self-start">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280] mb-3">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         On this page
       </div>
       <nav className="flex flex-col gap-1">
@@ -71,8 +71,8 @@ export function DocsRightRail({ contentRef, sectionSlug }: DocsRightRailProps) {
             className={cn(
               "text-left text-[11px] py-1 pl-3 border-l-2 transition-colors leading-snug",
               h.id === activeId
-                ? "border-emerald-400 text-emerald-300"
-                : "border-[#1e4040] text-[#9ca3af] hover:text-[#d1d5db]"
+                ? "border-emerald-400 text-accent"
+                : "border-border text-muted-foreground hover:text-foreground"
             )}
           >
             {h.text}

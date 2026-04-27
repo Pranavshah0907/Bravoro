@@ -6,17 +6,17 @@ import { Link } from "react-router-dom";
 export default function OverviewSection() {
   return (
     <>
-      <h2 id="what-is-bravoro" className="text-[17px] font-semibold text-[#e5e7eb] mt-8 mb-3 scroll-mt-24">
+      <h2 id="what-is-bravoro" className="text-[17px] font-semibold text-foreground mt-8 mb-3 scroll-mt-24">
         What is Bravoro?
       </h2>
-      <p className="text-[14px] text-[#b0b8c0] leading-relaxed mb-4">
+      <p className="text-[14px] text-foreground/80 leading-relaxed mb-4">
         Bravoro is a lead enrichment and automation platform that helps sales and recruiting teams
         find, verify, and enrich business contacts at scale. Upload company lists, search individually,
         or use AI chat to discover candidates — Bravoro handles the rest and delivers verified
         emails, phone numbers, and job listings.
       </p>
 
-      <h2 id="core-features" className="text-[17px] font-semibold text-[#e5e7eb] mt-10 mb-4 scroll-mt-24">
+      <h2 id="core-features" className="text-[17px] font-semibold text-foreground mt-10 mb-4 scroll-mt-24">
         Core Features
       </h2>
       <DocsFeatureCardGrid>
@@ -27,10 +27,10 @@ export default function OverviewSection() {
         <DocsFeatureCard icon={UserSearch} title="Recruiting Chat" description="Find and enrich candidates by role, skills, and location" href="/docs/recruiting-chat" />
       </DocsFeatureCardGrid>
 
-      <h2 id="credit-costs" className="text-[17px] font-semibold text-[#e5e7eb] mt-10 mb-4 scroll-mt-24">
+      <h2 id="credit-costs" className="text-[17px] font-semibold text-foreground mt-10 mb-4 scroll-mt-24">
         Credit Costs at a Glance
       </h2>
-      <p className="text-[14px] text-[#b0b8c0] leading-relaxed mb-3">
+      <p className="text-[14px] text-foreground/80 leading-relaxed mb-3">
         Every enrichment deducts credits from your workspace pool based on the type of contact data returned.
       </p>
       <DocsTable
@@ -43,12 +43,12 @@ export default function OverviewSection() {
         ]}
       />
 
-      <h2 id="next-steps" className="text-[17px] font-semibold text-[#e5e7eb] mt-10 mb-3 scroll-mt-24">
+      <h2 id="next-steps" className="text-[17px] font-semibold text-foreground mt-10 mb-3 scroll-mt-24">
         Next Steps
       </h2>
-      <p className="text-[14px] text-[#b0b8c0] leading-relaxed">
+      <p className="text-[14px] text-foreground/80 leading-relaxed">
         Ready to dive in?{" "}
-        <Link to="/docs/getting-started" className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2">
+        <Link to="/docs/getting-started" className="text-accent hover:text-accent underline underline-offset-2">
           Get Started →
         </Link>
       </p>
