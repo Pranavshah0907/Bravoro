@@ -113,9 +113,9 @@ interface ManualFormProps { userId: string; }
 
 const SectionHeading = ({ num, children, right }: { num: string; children: React.ReactNode; right?: React.ReactNode }) => (
   <div className="flex items-center gap-3 mb-6">
-    <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">{num}</span>
-    <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">{children}</span>
-    <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+    <span className="text-[12px] font-black tracking-[0.3em] text-primary/80 shrink-0 tabular-nums">{num}</span>
+    <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-accent shrink-0">{children}</span>
+    <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
     {right && <div className="shrink-0 ml-2">{right}</div>}
   </div>
 );
@@ -127,11 +127,11 @@ const FieldLabel = ({
 }) => (
   <div className="flex items-center justify-between mb-2.5">
     <div className="flex items-baseline gap-1.5">
-      <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">
+      <span className="text-[13px] font-bold text-foreground tracking-[0.08em] uppercase">
         {children}
-        {required && <span className="text-[#00c8d2] ml-0.5">*</span>}
+        {required && <span className="text-accent ml-0.5">*</span>}
       </span>
-      {hint && <span className="text-[12px] text-[#5e9898] normal-case tracking-normal font-normal">{hint}</span>}
+      {hint && <span className="text-[12px] text-muted-foreground normal-case tracking-normal font-normal">{hint}</span>}
     </div>
     {action}
   </div>
@@ -142,11 +142,11 @@ const LineInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     {...props}
     className={`
       w-full py-2.5 px-0 bg-transparent
-      border-0 border-b border-[#254848]
-      text-[16px] text-white
+      border-0 border-b border-border
+      text-[16px] text-foreground
       outline-none transition-colors duration-200
-      focus:border-[#009da5]
-      placeholder:text-[#3a6060]
+      focus:border-primary
+      placeholder:text-muted-foreground/60
       [appearance:textfield]
       [&::-webkit-inner-spin-button]:appearance-none
       [&::-webkit-outer-spin-button]:appearance-none
@@ -159,14 +159,14 @@ const LineInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
 const Tag = ({ label, onRemove, variant = "teal" }: { label: string; onRemove: () => void; variant?: "teal" | "violet" }) => {
   const colors = variant === "violet"
     ? "bg-[#7c3aed]/10 text-[#a78bfa] border-[#7c3aed]/25"
-    : "bg-[#009da5]/10 text-[#58dddd] border-[#009da5]/25";
+    : "bg-primary/10 text-accent border-primary/25";
   return (
     <span className={`tag-bubble inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[12px] font-medium border select-none whitespace-nowrap ${colors}`}>
       {label}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        className="rounded p-0.5 hover:bg-white/10 transition-colors duration-150 focus-visible:outline-none opacity-50 hover:opacity-100"
+        className="rounded p-0.5 hover:bg-foreground/10 transition-colors duration-150 focus-visible:outline-none opacity-50 hover:opacity-100"
       >
         <X className="h-2.5 w-2.5" />
       </button>
@@ -181,9 +181,9 @@ const TagBox = ({ children, onClick, className = "" }: {
     onClick={onClick}
     className={`
       min-h-[42px] flex flex-wrap gap-1.5 items-center px-3 py-2
-      border border-[#254848] rounded-lg bg-[#060e0e]
+      border border-border rounded-lg bg-card
       cursor-text transition-colors duration-200
-      focus-within:border-[#009da5]/60 hover:border-[#2e5555]
+      focus-within:border-primary/60 hover:border-border
       ${className}
     `}
   >
@@ -200,24 +200,24 @@ const ToggleSwitch = ({ on, onToggle, label }: { on: boolean; onToggle: () => vo
     role="switch"
     aria-checked={on}
   >
-    <span className={`text-[13px] font-semibold tracking-wide transition-colors duration-200 ${on ? "text-[#58dddd]" : "text-[#8ac8c8] group-hover:text-[#a8e0e0]"}`}>
+    <span className={`text-[13px] font-semibold tracking-wide transition-colors duration-200 ${on ? "text-accent" : "text-foreground/80 group-hover:text-foreground/90"}`}>
       {label}
     </span>
-    <div className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ${on ? "bg-[#009da5]" : "bg-[#1e3d3d] group-hover:bg-[#254848]"}`}>
+    <div className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ${on ? "bg-primary" : "bg-muted/60 group-hover:bg-muted"}`}>
       <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ${on ? "translate-x-4" : "translate-x-0"}`} />
     </div>
   </button>
 );
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
-  <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-[#0d2020] border border-[#254848] font-mono text-[#5a9898] leading-none">{children}</kbd>
+  <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-muted border border-border font-mono text-muted-foreground leading-none">{children}</kbd>
 );
 
 const HintLine = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[12px] text-[#5e9898] mt-1.5 leading-relaxed">{children}</p>
+  <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">{children}</p>
 );
 
-const PaneDivider = () => <div className="h-px bg-[#1a3535]" />;
+const PaneDivider = () => <div className="h-px bg-muted" />;
 
 // Reusable searchable tag-dropdown input (used for Functions, Seniority, and Job Departments)
 const TagDropdownInput = ({
@@ -282,8 +282,8 @@ const TagDropdownInput = ({
     (keepSelectedInList || !selected.includes(s))
   );
 
-  const checkBg = tagVariant === "violet" ? "bg-[#7c3aed] border-[#7c3aed]" : "bg-[#009da5] border-[#009da5]";
-  const checkBorder = tagVariant === "violet" ? "border-[#2a1a4a]" : "border-[#254848]";
+  const checkBg = tagVariant === "violet" ? "bg-[#7c3aed] border-[#7c3aed]" : "bg-primary border-primary";
+  const checkBorder = tagVariant === "violet" ? "border-[#2a1a4a]" : "border-border";
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -305,7 +305,7 @@ const TagDropdownInput = ({
             }
           }}
           placeholder={selected.length === 0 ? placeholder : "Add more…"}
-          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-white outline-none py-0.5"
+          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-foreground outline-none py-0.5"
         />
       </TagBox>
 
@@ -313,31 +313,31 @@ const TagDropdownInput = ({
         type="button"
         onMouseDown={e => e.preventDefault()}
         onClick={() => { setOpen(v => !v); inputRef.current?.focus(); }}
-        className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 focus-visible:outline-none ${open ? "text-[#58dddd] bg-[#009da5]/10" : "text-[#5a9898] hover:text-[#58dddd] hover:bg-[#009da5]/10"}`}
+        className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all duration-200 focus-visible:outline-none ${open ? "text-accent bg-primary/10" : "text-muted-foreground hover:text-accent hover:bg-primary/10"}`}
       >
         <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="fn-dropdown absolute top-[calc(100%+4px)] left-0 right-0 z-50 rounded-xl border border-[#1a3535] bg-[#0c1d1d] shadow-[0_16px_48px_rgba(0,0,0,0.7)] overflow-hidden">
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-[#1a3535]/60 bg-[#091616]">
-            <Search className="h-3.5 w-3.5 text-[#5a9898] shrink-0" />
+        <div className="fn-dropdown absolute top-[calc(100%+4px)] left-0 right-0 z-50 rounded-xl border border-border bg-card shadow-[0_16px_48px_rgba(0,0,0,0.7)] overflow-hidden">
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-border/60 bg-card">
+            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search…"
-              className="mf-bare flex-1 bg-transparent text-[14px] text-white outline-none"
+              className="mf-bare flex-1 bg-transparent text-[14px] text-foreground outline-none"
             />
             {search && (
-              <button type="button" onClick={() => setSearch("")} className="text-[#2e5c5c] hover:text-[#3d8080] transition-colors">
+              <button type="button" onClick={() => setSearch("")} className="text-[#2e5c5c] hover:text-muted-foreground transition-colors">
                 <X className="h-3 w-3" />
               </button>
             )}
           </div>
           <div className="max-h-44 overflow-y-auto py-1 px-1.5">
             {filtered.length === 0 ? (
-              <p className="px-3 py-4 text-xs text-center text-[#5a9090]">
+              <p className="px-3 py-4 text-xs text-center text-muted-foreground">
                 {search ? (canTypeCustom ? `No match — press Enter to add "${search}"` : "No matching option") : "All suggestions selected"}
               </p>
             ) : (
@@ -360,12 +360,12 @@ const TagDropdownInput = ({
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-[14px] rounded-lg text-left transition-colors duration-150 ${
                       isChecked
-                        ? "text-[#58dddd] hover:bg-white/[0.04]"
-                        : "text-[#b0d8d8] hover:bg-white/[0.05] hover:text-white"
+                        ? "text-accent hover:bg-foreground/[0.04]"
+                        : "text-foreground/85 hover:bg-foreground/[0.05] hover:text-foreground"
                     }`}
                   >
                     <div className={`w-[15px] h-[15px] rounded-[3px] border flex items-center justify-center shrink-0 transition-all duration-150 ${isChecked ? checkBg : checkBorder}`}>
-                      {isChecked && <Check className="h-2.5 w-2.5 text-white" />}
+                      {isChecked && <Check className="h-2.5 w-2.5 text-foreground" />}
                     </div>
                     {item}
                   </button>
@@ -374,9 +374,9 @@ const TagDropdownInput = ({
             )}
           </div>
           {selected.length > 0 && (
-            <div className="border-t border-[#1a3535]/60 px-3.5 py-2 flex items-center justify-between bg-[#091616]">
-              <span className="text-[12px] text-[#6aacac] font-medium">{selected.length} selected</span>
-              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => selected.forEach(s => onRemove(s))} className="text-[12px] text-[#4d8080] hover:text-red-400 transition-colors font-medium">Clear all</button>
+            <div className="border-t border-border/60 px-3.5 py-2 flex items-center justify-between bg-card">
+              <span className="text-[12px] text-muted-foreground font-medium">{selected.length} selected</span>
+              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => selected.forEach(s => onRemove(s))} className="text-[12px] text-muted-foreground hover:text-red-400 transition-colors font-medium">Clear all</button>
             </div>
           )}
         </div>
@@ -465,7 +465,7 @@ const JobTitleInput = ({ tags, onAdd, onRemove }: {
           onKeyDown={handleKeyDown}
           onBlur={() => { if (input.trim()) addTag(input); }}
           placeholder={tags.length === 0 ? "e.g. Sales, Marketing…" : "Add more…"}
-          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-white outline-none py-0.5"
+          className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-foreground outline-none py-0.5"
         />
       </TagBox>
       {(suggestion || checking) && (
@@ -477,12 +477,12 @@ const JobTitleInput = ({ tags, onAdd, onRemove }: {
           )}
           {suggestion && (
             <>
-              <span className="text-[12px] text-[#5e9898]">Did you mean</span>
+              <span className="text-[12px] text-muted-foreground">Did you mean</span>
               <button
                 type="button"
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => addTag(suggestion)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] font-semibold bg-[#009da5]/12 text-[#58dddd] border border-[#009da5]/30 hover:bg-[#009da5]/20 transition-colors duration-150 cursor-pointer"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] font-semibold bg-primary/12 text-accent border border-primary/30 hover:bg-primary/20 transition-colors duration-150 cursor-pointer"
               >
                 {suggestion} <Check className="h-2.5 w-2.5" />
               </button>
@@ -660,7 +660,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
   const valid = isFormValid();
 
   return (
-    <div className="dark">
+    <div>
       <style>{`
         @keyframes tagPop {
           0%   { transform: scale(0.65) translateY(4px); opacity: 0; }
@@ -675,13 +675,13 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         .mf-bare::placeholder { color: #3d6464; }
       `}</style>
 
-      <div className="rounded-2xl overflow-hidden border border-[#1e4040]/60 shadow-[0_12px_56px_rgba(0,0,0,0.6),0_0_0_1px_rgba(0,157,165,0.06)]">
+      <div className="rounded-2xl overflow-hidden border border-border/60 shadow-[0_12px_56px_rgba(0,0,0,0.6),0_0_0_1px_rgba(0,157,165,0.06)]">
 
         {/* ══ TWO-PANE ROW ════════════════════════════════════════════════════ */}
         <div className="flex flex-col lg:flex-row">
 
           {/* ── LEFT PANE: Target ── */}
-          <div className="lg:w-[38%] bg-[#0c1d1d] border-b lg:border-b-0 lg:border-r border-[#1e4040]/55 px-7 pt-8 pb-9 flex flex-col gap-7">
+          <div className="lg:w-[38%] bg-card border-b lg:border-b-0 lg:border-r border-border/55 px-7 pt-8 pb-9 flex flex-col gap-7">
             <SectionHeading num="01">Target</SectionHeading>
 
             <div>
@@ -697,12 +697,12 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             <div>
               <FieldLabel hint="optional">Geography</FieldLabel>
               <Select value={geography} onValueChange={setGeography}>
-                <SelectTrigger className="h-auto py-2.5 px-0 w-full bg-transparent border-0 border-b border-[#254848] text-[16px] text-white rounded-none shadow-none outline-none ring-0 ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:border-[#009da5] data-[placeholder]:text-[#3a6060] [&>svg]:text-[#5a9898] [&>svg]:opacity-80 transition-colors duration-200">
+                <SelectTrigger className="h-auto py-2.5 px-0 w-full bg-transparent border-0 border-b border-border text-[16px] text-foreground rounded-none shadow-none outline-none ring-0 ring-offset-0 focus:ring-0 focus:ring-offset-0 focus:border-primary data-[placeholder]:text-muted-foreground/60 [&>svg]:text-muted-foreground [&>svg]:opacity-80 transition-colors duration-200">
                   <SelectValue placeholder="Select a country" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0c1d1d] border border-[#1a3535] rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.75)] max-h-64">
+                <SelectContent className="bg-card border border-border rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.75)] max-h-64">
                   {COUNTRIES.map(country => (
-                    <SelectItem key={country} value={country} className="text-[14px] text-[#88c0c0] rounded-lg focus:bg-[#009da5]/15 focus:text-[#58dddd] cursor-pointer">
+                    <SelectItem key={country} value={country} className="text-[14px] text-foreground/70 rounded-lg focus:bg-primary/15 focus:text-accent cursor-pointer">
                       {country}
                     </SelectItem>
                   ))}
@@ -711,13 +711,13 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             </div>
 
             <div className="mt-auto pt-4 flex items-center gap-2 opacity-55">
-              <div className="w-5 h-px bg-[#009da5]" />
-              <span className="text-[12px] text-[#009da5] tracking-[0.12em]">* required</span>
+              <div className="w-5 h-px bg-primary" />
+              <span className="text-[12px] text-primary tracking-[0.12em]">* required</span>
             </div>
           </div>
 
           {/* ── RIGHT PANE: Filter Parameters ── */}
-          <div className="flex-1 bg-[#080f0f] px-7 pt-8 pb-9 flex flex-col gap-6">
+          <div className="flex-1 bg-card px-7 pt-8 pb-9 flex flex-col gap-6">
             <SectionHeading num="02">Filter Parameters</SectionHeading>
 
             {/* Functions */}
@@ -751,8 +751,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                     onClick={handleSelectAllSeniorities}
                     className={`text-[12px] px-2.5 py-1 rounded-md font-semibold border transition-colors duration-200 cursor-pointer ${
                       allSenioritiesSelected
-                        ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/40"
-                        : "bg-transparent text-[#7ababa] border-[#254848] hover:border-[#009da5]/40 hover:text-[#58dddd]"
+                        ? "bg-primary/16 text-accent border-primary/40"
+                        : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-accent"
                     }`}
                   >
                     {allSenioritiesSelected ? "✓ All selected" : "Select all"}
@@ -803,7 +803,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                     }
                   }}
                   placeholder={personJobTitles.length === 0 ? "e.g. Software Engineer, Product Manager…" : "Add more…"}
-                  className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-white outline-none py-0.5"
+                  className="mf-bare flex-1 min-w-[120px] bg-transparent text-[14px] text-foreground outline-none py-0.5"
                 />
               </TagBox>
               <HintLine>Type a title & press <Kbd>Enter</Kbd> · <Kbd>⌫</Kbd> removes last</HintLine>
@@ -834,16 +834,16 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         </div>
 
         {/* ══ JOB SEARCH SECTION ══════════════════════════════════════════════ */}
-        <div className="border-t border-[#1e4040]/55 bg-[#0a1818]">
+        <div className="border-t border-border/55 bg-muted/40">
 
           {/* Toggle header row */}
           <div className="px-7 py-4 flex items-center gap-3">
-            <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 tabular-nums">03</span>
+            <span className="text-[12px] font-black tracking-[0.3em] text-primary/80 tabular-nums">03</span>
             <div className="flex items-center gap-2">
-              <Briefcase className="h-3.5 w-3.5 text-[#009da5]/80" />
-              <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8]">Job Search</span>
+              <Briefcase className="h-3.5 w-3.5 text-primary/80" />
+              <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-accent">Job Search</span>
             </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/20 to-transparent" />
+            <div className="flex-1 h-px bg-gradient-to-r from-primary/20 to-transparent" />
             <ToggleSwitch
               on={includeJobSearch}
               onToggle={() => setIncludeJobSearch(v => !v)}
@@ -862,7 +862,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
             <div style={{ overflow: "hidden" }}>
               <div className="px-7 pb-8 pt-2">
                 {/* Subtle top divider inside expanded area */}
-                <div className="h-px bg-[#1a3535]/50 mb-6" />
+                <div className="h-px bg-muted/50 mb-6" />
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -890,7 +890,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                         onKeyDown={handleJobSeniorityKeyDown}
                         onBlur={() => { if (jobSeniorityInput.trim()) addJobSeniorityTag(jobSeniorityInput); }}
                         placeholder={jobSeniority.length === 0 ? "e.g. Manager, Director…" : "Add more…"}
-                        className="mf-bare flex-1 min-w-[100px] bg-transparent text-[14px] text-white outline-none py-0.5"
+                        className="mf-bare flex-1 min-w-[100px] bg-transparent text-[14px] text-foreground outline-none py-0.5"
                       />
                     </TagBox>
                     {/* Quick presets */}
@@ -904,8 +904,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                             onClick={() => active ? removeJobSeniorityTag(level) : addJobSeniorityTag(level)}
                             className={`px-2 py-0.5 rounded-md text-[12px] font-medium border transition-all duration-150 cursor-pointer active:scale-[0.97] focus-visible:outline-none ${
                               active
-                                ? "bg-[#009da5]/18 text-[#58dddd] border-[#009da5]/45"
-                                : "bg-transparent text-[#5a9090] border-[#254848] hover:border-[#009da5]/35 hover:text-[#7ab8b8]"
+                                ? "bg-primary/18 text-accent border-primary/45"
+                                : "bg-transparent text-muted-foreground border-border hover:border-primary/35 hover:text-muted-foreground"
                             }`}
                           >
                             {level}
@@ -929,14 +929,14 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                             onClick={() => setDatePosted(opt.value)}
                             className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[14px] font-medium border text-left transition-all duration-150 cursor-pointer focus-visible:outline-none ${
                               active
-                                ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/42"
-                                : "bg-transparent text-[#7ab8b8] border-[#254848] hover:border-[#009da5]/30 hover:text-[#9dd4d4]"
+                                ? "bg-primary/16 text-accent border-primary/42"
+                                : "bg-transparent text-muted-foreground border-border hover:border-primary/30 hover:text-foreground/85"
                             }`}
                           >
                             <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
-                              active ? "border-[#009da5]" : "border-[#3d6868]"
+                              active ? "border-primary" : "border-border"
                             }`}>
-                              {active && <div className="w-1.5 h-1.5 rounded-full bg-[#009da5]" />}
+                              {active && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                             </div>
                             {opt.label}
                           </button>
@@ -951,15 +951,15 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                         }}
                         className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[14px] font-medium border text-left transition-all duration-150 cursor-pointer select-none ${
                           datePosted === "custom"
-                            ? "bg-[#009da5]/16 text-[#58dddd] border-[#009da5]/42"
-                            : "bg-transparent text-[#7ab8b8] border-[#254848] hover:border-[#009da5]/30 hover:text-[#9dd4d4]"
+                            ? "bg-primary/16 text-accent border-primary/42"
+                            : "bg-transparent text-muted-foreground border-border hover:border-primary/30 hover:text-foreground/85"
                         }`}
                       >
                         {/* Radio dot */}
                         <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
-                          datePosted === "custom" ? "border-[#009da5]" : "border-[#3d6868]"
+                          datePosted === "custom" ? "border-primary" : "border-border"
                         }`}>
-                          {datePosted === "custom" && <div className="w-1.5 h-1.5 rounded-full bg-[#009da5]" />}
+                          {datePosted === "custom" && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                         </div>
 
                         <span className="shrink-0">Custom: Past</span>
@@ -984,8 +984,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
                               setCustomDaysRaw(String(valid));
                             }}
                             onClick={e => e.stopPropagation()}
-                            className="w-12 mx-0.5 text-center border border-[#009da5]/50 rounded-md text-[14px] text-[#58dddd] font-bold outline-none focus:border-[#009da5] px-1 py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            style={{ background: "#0a1f1f" }}
+                            className="w-12 mx-0.5 text-center border border-primary/50 rounded-md text-[14px] text-accent font-bold outline-none focus:border-primary px-1 py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            style={{ background: "hsl(var(--muted))" }}
                           />
                         ) : (
                           <span className="mx-1 opacity-40 font-normal text-[12px]">—</span>
@@ -1003,7 +1003,7 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
         </div>
 
         {/* ══ SUBMIT ROW ══════════════════════════════════════════════════════ */}
-        <div className="border-t border-[#1e4040]/55 bg-[#060c0c] px-7 py-5">
+        <div className="border-t border-border/55 bg-card px-7 py-5">
           <button
             type="button"
             onClick={handleSubmit as any}
@@ -1015,8 +1015,8 @@ export const ManualForm = ({ userId }: ManualFormProps) => {
               active:scale-[0.99] cursor-pointer
               flex items-center justify-center gap-2
               ${valid && !loading
-                ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
-                : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+                ? "bg-primary text-primary-foreground hover:bg-accent shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
+                : "bg-muted/40 text-muted-foreground border border-border"
               }
             `}
           >

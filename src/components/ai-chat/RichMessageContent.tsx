@@ -63,7 +63,7 @@ function CompanyRow({ company }: { company: CompanyData }) {
       <div className="px-3.5 py-2.5 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Building2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
+            <Building2 className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
             <span className="font-semibold text-[13px] text-foreground truncate">
               {company.name}
             </span>
@@ -74,7 +74,7 @@ function CompanyRow({ company }: { company: CompanyData }) {
                 href={websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-0.5 hover:text-emerald-400 transition-colors"
+                className="flex items-center gap-0.5 hover:text-accent transition-colors"
               >
                 <Globe className="h-2.5 w-2.5" />
                 {company.domain}
@@ -142,7 +142,7 @@ function CompanyRow({ company }: { company: CompanyData }) {
                   className="flex items-start gap-2 group py-0.5"
                 >
                   <Briefcase className="h-3 w-3 text-muted-foreground/60 shrink-0 mt-0.5" />
-                  <span className="text-[12px] text-foreground/80 group-hover:text-emerald-400 transition-colors flex-1 leading-snug">
+                  <span className="text-[12px] text-foreground/80 group-hover:text-accent transition-colors flex-1 leading-snug">
                     {job.title}
                   </span>
                   <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/50 shrink-0">
@@ -210,7 +210,7 @@ function ContactGroup({
             }}
             className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
               allSelected
-                ? "bg-emerald-500 border-emerald-500"
+                ? "bg-accent border-accent"
                 : "border-border/60 hover:border-emerald-400/60"
             }`}
             title={allSelected ? "Deselect all" : "Select all"}
@@ -222,7 +222,7 @@ function ContactGroup({
             )}
           </button>
         )}
-        <Building2 className="h-3 w-3 text-emerald-400" />
+        <Building2 className="h-3 w-3 text-accent" />
         <span className="text-[12px] font-semibold text-foreground/80">
           {companyName}
         </span>
@@ -236,7 +236,7 @@ function ContactGroup({
               key={i}
               className={`px-3.5 py-2 flex items-center gap-2.5 transition-colors ${
                 onToggle ? "cursor-pointer hover:bg-muted/30" : ""
-              } ${checked ? "bg-emerald-500/5" : ""}`}
+              } ${checked ? "bg-accent/5" : ""}`}
               onClick={() => onToggle?.(contact, key)}
             >
               {onToggle && (
@@ -244,7 +244,7 @@ function ContactGroup({
                   type="button"
                   className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                     checked
-                      ? "bg-emerald-500 border-emerald-500"
+                      ? "bg-accent border-accent"
                       : "border-border/60 hover:border-emerald-400/60"
                   }`}
                   tabIndex={-1}
@@ -293,8 +293,8 @@ function EnrichedContactCard({ contact }: { contact: ContactData }) {
     <div className="px-3.5 py-3">
       {/* Name + title row */}
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mt-0.5">
-          <User className="h-4 w-4 text-emerald-400" />
+        <div className="shrink-0 w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mt-0.5">
+          <User className="h-4 w-4 text-accent" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-[13px] text-foreground">
@@ -314,18 +314,18 @@ function EnrichedContactCard({ contact }: { contact: ContactData }) {
         {contact.email && (
           <a
             href={`mailto:${contact.email}`}
-            className="flex items-center gap-2 text-[12px] text-foreground/80 hover:text-emerald-400 transition-colors group"
+            className="flex items-center gap-2 text-[12px] text-foreground/80 hover:text-accent transition-colors group"
           >
-            <Mail className="h-3 w-3 text-muted-foreground/50 group-hover:text-emerald-400 shrink-0" />
+            <Mail className="h-3 w-3 text-muted-foreground/50 group-hover:text-accent shrink-0" />
             <span>{contact.email}</span>
           </a>
         )}
         {contact.phone && contact.phone !== "Locked" && (
           <a
             href={`tel:${contact.phone}`}
-            className="flex items-center gap-2 text-[12px] text-foreground/80 hover:text-emerald-400 transition-colors group"
+            className="flex items-center gap-2 text-[12px] text-foreground/80 hover:text-accent transition-colors group"
           >
-            <Phone className="h-3 w-3 text-muted-foreground/50 group-hover:text-emerald-400 shrink-0" />
+            <Phone className="h-3 w-3 text-muted-foreground/50 group-hover:text-accent shrink-0" />
             <span>{contact.phone}</span>
           </a>
         )}
@@ -365,7 +365,7 @@ function EnrichedContactsPanel({ contacts }: { contacts: ContactData[] }) {
       {Array.from(byCompany.entries()).map(([company, groupContacts]) => (
         <div key={company}>
           <div className="px-3.5 py-2 bg-muted/20 flex items-center gap-2">
-            <Building2 className="h-3 w-3 text-emerald-400" />
+            <Building2 className="h-3 w-3 text-accent" />
             <span className="text-[12px] font-semibold text-foreground/80">{company}</span>
           </div>
           <div className="divide-y divide-border/20">
@@ -458,7 +458,7 @@ function SelectAllButton({
       <span
         className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${
           allSelected
-            ? "bg-emerald-500 border-emerald-500"
+            ? "bg-accent border-accent"
             : "border-border/60 hover:border-emerald-400/60"
         }`}
       >
@@ -494,10 +494,10 @@ const CandidatePreviewCard = ({
     className={cn(
       "group relative flex items-start gap-3 p-3 rounded-lg border transition-colors",
       isEnriched
-        ? "bg-emerald-500/5 border-emerald-500/20 opacity-60 cursor-default"
+        ? "bg-accent/5 border-accent/20 opacity-60 cursor-default"
         : isSelected
-          ? "bg-emerald-500/10 border-emerald-500/30 cursor-pointer"
-          : "bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12] cursor-pointer"
+          ? "bg-accent/10 border-accent/30 cursor-pointer"
+          : "bg-foreground/[0.03] border-border hover:border-foreground/20 cursor-pointer"
     )}
     onClick={() => !isEnriched && onToggle(contact, key)}
   >
@@ -506,8 +506,8 @@ const CandidatePreviewCard = ({
       isEnriched
         ? "bg-emerald-700/50 border-emerald-700/50"
         : isSelected
-          ? "bg-emerald-500 border-emerald-500"
-          : "border-white/20 group-hover:border-white/40"
+          ? "bg-accent border-accent"
+          : "border-foreground/20 group-hover:border-foreground/40"
     )}>
       {(isSelected || isEnriched) && (
         <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -517,7 +517,7 @@ const CandidatePreviewCard = ({
     </div>
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-white truncate">{contact.fullName}</span>
+        <span className="text-sm font-medium text-foreground truncate">{contact.fullName}</span>
         {contact.linkedinUrl && (
           <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -529,25 +529,25 @@ const CandidatePreviewCard = ({
         )}
       </div>
       {(contact.headline || contact.jobTitle) && (
-        <p className="text-xs text-white/60 mt-0.5 truncate">
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
           {contact.headline || `${contact.jobTitle}${contact.companyName ? ` at ${contact.companyName}` : ""}`}
         </p>
       )}
       {(contact.city || contact.country) && (
-        <p className="text-xs text-white/40 mt-0.5">{[contact.city, contact.country].filter(Boolean).join(", ")}</p>
+        <p className="text-xs text-foreground/60 mt-0.5">{[contact.city, contact.country].filter(Boolean).join(", ")}</p>
       )}
       {contact.skills && contact.skills.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
           {contact.skills.slice(0, 5).map((skill) => (
-            <span key={skill} className="px-1.5 py-0.5 text-[10px] rounded bg-white/[0.06] text-white/50">{skill}</span>
+            <span key={skill} className="px-1.5 py-0.5 text-[10px] rounded bg-foreground/5 text-foreground/70">{skill}</span>
           ))}
           {contact.skills.length > 5 && (
-            <span className="px-1.5 py-0.5 text-[10px] rounded bg-white/[0.06] text-white/40">+{contact.skills.length - 5}</span>
+            <span className="px-1.5 py-0.5 text-[10px] rounded bg-foreground/5 text-foreground/60">+{contact.skills.length - 5}</span>
           )}
         </div>
       )}
       {contact.experienceSummary && (
-        <p className="text-[11px] text-white/30 mt-1 line-clamp-2 italic">{contact.experienceSummary}</p>
+        <p className="text-[11px] text-foreground/50 mt-1 line-clamp-2 italic">{contact.experienceSummary}</p>
       )}
     </div>
   </div>
@@ -558,10 +558,10 @@ const CandidatePreviewCard = ({
 /* ──────────────────────────────────────────────────────────────── */
 
 const EnrichedCandidateCard = ({ contact }: { contact: ContactData }) => (
-  <div className="flex items-start gap-3 p-3 rounded-lg border bg-emerald-500/[0.05] border-emerald-500/20">
+  <div className="flex items-start gap-3 p-3 rounded-lg border bg-accent/[0.05] border-accent/20">
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-white truncate">{contact.fullName}</span>
+        <span className="text-sm font-medium text-foreground truncate">{contact.fullName}</span>
         {contact.linkedinUrl && (
           <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 shrink-0">
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -571,34 +571,34 @@ const EnrichedCandidateCard = ({ contact }: { contact: ContactData }) => (
         )}
       </div>
       {contact.jobTitle && (
-        <p className="text-xs text-white/60 mt-0.5">{contact.jobTitle}{contact.companyName ? ` at ${contact.companyName}` : ""}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{contact.jobTitle}{contact.companyName ? ` at ${contact.companyName}` : ""}</p>
       )}
       {(contact.city || contact.country) && (
-        <p className="text-xs text-white/40 mt-0.5">{[contact.city, contact.country].filter(Boolean).join(", ")}</p>
+        <p className="text-xs text-foreground/60 mt-0.5">{[contact.city, contact.country].filter(Boolean).join(", ")}</p>
       )}
       <div className="flex flex-col gap-1 mt-2 text-xs">
         {contact.email && (
           <div className="flex items-center gap-1.5">
-            <span className="text-white/40 shrink-0">Email:</span>
-            <a href={`mailto:${contact.email}`} className="text-emerald-400 hover:text-emerald-300 truncate">{contact.email}</a>
+            <span className="text-foreground/60 shrink-0">Email:</span>
+            <a href={`mailto:${contact.email}`} className="text-accent hover:text-accent truncate">{contact.email}</a>
           </div>
         )}
         {contact.mobilePhone && (
           <div className="flex items-center gap-1.5">
-            <span className="text-white/40 shrink-0">Mobile:</span>
-            <a href={`tel:${contact.mobilePhone}`} className="text-emerald-400 hover:text-emerald-300">{contact.mobilePhone}</a>
+            <span className="text-foreground/60 shrink-0">Mobile:</span>
+            <a href={`tel:${contact.mobilePhone}`} className="text-accent hover:text-accent">{contact.mobilePhone}</a>
           </div>
         )}
         {contact.directPhone && (
           <div className="flex items-center gap-1.5">
-            <span className="text-white/40 shrink-0">Direct:</span>
-            <a href={`tel:${contact.directPhone}`} className="text-emerald-400 hover:text-emerald-300">{contact.directPhone}</a>
+            <span className="text-foreground/60 shrink-0">Direct:</span>
+            <a href={`tel:${contact.directPhone}`} className="text-accent hover:text-accent">{contact.directPhone}</a>
           </div>
         )}
         {!contact.mobilePhone && !contact.directPhone && contact.phone && (
           <div className="flex items-center gap-1.5">
-            <span className="text-white/40 shrink-0">Phone:</span>
-            <a href={`tel:${contact.phone}`} className="text-emerald-400 hover:text-emerald-300">{contact.phone}</a>
+            <span className="text-foreground/60 shrink-0">Phone:</span>
+            <a href={`tel:${contact.phone}`} className="text-accent hover:text-accent">{contact.phone}</a>
           </div>
         )}
       </div>
@@ -707,7 +707,7 @@ export function RichMessageContent({
       {structuredData?.type === "candidates" && structuredData.contacts && structuredData.contacts.length > 0 && onToggleContact && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-white/50 uppercase tracking-wider">
+            <span className="text-xs font-medium text-foreground/70 uppercase tracking-wider">
               Candidates Found ({structuredData.contacts.length})
             </span>
             <button
@@ -720,7 +720,7 @@ export function RichMessageContent({
                   else { if (!selectedContactKeys?.has(k)) onToggleContact(c, k); }
                 });
               }}
-              className="text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="text-[10px] text-accent hover:text-accent transition-colors"
             >
               {structuredData.contacts.filter((c) => !enrichedContactKeys?.has(contactKey(c))).every((c) => selectedContactKeys?.has(contactKey(c))) && structuredData.contacts.some((c) => !enrichedContactKeys?.has(contactKey(c))) ? "Deselect All" : "Select All"}
             </button>
@@ -739,7 +739,7 @@ export function RichMessageContent({
       {/* Enriched Candidate Cards (recruiting enrichment results) */}
       {structuredData?.type === "enriched_contacts" && structuredData.contacts && structuredData.contacts.length > 0 && (
         <div className="space-y-2">
-          <span className="text-xs font-medium text-emerald-400/70 uppercase tracking-wider">
+          <span className="text-xs font-medium text-accent/70 uppercase tracking-wider">
             Enriched Contacts ({structuredData.contacts.length})
           </span>
           <div className="grid gap-2">

@@ -309,39 +309,39 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
   const cardClass = (mode: ActiveMode) =>
     `p-4 rounded-xl border transition-all duration-200 cursor-pointer group ${
       activeMode === mode
-        ? "border-[#009da5]/60 bg-[#009da5]/8 shadow-[0_0_0_1px_rgba(0,157,165,0.2)]"
-        : "border-[#1e4040]/60 bg-[#0a1818] hover:border-[#009da5]/30"
+        ? "border-primary/60 bg-primary/8 shadow-[0_0_0_1px_rgba(0,157,165,0.2)]"
+        : "border-border/60 bg-muted/40 hover:border-primary/30"
     }`;
 
   return (
-    <div className="dark rounded-2xl overflow-hidden border border-[#1e4040]/60 shadow-[0_12px_56px_rgba(0,0,0,0.6),0_0_0_1px_rgba(0,157,165,0.06)]">
+    <div className="rounded-2xl overflow-hidden border border-border bg-card shadow-medium">
 
       {/* ── SECTION 01: Input Method ─────────────────────────────────────────── */}
-      <div className="bg-[#0c1d1d] px-7 pt-8 pb-8 border-b border-[#1e4040]/55">
+      <div className="bg-card px-7 pt-8 pb-8 border-b border-border/55">
         <div className="flex items-center gap-3 mb-5">
-          <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">01</span>
-          <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Input Method</span>
-          <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+          <span className="text-[12px] font-black tracking-[0.3em] text-primary/80 shrink-0 tabular-nums">01</span>
+          <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-accent shrink-0">Input Method</span>
+          <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
         </div>
 
-        <p className="text-[14px] text-[#3d7070] font-medium mb-6">Choose how you'd like to add your companies</p>
+        <p className="text-[14px] text-muted-foreground font-medium mb-6">Choose how you'd like to add your companies</p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Microsoft Excel */}
           <div className={cardClass("excel")} onClick={() => setActiveMode("excel")}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
-                <FileSpreadsheet className="h-5 w-5 text-[#009da5]" />
+              <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/18 transition-colors">
+                <FileSpreadsheet className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold text-white">Microsoft Excel</h3>
-                <p className="text-[11px] text-[#3d7070]">Download .xlsm template</p>
+                <h3 className="text-[14px] font-semibold text-foreground">Microsoft Excel</h3>
+                <p className="text-[11px] text-muted-foreground">Download .xlsm template</p>
               </div>
             </div>
             <button
               onClick={e => { e.stopPropagation(); handleDownloadTemplate(); }}
-              className="w-full h-9 rounded-lg border border-[#254848] bg-transparent text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full h-9 rounded-lg border border-border bg-transparent text-[12px] font-semibold text-accent hover:bg-primary/10 hover:border-primary/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download className="h-3.5 w-3.5" />
               Download Template
@@ -351,8 +351,8 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
           {/* Google Sheets */}
           <div className={cardClass("sheets-copy")} onClick={() => setActiveMode("sheets-copy")}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
-                <svg className="h-5 w-5 text-[#009da5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/18 transition-colors">
+                <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                   <line x1="16" y1="13" x2="8" y2="13"/>
@@ -360,13 +360,13 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-[14px] font-semibold text-white">Google Sheets</h3>
-                <p className="text-[11px] text-[#3d7070]">With option picker tab</p>
+                <h3 className="text-[14px] font-semibold text-foreground">Google Sheets</h3>
+                <p className="text-[11px] text-muted-foreground">With option picker tab</p>
               </div>
               <Link
                 to="/google-sheets-guide"
                 onClick={e => e.stopPropagation()}
-                className="text-[11px] text-[#3d7070] hover:text-[#58dddd] transition-colors flex items-center gap-1"
+                className="text-[11px] text-muted-foreground hover:text-accent transition-colors flex items-center gap-1"
               >
                 <BookOpen className="h-3 w-3" />
                 Guide
@@ -378,7 +378,7 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
                 window.open(GOOGLE_SHEET_COPY_URL, "_blank", "noopener,noreferrer");
                 toast({ title: "Google Sheets Opened", description: "Make a copy, fill it with your data, then download and upload here" });
               }}
-              className="w-full h-9 rounded-lg border border-[#254848] bg-transparent text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full h-9 rounded-lg border border-border bg-transparent text-[12px] font-semibold text-accent hover:bg-primary/10 hover:border-primary/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Make a Copy
@@ -388,17 +388,17 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
           {/* Spreadsheet (new) */}
           <div className={cardClass("spreadsheet")} onClick={() => setActiveMode("spreadsheet")}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-[#009da5]/10 group-hover:bg-[#009da5]/18 transition-colors">
-                <Table2 className="h-5 w-5 text-[#009da5]" />
+              <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/18 transition-colors">
+                <Table2 className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold text-white">Spreadsheet</h3>
-                <p className="text-[11px] text-[#3d7070]">Paste from Excel directly</p>
+                <h3 className="text-[14px] font-semibold text-foreground">Spreadsheet</h3>
+                <p className="text-[11px] text-muted-foreground">Paste from Excel directly</p>
               </div>
             </div>
-            <div className="w-full h-9 rounded-lg bg-[#009da5]/10 border border-[#009da5]/25 flex items-center justify-center gap-2">
-              <Check className="h-3.5 w-3.5 text-[#009da5]" />
-              <span className="text-[12px] font-semibold text-[#58dddd]">Recommended</span>
+            <div className="w-full h-9 rounded-lg bg-primary/10 border border-primary/25 flex items-center justify-center gap-2">
+              <Check className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[12px] font-semibold text-accent">Recommended</span>
             </div>
           </div>
 
@@ -407,14 +407,14 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
         {activeMode === "excel" && (
           <div className="mt-5 flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <p className="text-[12px] text-[#5e9898]">Important: Keep headers unchanged for a successful upload.</p>
+            <p className="text-[12px] text-muted-foreground">Important: Keep headers unchanged for a successful upload.</p>
           </div>
         )}
       </div>
 
       {/* ── SECTION 02: Spreadsheet Grid / My Sheets Manager ─────────────────── */}
       {activeMode === "spreadsheet" && (
-        <div className="bg-[#080f0f] px-7 pt-8 pb-8">
+        <div className="bg-card px-7 pt-8 pb-8">
           {sheetView === "manager" ? (
             <SheetsManager
               userId={userId}
@@ -427,9 +427,9 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
           ) : (
             <>
               <div className="flex items-center gap-3 mb-6">
-                <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
-                <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Enter Companies</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+                <span className="text-[12px] font-black tracking-[0.3em] text-primary/80 shrink-0 tabular-nums">02</span>
+                <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-accent shrink-0">Enter Companies</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
               </div>
               <div className="overflow-x-auto">
                 <SpreadsheetGrid
@@ -446,11 +446,11 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
 
       {/* ── SECTION 02: Google Sheets — URL Import OR File Upload ─────────────── */}
       {activeMode === "sheets-copy" && (
-        <div className="bg-[#080f0f] px-7 pt-8 pb-8">
+        <div className="bg-card px-7 pt-8 pb-8">
           <div className="flex items-center gap-3 mb-5">
-            <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
-            <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Import from Google Sheets</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+            <span className="text-[12px] font-black tracking-[0.3em] text-primary/80 shrink-0 tabular-nums">02</span>
+            <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-accent shrink-0">Import from Google Sheets</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
           </div>
 
           {/* ── Two-column layout: URL import | File upload ───────────── */}
@@ -458,38 +458,38 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
 
             {/* LEFT: Paste URL */}
             <div className="flex-1 flex flex-col gap-4 pr-6">
-              <span className="text-[12px] font-bold text-white/60 tracking-[0.08em] uppercase">Paste Google Sheet URL</span>
+              <span className="text-[12px] font-bold text-foreground/60 tracking-[0.08em] uppercase">Paste Google Sheet URL</span>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
-                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#3d7070] pointer-events-none" />
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   <input
                     type="text"
                     value={sheetsUrl}
                     onChange={e => { setSheetsUrl(e.target.value); if (sheetsResult) setSheetsResult(null); }}
                     onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSheetsImport(); } }}
                     placeholder="https://docs.google.com/spreadsheets/d/..."
-                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-[#0a1818] border border-[#254848] text-[13px] text-white placeholder:text-[#2e5252] focus:outline-none focus:border-[#009da5]/60 focus:ring-1 focus:ring-[#009da5]/30 transition-colors"
+                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-muted/40 border border-border text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors"
                   />
                 </div>
                 <button
                   onClick={handleSheetsImport}
                   disabled={!sheetsUrl.trim() || sheetsValidating}
-                  className="h-9 px-4 rounded-lg border border-[#254848] bg-[#0a1818] text-[12px] font-semibold text-[#58dddd] hover:bg-[#009da5]/10 hover:border-[#009da5]/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 shrink-0"
+                  className="h-9 px-4 rounded-lg border border-border bg-muted/40 text-[12px] font-semibold text-accent hover:bg-primary/10 hover:border-primary/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 shrink-0"
                 >
                   {sheetsValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                   {sheetsValidating ? "Checking..." : "Import"}
                 </button>
               </div>
-              <p className="text-[11px] text-white/50 leading-relaxed">
-                Sheet must be public: <span className="text-[#58dddd]/70">Share</span> &rarr; <span className="text-[#58dddd]/70">Anyone with the link</span> &rarr; <span className="text-[#58dddd]/70">Viewer</span>
+              <p className="text-[11px] text-foreground/50 leading-relaxed">
+                Sheet must be public: <span className="text-accent/70">Share</span> &rarr; <span className="text-accent/70">Anyone with the link</span> &rarr; <span className="text-accent/70">Viewer</span>
               </p>
               <button
                 onClick={handleSheetsSubmit}
                 disabled={sheetsResult?.status !== "ok" || sheetsSubmitting}
                 className={`mt-auto h-10 rounded-lg font-semibold text-[13px] tracking-wide transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
                   sheetsResult?.status === "ok" && !sheetsSubmitting
-                    ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_2px_12px_rgba(0,157,165,0.2)]"
-                    : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+                    ? "bg-primary text-primary-foreground hover:bg-accent shadow-[0_2px_12px_rgba(0,157,165,0.2)]"
+                    : "bg-muted/40 text-muted-foreground border border-border"
                 }`}
               >
                 {sheetsSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</> : <><Upload className="h-4 w-4" />Upload & Process</>}
@@ -498,39 +498,39 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
 
             {/* CENTER: Vertical OR divider */}
             <div className="flex flex-col items-center gap-2 px-1">
-              <div className="flex-1 w-px bg-[#1e4040]/60" />
-              <span className="text-[11px] font-semibold text-[#3d7070] tracking-[0.1em] uppercase">or</span>
-              <div className="flex-1 w-px bg-[#1e4040]/60" />
+              <div className="flex-1 w-px bg-muted/60" />
+              <span className="text-[11px] font-semibold text-muted-foreground tracking-[0.1em] uppercase">or</span>
+              <div className="flex-1 w-px bg-muted/60" />
             </div>
 
             {/* RIGHT: File upload */}
             <div className="flex-1 flex flex-col gap-4 pl-6">
-              <span className="text-[12px] font-bold text-white/60 tracking-[0.08em] uppercase">Upload Filled Template</span>
+              <span className="text-[12px] font-bold text-foreground/60 tracking-[0.08em] uppercase">Upload Filled Template</span>
               <div
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
                 onDrop={e => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files?.[0]; if (f && validateFile(f)) setSelectedFile(f); }}
                 className={`flex-1 relative cursor-pointer rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 p-5 transition-colors ${
-                  isDragging ? "border-[#009da5] bg-[#009da5]/8"
-                    : selectedFile ? "border-[#009da5]/50 bg-[#009da5]/5"
-                    : "border-[#254848] hover:border-[#009da5]/40 hover:bg-[#009da5]/5"
+                  isDragging ? "border-primary bg-primary/8"
+                    : selectedFile ? "border-primary/50 bg-primary/5"
+                    : "border-border hover:border-primary/40 hover:bg-primary/5"
                 }`}
               >
                 <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm,.csv" onChange={handleFileChange} disabled={loading} className="hidden" />
                 {selectedFile ? (
                   <>
-                    <div className="p-2 rounded-full bg-[#009da5]/12"><FileSpreadsheet className="h-6 w-6 text-[#009da5]" /></div>
-                    <p className="text-[13px] font-semibold text-white truncate max-w-full">{selectedFile.name}</p>
-                    <p className="text-[11px] text-[#5e9898]">Click or drag to replace</p>
+                    <div className="p-2 rounded-full bg-primary/12"><FileSpreadsheet className="h-6 w-6 text-primary" /></div>
+                    <p className="text-[13px] font-semibold text-foreground truncate max-w-full">{selectedFile.name}</p>
+                    <p className="text-[11px] text-muted-foreground">Click or drag to replace</p>
                   </>
                 ) : (
                   <>
-                    <div className={`p-2 rounded-full transition-colors ${isDragging ? "bg-[#009da5]/20" : "bg-[#1a3535]"}`}>
-                      <Upload className={`h-6 w-6 ${isDragging ? "text-[#009da5]" : "text-[#3d7070]"}`} />
+                    <div className={`p-2 rounded-full transition-colors ${isDragging ? "bg-primary/20" : "bg-muted"}`}>
+                      <Upload className={`h-6 w-6 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
                     </div>
-                    <p className="text-[13px] font-semibold text-white">{isDragging ? "Drop here" : "Drag & drop file"}</p>
-                    <p className="text-[11px] text-[#5e9898]">or <span className="text-[#58dddd] font-medium">browse</span> &middot; .xlsx, .xlsm, .csv</p>
+                    <p className="text-[13px] font-semibold text-foreground">{isDragging ? "Drop here" : "Drag & drop file"}</p>
+                    <p className="text-[11px] text-muted-foreground">or <span className="text-accent font-medium">browse</span> &middot; .xlsx, .xlsm, .csv</p>
                   </>
                 )}
               </div>
@@ -540,8 +540,8 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
                 disabled={!selectedFile || loading}
                 className={`h-10 rounded-lg font-semibold text-[13px] tracking-wide transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
                   selectedFile && !loading
-                    ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_2px_12px_rgba(0,157,165,0.2)]"
-                    : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+                    ? "bg-primary text-primary-foreground hover:bg-accent shadow-[0_2px_12px_rgba(0,157,165,0.2)]"
+                    : "bg-muted/40 text-muted-foreground border border-border"
                 }`}
               >
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</> : <><Upload className="h-4 w-4" />Upload & Process</>}
@@ -551,10 +551,10 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
 
           {/* ── Progress bar (spans full width below) ──────────────────── */}
           {loading && currentStep !== "idle" && (
-            <div className="space-y-3 p-4 mt-5 rounded-xl bg-[#0a1818] border border-[#1e4040]/55">
+            <div className="space-y-3 p-4 mt-5 rounded-xl bg-muted/40 border border-border/55">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-medium text-white">{PROCESSING_STEPS.find(s => s.key === currentStep)?.label}</span>
-                <span className="text-[13px] text-[#3d7070]">{getCurrentProgress()}%</span>
+                <span className="text-[13px] font-medium text-foreground">{PROCESSING_STEPS.find(s => s.key === currentStep)?.label}</span>
+                <span className="text-[13px] text-muted-foreground">{getCurrentProgress()}%</span>
               </div>
               <Progress value={getCurrentProgress()} className="h-2" />
             </div>
@@ -643,15 +643,15 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
 
       {/* ── SECTION 02: File Upload (Excel only) ──────────────────────────────── */}
       {activeMode === "excel" && (
-        <div className="bg-[#080f0f] px-7 pt-8 pb-8">
+        <div className="bg-card px-7 pt-8 pb-8">
           <div className="flex items-center gap-3 mb-5">
-            <span className="text-[12px] font-black tracking-[0.3em] text-[#009da5]/80 shrink-0 tabular-nums">02</span>
-            <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-[#70e8e8] shrink-0">Upload File</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-[#009da5]/30 to-transparent" />
+            <span className="text-[12px] font-black tracking-[0.3em] text-primary/80 shrink-0 tabular-nums">02</span>
+            <span className="text-[16px] font-bold tracking-[0.16em] uppercase text-accent shrink-0">Upload File</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
           </div>
 
           <form onSubmit={handleFileSubmit} className="space-y-5">
-            <span className="text-[13px] font-bold text-white tracking-[0.08em] uppercase">Upload Filled Template</span>
+            <span className="text-[13px] font-bold text-foreground tracking-[0.08em] uppercase">Upload Filled Template</span>
 
             <div
               onClick={() => fileInputRef.current?.click()}
@@ -659,29 +659,29 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
               onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
               onDrop={e => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files?.[0]; if (f && validateFile(f)) setSelectedFile(f); }}
               className={`relative cursor-pointer rounded-xl border-2 border-dashed p-8 transition-all duration-300 ${
-                isDragging ? "border-[#009da5] bg-[#009da5]/8"
-                  : selectedFile ? "border-[#009da5]/50 bg-[#009da5]/5"
-                  : "border-[#254848] hover:border-[#009da5]/40 hover:bg-[#009da5]/5"
+                isDragging ? "border-primary bg-primary/8"
+                  : selectedFile ? "border-primary/50 bg-primary/5"
+                  : "border-border hover:border-primary/40 hover:bg-primary/5"
               }`}
             >
               <input ref={fileInputRef} type="file" accept=".xlsx,.xlsm,.csv" onChange={handleFileChange} disabled={loading} className="hidden" />
               <div className="flex flex-col items-center justify-center gap-3 text-center">
                 {selectedFile ? (
                   <>
-                    <div className="p-3 rounded-full bg-[#009da5]/12"><FileSpreadsheet className="h-8 w-8 text-[#009da5]" /></div>
+                    <div className="p-3 rounded-full bg-primary/12"><FileSpreadsheet className="h-8 w-8 text-primary" /></div>
                     <div>
-                      <p className="text-[15px] font-semibold text-white">{selectedFile.name}</p>
-                      <p className="text-[12px] text-[#5e9898] mt-1">Click or drag to replace</p>
+                      <p className="text-[15px] font-semibold text-foreground">{selectedFile.name}</p>
+                      <p className="text-[12px] text-muted-foreground mt-1">Click or drag to replace</p>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className={`p-3 rounded-full transition-colors ${isDragging ? "bg-[#009da5]/20" : "bg-[#1a3535]"}`}>
-                      <Upload className={`h-8 w-8 ${isDragging ? "text-[#009da5]" : "text-[#3d7070]"}`} />
+                    <div className={`p-3 rounded-full transition-colors ${isDragging ? "bg-primary/20" : "bg-muted"}`}>
+                      <Upload className={`h-8 w-8 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
                     </div>
                     <div>
-                      <p className="text-[15px] font-semibold text-white">{isDragging ? "Drop your file here" : "Drag & drop your file here"}</p>
-                      <p className="text-[13px] text-[#5e9898] mt-1">or <span className="text-[#58dddd] font-medium">browse</span> to choose a file</p>
+                      <p className="text-[15px] font-semibold text-foreground">{isDragging ? "Drop your file here" : "Drag & drop your file here"}</p>
+                      <p className="text-[13px] text-muted-foreground mt-1">or <span className="text-accent font-medium">browse</span> to choose a file</p>
                       <p className="text-[12px] text-[#3d6060] mt-2">Supports .xlsx, .xlsm, .csv</p>
                     </div>
                   </>
@@ -690,19 +690,19 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
             </div>
 
             {loading && currentStep !== "idle" && (
-              <div className="space-y-3 p-4 rounded-xl bg-[#0a1818] border border-[#1e4040]/55">
+              <div className="space-y-3 p-4 rounded-xl bg-muted/40 border border-border/55">
                 <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-medium text-white">{PROCESSING_STEPS.find(s => s.key === currentStep)?.label}</span>
-                  <span className="text-[13px] text-[#3d7070]">{getCurrentProgress()}%</span>
+                  <span className="text-[13px] font-medium text-foreground">{PROCESSING_STEPS.find(s => s.key === currentStep)?.label}</span>
+                  <span className="text-[13px] text-muted-foreground">{getCurrentProgress()}%</span>
                 </div>
                 <Progress value={getCurrentProgress()} className="h-2" />
                 <div className="flex justify-between gap-2">
                   {PROCESSING_STEPS.map((step, index) => (
                     <div key={step.key} className="flex items-center gap-1.5">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] transition-colors ${getCurrentProgress() >= step.progress ? "bg-[#009da5] text-black" : "bg-[#1a3535] text-[#3d7070]"}`}>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] transition-colors ${getCurrentProgress() >= step.progress ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                         {getCurrentProgress() >= step.progress ? <Check className="h-3 w-3" /> : index + 1}
                       </div>
-                      <span className={`text-[12px] hidden sm:inline ${getCurrentProgress() >= step.progress ? "text-white" : "text-[#3d7070]"}`}>
+                      <span className={`text-[12px] hidden sm:inline ${getCurrentProgress() >= step.progress ? "text-foreground" : "text-muted-foreground"}`}>
                         {step.key === "parsing" ? "Parse" : step.key === "creating" ? "Create" : step.key === "triggering" ? "Process" : "Done"}
                       </span>
                     </div>
@@ -716,8 +716,8 @@ export const ExcelUpload = ({ userId, userEmail }: ExcelUploadProps) => {
               disabled={!selectedFile || loading}
               className={`w-full h-12 rounded-xl font-semibold text-[15px] tracking-wide transition-all duration-200 disabled:opacity-25 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
                 selectedFile && !loading
-                  ? "bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
-                  : "bg-white/[0.03] text-[#2e5252] border border-white/[0.05]"
+                  ? "bg-primary text-primary-foreground hover:bg-accent shadow-[0_4px_16px_rgba(0,157,165,0.25)]"
+                  : "bg-muted/40 text-muted-foreground border border-border"
               }`}
             >
               {loading ? <><Loader2 className="h-5 w-5 animate-spin" />Processing...</> : <><Upload className="h-5 w-5" />Upload & Process</>}

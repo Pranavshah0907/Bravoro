@@ -229,8 +229,8 @@ export function WorkspaceSearches({ userIds }: WorkspaceSearchesProps) {
     {
       key: "all",
       label: "All",
-      className: "text-foreground/60 bg-white/5 border border-white/10",
-      activeClassName: "text-foreground bg-white/10 border border-white/20",
+      className: "text-foreground/60 bg-foreground/5 border border-foreground/10",
+      activeClassName: "text-foreground bg-foreground/10 border border-foreground/20",
     },
     {
       key: "processing",

@@ -1268,7 +1268,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="dark">
+    <div>
       <style>{`
         .sg-input::placeholder { color: #b0c8c8; }
         .sg-input:focus::placeholder { color: #c5d8d8; }
@@ -1422,7 +1422,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
         {/* ── Hint + row count + separator ────────────────────────────────── */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 shrink-0">
-            <Clipboard className="h-3 w-3 text-[#009da5]" />
+            <Clipboard className="h-3 w-3 text-primary" />
             <span className="text-[11px] text-[#4a7878]">Click a cell · Ctrl+C to copy selection · paste from Excel or Google Sheets</span>
           </div>
           {validCount > 0 && (
@@ -1462,7 +1462,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                           {isPicker && <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: "#009da5", opacity: 0.8 }} />}
                         </div>
                         <div className="absolute right-0 top-0 h-full flex items-center justify-center group/rh" style={{ width: 8, cursor: "col-resize", zIndex: 1 }} onMouseDown={e => startResize(e, col.key)}>
-                          <div className="h-3/5 rounded-full transition-colors duration-150 group-hover/rh:bg-[#009da5]" style={{ width: 2, background: "#c8e2e2" }} />
+                          <div className="h-3/5 rounded-full transition-colors duration-150 group-hover/rh:bg-primary" style={{ width: 2, background: "#c8e2e2" }} />
                         </div>
                       </th>
                     );
@@ -1647,7 +1647,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
                   return (
                     <button key={option} type="button" onMouseDown={e => e.preventDefault()} onClick={() => toggleItem(option)} className="w-full flex items-center gap-2.5 px-3 py-[7px] text-left transition-colors duration-100" style={{ background: isSel ? "rgba(0,157,165,0.06)" : undefined, color: isSel ? "#007980" : "#2a4a4a" }} onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = "#f0fafa"; }} onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.background = ""; }}>
                       <div className="w-[13px] h-[13px] rounded-[3px] border shrink-0 flex items-center justify-center transition-all duration-100" style={{ background: isSel ? "#009da5" : "transparent", borderColor: isSel ? "#009da5" : "#b0cccc" }}>
-                        {isSel && <Check className="h-[9px] w-[9px] text-white" />}
+                        {isSel && <Check className="h-[9px] w-[9px] text-foreground" />}
                       </div>
                       <span className="text-[12px] truncate">{option}</span>
                     </button>
@@ -1670,7 +1670,7 @@ export const SpreadsheetGrid = forwardRef<SpreadsheetGridHandle, SpreadsheetGrid
               <p className="text-[12px] text-[#2a4545]">Fill at least one company name to run</p>
             )}
           </div>
-          <button type="button" onClick={handleSubmit} disabled={submitting || validCount === 0} className="h-11 px-7 rounded-xl font-semibold text-[14px] tracking-wide bg-[#009da5] text-black hover:bg-[#00b2ba] shadow-[0_4px_20px_rgba(0,157,165,0.22)] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center gap-2 shrink-0">
+          <button type="button" onClick={handleSubmit} disabled={submitting || validCount === 0} className="h-11 px-7 rounded-xl font-semibold text-[14px] tracking-wide bg-primary text-black hover:bg-accent shadow-[0_4px_20px_rgba(0,157,165,0.22)] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.99] cursor-pointer flex items-center gap-2 shrink-0">
             {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Processing…</> : <><Play className="h-4 w-4" />Run Bulk Search</>}
           </button>
         </div>
