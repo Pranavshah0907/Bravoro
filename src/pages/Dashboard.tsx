@@ -305,20 +305,26 @@ const Dashboard = () => {
               )}
 
               {/* Form Area — full width now that nav is in sidebar */}
-              <div className="p-5 lg:p-8 xl:p-10 2xl:p-12 pt-3 lg:pt-8">
+              <div className="p-5 lg:px-10 lg:py-10 2xl:px-14">
                 <div className={selectedType === "bulk" || selectedType === "people_enrichment" ? "max-w-full" : "max-w-4xl mx-auto"}>
-                  {/* Page header */}
-                  <div className="mb-6 lg:mb-8 animate-fade-in">
-                    <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-primary/70 mb-2">
-                      Enrichment
-                    </p>
-                    <h1 className="text-2xl lg:text-3xl xl:text-4xl font-extrabold text-foreground tracking-tight mb-2">
-                      {ENRICHMENT_OPTIONS.find(o => o.type === selectedType)?.title}
+                  {/* Editorial page header */}
+                  <div className="mb-7 lg:mb-9 animate-fade-in">
+                    <p className="eyebrow text-foreground/55 mb-2.5">Enrichment · Workflow</p>
+                    <h1 className="text-3xl lg:text-4xl xl:text-5xl font-semibold text-foreground tracking-tight leading-none">
+                      {(() => {
+                        const title = ENRICHMENT_OPTIONS.find(o => o.type === selectedType)?.title ?? "";
+                        const [first, ...rest] = title.split(" ");
+                        return (
+                          <>
+                            <span className="font-display italic font-normal text-primary">{first}</span>
+                            {rest.length > 0 && <span> {rest.join(" ")}</span>}
+                          </>
+                        );
+                      })()}
                     </h1>
-                    <p className="text-sm lg:text-base text-muted-foreground font-medium">
+                    <p className="text-sm lg:text-base text-muted-foreground mt-3 max-w-[58ch] leading-relaxed">
                       {ENRICHMENT_OPTIONS.find(o => o.type === selectedType)?.description}
                     </p>
-                    <div className="mt-4 h-px w-16 bg-gradient-to-r from-primary to-transparent rounded-full" />
                   </div>
 
                   <div className="animate-slide-up">
