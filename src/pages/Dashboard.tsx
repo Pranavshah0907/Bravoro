@@ -14,9 +14,8 @@ import { PasswordReset } from "@/components/PasswordReset";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
-import { EnrichmentCard } from "@/components/EnrichmentCard";
+import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { DesktopRecommendedBanner } from "@/components/DesktopRecommendedBanner";
-import { Search, Upload, Users, Bot, UserSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BravoroWordmark } from "@/components/BravoroWordmark";
 
@@ -24,42 +23,12 @@ type EnrichmentType = "manual" | "bulk" | "people_enrichment" | "ai_staffing" | 
 
 const VALID_TABS: EnrichmentType[] = ["manual", "bulk", "people_enrichment", "ai_staffing", "recruiting_chat"];
 
-const ENRICHMENT_OPTIONS = [
-  {
-    type: "manual" as const,
-    title: "Single Search",
-    description: "Search and enrich contacts from a single company",
-    icon: Search,
-    gradient: "from-primary/25 via-accent/15 to-primary/8",
-  },
-  {
-    type: "bulk" as const,
-    title: "Bulk Search",
-    description: "Upload multiple companies and enrich contacts in batch",
-    icon: Upload,
-    gradient: "from-accent/25 via-secondary/15 to-accent/8",
-  },
-  {
-    type: "people_enrichment" as const,
-    title: "Bulk People Enrichment",
-    description: "Enrich existing contact lists with updated information",
-    icon: Users,
-    gradient: "from-secondary/25 via-primary/15 to-secondary/8",
-  },
-  {
-    type: "ai_staffing" as const,
-    title: "AI-based Staffing",
-    description: "Chat with AI to find and shortlist candidates for your roles",
-    icon: Bot,
-    gradient: "from-caretta/25 via-primary/15 to-caretta/8",
-  },
-  {
-    type: "recruiting_chat" as const,
-    title: "Recruiting Search",
-    description: "Find candidates by role, skills & location using AI",
-    icon: UserSearch,
-    gradient: "from-accent/25 via-primary/15 to-caretta/8",
-  },
+const ENRICHMENT_OPTIONS: { type: NonNullable<EnrichmentType>; title: string; description: string }[] = [
+  { type: "manual", title: "Single Search", description: "Search and enrich contacts from a single company" },
+  { type: "bulk", title: "Bulk Search", description: "Upload multiple companies and enrich contacts in batch" },
+  { type: "people_enrichment", title: "Bulk People Enrichment", description: "Enrich existing contact lists with updated information" },
+  { type: "ai_staffing", title: "AI-based Staffing", description: "Chat with AI to find and shortlist candidates for your roles" },
+  { type: "recruiting_chat", title: "Recruiting Search", description: "Find candidates by role, skills & location using AI" },
 ];
 
 const Dashboard = () => {
@@ -272,24 +241,24 @@ const Dashboard = () => {
         "ml-0 pt-14 pb-20 md:pt-0 md:pb-0 md:ml-16",
         isSidebarPinned && "md:ml-56"
       )}>
-        {/* Background Effects — atmospheric black + teal */}
-        <div className={cn(
-          "fixed inset-0 pointer-events-none overflow-hidden duration-300 ease-out",
-          "ml-0 md:ml-16",
-          isSidebarPinned && "md:ml-56"
-        )}>
-          {/* Top-center teal corona — uses accent (cyan in dark, mid-teal in light) at theme-aware intensity */}
-          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full" style={{
-            background: "radial-gradient(ellipse, hsl(var(--accent) / var(--glow-strength, 0.30)) 0%, transparent 65%)",
-            filter: "blur(60px)",
-            animation: "float 22s ease-in-out infinite",
-          }} />
-          {/* Bottom-right secondary glow */}
-          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{
-            background: "radial-gradient(circle, hsl(var(--accent) / var(--glow-strength-soft, 0.15)) 0%, transparent 65%)",
-            filter: "blur(80px)",
-            animation: "float 18s ease-in-out infinite reverse",
-          }} />
+        {/* Background — quiet, theme-aware warm wash. No "designed-this" blobs. */}
+        <div
+          aria-hidden
+          className={cn(
+            "fixed inset-0 pointer-events-none overflow-hidden duration-300 ease-out",
+            "ml-0 md:ml-16",
+            isSidebarPinned && "md:ml-56"
+          )}
+        >
+          {/* Single subtle top-right warm wash — sells 'lit room' without performing */}
+          <div
+            className="absolute -top-40 right-[-10%] w-[700px] h-[420px] rounded-full"
+            style={{
+              background:
+                "radial-gradient(ellipse, hsl(var(--accent) / var(--glow-strength-soft, 0.06)) 0%, transparent 70%)",
+              filter: "blur(80px)",
+            }}
+          />
         </div>
 
         {/* Content */}
@@ -324,37 +293,10 @@ const Dashboard = () => {
             </div>
           ) : !selectedType ? (
             /* ── Home: Welcome view ── */
-            <div className="min-h-screen flex flex-col items-center justify-center px-8 py-16">
-              <div className="text-center mb-14 animate-fade-in">
-                <p className="text-xs font-bold tracking-[0.2em] uppercase text-primary mb-4 opacity-80">
-                  Lead Enrichment Platform
-                </p>
-                <h1 className="hero-gradient text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-none tracking-tight">
-                  Welcome back
-                </h1>
-                <p className="text-base lg:text-lg text-muted-foreground max-w-lg mx-auto font-medium">
-                  Select an enrichment method to get started
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 max-w-6xl w-full items-stretch">
-                {ENRICHMENT_OPTIONS.map((option, index) => (
-                  <div
-                    key={option.type}
-                    className="animate-slide-up"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <EnrichmentCard
-                      title={option.title}
-                      description={option.description}
-                      icon={option.icon}
-                      gradient={option.gradient}
-                      onClick={() => setSelectedType(option.type)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <DashboardHome
+              onSelect={(type) => setSelectedType(type)}
+              userName={user?.email?.split("@")[0]}
+            />
           ) : (
             /* ── Selected View: Form ── */
             <div className="min-h-screen">

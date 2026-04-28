@@ -226,6 +226,45 @@
     --glow-strength-soft: 0.08;
     /* Hero gradient: foreground dark → mid-teal → vivid teal — gives drama on cream where the dark-mode stops collapse */
     --hero-gradient: linear-gradient(135deg, hsl(var(--foreground)) 25%, hsl(184 100% 27%) 65%, hsl(184 86% 16%) 100%);
+
+    /* ── Elevation scale — layered, warm-tinted shadows tuned for cream surfaces ── */
+    --elev-1: 0 1px 1px hsl(35 28% 22% / 0.04), 0 2px 6px hsl(35 28% 22% / 0.04);
+    --elev-2: 0 1px 2px hsl(35 28% 22% / 0.05), 0 6px 16px hsl(35 28% 22% / 0.06);
+    --elev-3: 0 2px 4px hsl(35 28% 22% / 0.06), 0 14px 36px hsl(35 28% 22% / 0.10);
+    --elev-4: 0 4px 8px hsl(35 28% 22% / 0.07), 0 28px 56px hsl(35 28% 22% / 0.14);
+    /* Inset hairline highlight — the 1px white edge that makes cards feel like real paper */
+    --hairline-top: inset 0 1px 0 hsl(0 0% 100% / 0.85);
+    /* Optional warm under-glow for spotlight surfaces */
+    --highlight-warm: 0 0 0 1px hsl(35 30% 88%), 0 1px 0 hsl(0 0% 100%) inset;
+
+    /* Surface variants for layered hierarchy */
+    --surface-base: 35 43% 97%;        /* same as bg — body */
+    --surface-raised: 0 0% 100%;       /* white cards */
+    --surface-sunken: 35 32% 95%;      /* slightly cooler than bg, for input wells / list rails */
+    --surface-tint: 184 35% 96%;       /* faintest teal wash, for accent rows */
+  }
+
+  /* Dark-mode elevation: deeper shadows, no warm undertone */
+  :root, .dark {
+    --elev-1: 0 1px 2px hsl(183 100% 3% / 0.7), 0 2px 8px hsl(183 100% 3% / 0.5);
+    --elev-2: 0 2px 6px hsl(183 100% 3% / 0.7), 0 8px 24px hsl(183 100% 3% / 0.55);
+    --elev-3: 0 4px 12px hsl(183 100% 3% / 0.75), 0 16px 40px hsl(183 100% 3% / 0.6);
+    --elev-4: 0 8px 24px hsl(183 100% 3% / 0.8), 0 32px 64px hsl(183 100% 3% / 0.65);
+    --hairline-top: inset 0 1px 0 hsl(180 30% 18% / 0.5);
+    --highlight-warm: 0 0 0 1px hsl(183 30% 13%), 0 1px 0 hsl(180 30% 18% / 0.5) inset;
+
+    --surface-base: 180 20% 4%;
+    --surface-raised: 183 20% 6%;
+    --surface-sunken: 183 22% 5%;
+    --surface-tint: 184 30% 8%;
+  }
+
+  /* ── Motion easing curves ── */
+  :root {
+    --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-cubic: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-glide: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -237,11 +276,17 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  /* Tabular figures globally for any element marked .tabular */
+  .tabular, [data-slot="number"] {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Custom scrollbar */
@@ -405,6 +450,117 @@
     border-radius: 50%;
     box-shadow: 0 0 20px hsl(var(--accent) / 0.6);
   }
+
+  /* ── Editorial display: Instrument Serif italic, used sparingly for hero moments ── */
+  .font-display {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-feature-settings: "liga", "calt";
+  }
+
+  /* ── Surface utilities ── */
+  .surface-raised {
+    background: hsl(var(--surface-raised));
+    box-shadow: var(--elev-2), var(--hairline-top);
+  }
+  .surface-sunken {
+    background: hsl(var(--surface-sunken));
+  }
+  .surface-tint {
+    background: hsl(var(--surface-tint));
+  }
+
+  /* ── Premium card: white surface, layered warm shadow, hairline top edge ── */
+  .card-paper {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--elev-1), var(--hairline-top);
+  }
+  .card-paper-lift {
+    transition: transform 360ms var(--ease-spring), box-shadow 360ms var(--ease-spring), border-color 240ms var(--ease-glide);
+  }
+  .card-paper-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--elev-3), var(--hairline-top);
+    border-color: hsl(var(--primary) / 0.35);
+  }
+  .card-paper-lift:active {
+    transform: translateY(-1px) scale(0.998);
+    transition-duration: 80ms;
+  }
+
+  /* ── Eyebrow tag — small, uppercase tracking ── */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* ── Premium focus ring — visible only when keyboard navigating ── */
+  .focus-ring {
+    outline: none;
+    transition: box-shadow 160ms var(--ease-glide);
+  }
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.7);
+  }
+
+  /* ── Linear-style status pill ── */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 9999px;
+    background: hsl(var(--surface-sunken));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+  .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 2px hsl(var(--background));
+  }
+
+  /* ── Editorial divider — subtle hairline with a precise gap, not a heavy rule ── */
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--border)) 12%, hsl(var(--border)) 88%, transparent);
+  }
+
+  /* ── Marquee-style perpetual breathing for live status indicators ── */
+  .breathe {
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+
+  /* ── Subtle background grain — applied as a fixed pseudo-overlay for paper feel ── */
+  .grain-overlay::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.10 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+  .dark .grain-overlay::before {
+    opacity: 0.04;
+    mix-blend-mode: screen;
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.92); }
 }
 
 @keyframes fade-in {

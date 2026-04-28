@@ -59,3 +59,4 @@ migration_data/
 
 # Sensitive credential files
 InputFiles/*.json
+.vercel
