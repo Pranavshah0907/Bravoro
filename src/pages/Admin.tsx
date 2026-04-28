@@ -877,63 +877,64 @@ const Admin = () => {
         {/* ────────────────── RIGHT DETAIL PANE ────────────────── */}
         <main className="flex-1 overflow-y-auto bg-background relative">
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div
-              className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
-              style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)" }}
-            />
+            {/* No background blob — administrative surface stays calm and authoritative */}
           </div>
 
-          <div className="relative z-10 p-6 md:p-8">
+          <div className="relative z-10 p-6 md:p-10">
 
             {/* ── OVERVIEW ── */}
             {selectedView.type === "overview" && (
-              <div className="space-y-8 animate-fade-in">
+              <div className="space-y-10 animate-fade-in">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Overview</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">Summary of your workspace and user activity</p>
+                  <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Admin</p>
+                  <h2 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
+                    <span className="font-display italic font-normal text-primary">Overview</span>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-3 max-w-[48ch]">Workspace and user activity, billing snapshot, and pending invites — all in one view.</p>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Stat strip — editorial, no card boxes, just a divided row */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-b border-border divide-x divide-border">
                   {[
-                    { label: "Workspaces", value: workspaces.length, icon: <Building2 className="h-5 w-5" />, color: "text-primary" },
-                    { label: "Total Users", value: users.length, icon: <Users className="h-5 w-5" />, color: "text-primary" },
-                    { label: "Active Users", value: users.filter((u) => !u.requires_password_reset).length, icon: <Activity className="h-5 w-5" />, color: "text-green-700 dark:text-green-400" },
-                    { label: "Pending Login", value: users.filter((u) => u.requires_password_reset).length, icon: <UserIcon className="h-5 w-5" />, color: "text-amber-700 dark:text-amber-400" },
-                  ].map(({ label, value, icon, color }) => (
-                    <Card key={label} className="border-border/40 bg-card/90 backdrop-blur-sm">
-                      <CardContent className="p-5">
-                        <div className={cn("mb-3", color)}>{icon}</div>
-                        <p className="text-3xl font-bold text-foreground">{value}</p>
-                        <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider font-medium">{label}</p>
-                      </CardContent>
-                    </Card>
+                    { label: "Workspaces", value: workspaces.length, hint: "Active" },
+                    { label: "Total users", value: users.length, hint: "Across workspaces" },
+                    { label: "Active users", value: users.filter((u) => !u.requires_password_reset).length, hint: "Logged in" },
+                    { label: "Pending login", value: users.filter((u) => u.requires_password_reset).length, hint: "Awaiting invite" },
+                  ].map(({ label, value, hint }, i) => (
+                    <div key={label} className={cn("py-7 px-5 lg:px-7 flex flex-col justify-between min-h-[120px]", i === 0 && "lg:pl-0")}>
+                      <span className="eyebrow text-muted-foreground">{label}</span>
+                      <div className="mt-3 flex items-baseline gap-3">
+                        <span className="font-display tabular text-5xl md:text-6xl leading-none tracking-tight text-foreground">{value}</span>
+                        <span className="text-[11px] text-muted-foreground/70 font-medium">{hint}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
 
                 {workspaces.length > 0 && (
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Workspaces</h3>
-                    <div className="grid gap-2">
+                    <h3 className="eyebrow text-muted-foreground">Workspaces</h3>
+                    <div className="card-paper divide-y divide-border/70 overflow-hidden">
                       {workspaces.map((ws) => {
                         const memberCount = users.filter((u) => u.workspace_id === ws.id).length;
                         return (
                           <div
                             key={ws.id}
                             onClick={() => setSelectedView({ type: "workspace", id: ws.id })}
-                            className="group flex items-center justify-between rounded-lg border border-border/30 bg-card/40 hover:bg-card/70 px-4 py-3 transition-colors cursor-pointer"
+                            className="group flex items-center justify-between px-5 py-4 hover:bg-[hsl(var(--surface-sunken))] transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-md bg-primary/10 shrink-0">
-                                <Building2 className="h-4 w-4 text-primary" />
+                              <div className="h-9 w-9 rounded-lg bg-[hsl(var(--surface-tint))] border border-border flex items-center justify-center shrink-0 group-hover:border-primary/30 transition-colors">
+                                <Building2 className="h-4 w-4 text-primary" strokeWidth={1.75} />
                               </div>
                               <div>
-                                <p className="text-sm font-semibold text-foreground">{ws.company_name}</p>
-                                <p className="text-xs text-muted-foreground">{ws.primary_contact_name}</p>
+                                <p className="text-[14px] font-semibold text-foreground tracking-tight">{ws.company_name}</p>
+                                <p className="text-[12px] text-muted-foreground mt-0.5">{ws.primary_contact_name}</p>
                               </div>
                             </div>
-                            <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                            <span className="text-[11px] font-medium font-mono tabular text-muted-foreground bg-[hsl(var(--surface-sunken))] border border-border px-2 py-0.5 rounded-md">
                               {memberCount} {memberCount === 1 ? "user" : "users"}
-                            </Badge>
+                            </span>
                           </div>
                         );
                       })}
@@ -943,20 +944,20 @@ const Admin = () => {
 
                 {users.filter((u) => !u.workspace_id).length > 0 && (
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Independent Users</h3>
+                    <h3 className="eyebrow text-muted-foreground">Independent users</h3>
                     <div
                       onClick={() => setSelectedView({ type: "independent" })}
-                      className="flex items-center justify-between rounded-lg border border-border/30 bg-card/40 hover:bg-card/70 px-4 py-3 transition-colors cursor-pointer"
+                      className="card-paper card-paper-lift flex items-center justify-between px-5 py-4 cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-md bg-muted/30 shrink-0">
-                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                        <div className="h-9 w-9 rounded-lg bg-[hsl(var(--surface-sunken))] border border-border flex items-center justify-center shrink-0">
+                          <FolderOpen className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                         </div>
-                        <p className="text-sm font-semibold text-foreground">Independent Users</p>
+                        <p className="text-[14px] font-semibold text-foreground tracking-tight">Independent users</p>
                       </div>
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                      <span className="text-[11px] font-medium font-mono tabular text-muted-foreground bg-[hsl(var(--surface-sunken))] border border-border px-2 py-0.5 rounded-md">
                         {users.filter((u) => !u.workspace_id).length}
-                      </Badge>
+                      </span>
                     </div>
                   </div>
                 )}

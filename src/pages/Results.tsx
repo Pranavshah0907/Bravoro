@@ -780,19 +780,46 @@ const Results = () => {
   };
 
   const getStatusBadge = (status: string, errorMessage?: string | null) => {
+    const StatusPill = ({ tone, dot, children }: { tone: string; dot: string; children: React.ReactNode }) => (
+      <span className={cn("pill", tone)}>
+        <span className={cn("pill-dot", dot)} />
+        {children}
+      </span>
+    );
     switch (status) {
       case "pending":
-        return <Badge variant="secondary" className="bg-muted text-muted-foreground font-medium">Pending</Badge>;
+        return <StatusPill tone="text-muted-foreground" dot="bg-muted-foreground/60">Pending</StatusPill>;
       case "processing":
-        return <Badge variant="default" className="bg-secondary text-secondary-foreground font-medium">Processing</Badge>;
+        return (
+          <span className="pill text-foreground">
+            <span className="pill-dot bg-blue-500 breathe" />
+            Processing
+          </span>
+        );
       case "queued":
-        return <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 font-medium">In Queue</Badge>;
+        return <StatusPill tone="text-amber-700" dot="bg-amber-500">In queue</StatusPill>;
       case "completed":
-        return <Badge className="bg-primary text-primary-foreground font-medium">Completed</Badge>;
+        return (
+          <span className="pill" style={{
+            background: "hsl(145 60% 96%)",
+            color: "hsl(145 65% 26%)",
+            borderColor: "hsl(145 50% 85%)",
+          }}>
+            <span className="pill-dot" style={{ background: "hsl(145 65% 38%)", boxShadow: "0 0 0 2px hsl(145 60% 96%)" }} />
+            Completed
+          </span>
+        );
       case "error":
         return (
           <div className="flex items-center gap-2">
-            <Badge variant="destructive" className="font-medium">Error</Badge>
+            <span className="pill" style={{
+              background: "hsl(0 80% 97%)",
+              color: "hsl(0 70% 38%)",
+              borderColor: "hsl(0 70% 88%)",
+            }}>
+              <span className="pill-dot" style={{ background: "hsl(0 70% 50%)", boxShadow: "0 0 0 2px hsl(0 80% 97%)" }} />
+              Error
+            </span>
             {errorMessage && (
               <Dialog>
                 <DialogTrigger asChild>
@@ -1463,23 +1490,18 @@ const Results = () => {
       <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} />
 
       <main className="flex-1 ml-0 md:ml-16 min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
-        {/* Background Effects */}
-        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
-          <div 
-            className="absolute -top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
-            style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)" }}
-          />
-        </div>
-
-        <div className="relative z-10 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="relative z-10 p-4 md:p-6 lg:px-10 lg:py-10 max-w-[1320px] mx-auto">
           {/* Page Header */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 md:mb-8 animate-fade-in">
-            <div className="flex items-center justify-between w-full lg:w-auto">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-7 md:mb-9 animate-fade-in">
+            <div className="flex items-end justify-between w-full lg:w-auto gap-4">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                  Search Results
+                <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Activity</p>
+                <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
+                  Search <span className="font-display italic font-normal text-primary">results</span>
                 </h1>
-                <p className="text-muted-foreground mt-1">Track your enrichment requests and download results</p>
+                <p className="text-sm text-muted-foreground mt-3 max-w-[42ch]">
+                  Every enrichment request, with status, source files and one-click export.
+                </p>
               </div>
               <BravoroWordmark className="h-6 w-auto hidden md:block lg:hidden text-foreground" />
             </div>
@@ -1599,11 +1621,11 @@ const Results = () => {
           )}
 
           {/* Results Table */}
-          <div className="bg-card rounded-xl border border-border/40 shadow-soft overflow-hidden animate-fade-in">
+          <div className="card-paper overflow-hidden animate-fade-in">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border/30">
+                  <TableRow className="bg-[hsl(var(--surface-sunken))] hover:bg-[hsl(var(--surface-sunken))] border-b border-border">
                     <TableHead className="w-[40px]">
                       <Checkbox
                         checked={filteredSearches.length > 0 && selectedIds.size === filteredSearches.length}
@@ -1612,12 +1634,12 @@ const Results = () => {
                       />
                     </TableHead>
                     <TableHead className="w-[40px]"></TableHead>
-                    <TableHead className="w-[40px] font-semibold text-foreground">#</TableHead>
-                    <TableHead className="font-semibold text-foreground">Type</TableHead>
-                    <TableHead className="font-semibold text-foreground">Name / File</TableHead>
-                    <TableHead className="font-semibold text-foreground">Created</TableHead>
-                    <TableHead className="font-semibold text-foreground">Status</TableHead>
-                    <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
+                    <TableHead className="w-[40px] text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">#</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">Type</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">Name / File</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">Created</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1637,11 +1659,11 @@ const Results = () => {
                   ) : (
                     filteredSearches.map((search, index) => (
                       <>
-                        <TableRow 
+                        <TableRow
                           key={search.id}
                           className={cn(
-                            "hover:bg-muted/10 transition-colors border-b border-border/20",
-                            expandedRows.has(search.id) && "bg-muted/10"
+                            "hover:bg-[hsl(var(--surface-sunken))] transition-colors duration-150 border-b border-border/60",
+                            expandedRows.has(search.id) && "bg-[hsl(var(--surface-sunken))]"
                           )}
                         >
                           <TableCell>
@@ -1669,33 +1691,30 @@ const Results = () => {
                               <span className="w-7 inline-block" />
                             )}
                           </TableCell>
-                          <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                          <TableCell className="font-mono text-[12px] text-muted-foreground tabular">{String(index + 1).padStart(2, "0")}</TableCell>
                           <TableCell>
-                            <Badge
-                              variant={search.search_type === "bulk" ? "default" : search.search_type === "bulk_people_enrichment" ? "outline" : search.search_type === "ai_chat" ? "outline" : "secondary"}
-                              className={cn(
-                                "font-medium",
-                                search.search_type === "bulk" ? "bg-secondary text-secondary-foreground" :
-                                search.search_type === "bulk_people_enrichment" ? "border-accent text-accent" :
-                                search.search_type === "ai_chat" && search.domain === "recruiting" ? "border-cyan-500/40 text-cyan-700 dark:text-cyan-400" :
-                                search.search_type === "ai_chat" ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-400" :
-                                "bg-muted text-muted-foreground"
-                              )}
-                            >
+                            <span className={cn(
+                              "inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium tracking-tight border",
+                              search.search_type === "bulk" && "bg-[hsl(var(--surface-tint))] text-secondary border-secondary/20",
+                              search.search_type === "bulk_people_enrichment" && "border-accent/30 text-accent bg-transparent",
+                              search.search_type === "ai_chat" && search.domain === "recruiting" && "border-cyan-500/30 text-cyan-700 dark:text-cyan-400 bg-transparent",
+                              search.search_type === "ai_chat" && search.domain !== "recruiting" && "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-transparent",
+                              search.search_type === "manual" && "bg-[hsl(var(--surface-sunken))] text-muted-foreground border-border",
+                            )}>
                               {search.search_type === "bulk" ? "Bulk" : search.search_type === "bulk_people_enrichment" ? "People Enrich" : search.search_type === "ai_chat" && search.domain === "recruiting" ? "Recruiting" : search.search_type === "ai_chat" ? "AI Chat" : "Manual"}
-                            </Badge>
+                            </span>
                           </TableCell>
                           <TableCell className="max-w-[300px]">
                             {(search.search_type === "bulk" || search.search_type === "bulk_people_enrichment") && search.excel_file_name ? (
-                              <span className="text-sm truncate block" title={search.excel_file_name}>{search.excel_file_name}</span>
+                              <span className="text-[13px] font-medium text-foreground truncate block tracking-tight" title={search.excel_file_name}>{search.excel_file_name}</span>
                             ) : search.company_name ? (
-                              <span className="text-sm">{search.company_name}</span>
+                              <span className="text-[13px] font-medium text-foreground tracking-tight">{search.company_name}</span>
                             ) : (
-                              <span className="text-sm text-muted-foreground">-</span>
+                              <span className="text-[13px] text-muted-foreground/60">—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {new Date(search.created_at).toLocaleDateString()}
+                          <TableCell className="text-[13px] text-muted-foreground font-mono tabular">
+                            {format(new Date(search.created_at), "dd MMM yyyy")}
                           </TableCell>
                           <TableCell>{getStatusBadge(search.status, search.error_message)}</TableCell>
                           <TableCell className="text-right">

@@ -101,6 +101,24 @@
     --sidebar-border: 183 30% 11%;      /* #0d1f1f */
     --sidebar-ring: 180 66% 61%;
     --sidebar-muted: 183 20% 8%;        /* #0d1818 */
+
+    /* Dark-mode elevation + surface defaults — overridden in .light below */
+    --elev-1: 0 1px 2px hsl(183 100% 3% / 0.7), 0 2px 8px hsl(183 100% 3% / 0.5);
+    --elev-2: 0 2px 6px hsl(183 100% 3% / 0.7), 0 8px 24px hsl(183 100% 3% / 0.55);
+    --elev-3: 0 4px 12px hsl(183 100% 3% / 0.75), 0 16px 40px hsl(183 100% 3% / 0.6);
+    --elev-4: 0 8px 24px hsl(183 100% 3% / 0.8), 0 32px 64px hsl(183 100% 3% / 0.65);
+    --hairline-top: inset 0 1px 0 hsl(180 30% 18% / 0.5);
+    --highlight-warm: 0 0 0 1px hsl(183 30% 13%), 0 1px 0 hsl(180 30% 18% / 0.5) inset;
+    --surface-base: 180 20% 4%;
+    --surface-raised: 183 20% 6%;
+    --surface-sunken: 183 22% 5%;
+    --surface-tint: 184 30% 8%;
+
+    /* Motion easing curves */
+    --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-cubic: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-glide: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* ── .dark mirrors :root so nested-dark wrappers (auth pages) work
@@ -154,6 +172,17 @@
     --glow-strength: 0.30;
     --glow-strength-soft: 0.15;
     --hero-gradient: linear-gradient(135deg, hsl(var(--foreground)) 30%, hsl(var(--accent)) 75%, hsl(var(--primary)) 100%);
+
+    --elev-1: 0 1px 2px hsl(183 100% 3% / 0.7), 0 2px 8px hsl(183 100% 3% / 0.5);
+    --elev-2: 0 2px 6px hsl(183 100% 3% / 0.7), 0 8px 24px hsl(183 100% 3% / 0.55);
+    --elev-3: 0 4px 12px hsl(183 100% 3% / 0.75), 0 16px 40px hsl(183 100% 3% / 0.6);
+    --elev-4: 0 8px 24px hsl(183 100% 3% / 0.8), 0 32px 64px hsl(183 100% 3% / 0.65);
+    --hairline-top: inset 0 1px 0 hsl(180 30% 18% / 0.5);
+    --highlight-warm: 0 0 0 1px hsl(183 30% 13%), 0 1px 0 hsl(180 30% 18% / 0.5) inset;
+    --surface-base: 180 20% 4%;
+    --surface-raised: 183 20% 6%;
+    --surface-sunken: 183 22% 5%;
+    --surface-tint: 184 30% 8%;
   }
 
   /* ── Warm Cream — paper-like surfaces, deep harmonious teal accents ── */
@@ -242,29 +271,6 @@
     --surface-raised: 0 0% 100%;       /* white cards */
     --surface-sunken: 35 32% 95%;      /* slightly cooler than bg, for input wells / list rails */
     --surface-tint: 184 35% 96%;       /* faintest teal wash, for accent rows */
-  }
-
-  /* Dark-mode elevation: deeper shadows, no warm undertone */
-  :root, .dark {
-    --elev-1: 0 1px 2px hsl(183 100% 3% / 0.7), 0 2px 8px hsl(183 100% 3% / 0.5);
-    --elev-2: 0 2px 6px hsl(183 100% 3% / 0.7), 0 8px 24px hsl(183 100% 3% / 0.55);
-    --elev-3: 0 4px 12px hsl(183 100% 3% / 0.75), 0 16px 40px hsl(183 100% 3% / 0.6);
-    --elev-4: 0 8px 24px hsl(183 100% 3% / 0.8), 0 32px 64px hsl(183 100% 3% / 0.65);
-    --hairline-top: inset 0 1px 0 hsl(180 30% 18% / 0.5);
-    --highlight-warm: 0 0 0 1px hsl(183 30% 13%), 0 1px 0 hsl(180 30% 18% / 0.5) inset;
-
-    --surface-base: 180 20% 4%;
-    --surface-raised: 183 20% 6%;
-    --surface-sunken: 183 22% 5%;
-    --surface-tint: 184 30% 8%;
-  }
-
-  /* ── Motion easing curves ── */
-  :root {
-    --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
-    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-out-cubic: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-glide: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 

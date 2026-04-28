@@ -156,37 +156,44 @@ export const AppSidebar = ({
           else if (item.path) navigate(item.path);
         }}
         className={cn(
-          "group relative flex items-center w-full rounded-xl duration-300",
-          "hover:bg-sidebar-accent/80",
-          isExpanded ? "px-4 py-3 gap-4" : "p-3 justify-center",
-          isActive && "bg-primary/20 text-primary"
+          "group relative flex items-center w-full rounded-lg transition-colors duration-200",
+          "hover:bg-sidebar-accent",
+          isExpanded ? "px-3 py-2.5 gap-3" : "p-2.5 justify-center",
+          isActive && [
+            "bg-card dark:bg-primary/15",
+            "shadow-[var(--elev-1)] dark:shadow-none",
+            "ring-1 ring-border/70 dark:ring-0",
+          ]
         )}
       >
-        <div className="relative flex items-center justify-center duration-300 group-hover:scale-110">
+        {/* Active rail — left edge accent stripe, present in both states */}
+        {isActive && (
+          <span
+            aria-hidden
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary"
+          />
+        )}
+        <div className="relative flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
           <Icon
             className={cn(
-              "h-5 w-5 duration-200",
-              isActive ? "text-primary" : "text-sidebar-foreground/70"
+              "h-[18px] w-[18px] transition-colors duration-200",
+              isActive ? "text-primary" : "text-sidebar-foreground/65 group-hover:text-sidebar-foreground"
             )}
+            strokeWidth={1.75}
           />
-          {isActive && (
-            <span className="absolute -inset-2 bg-primary/20 rounded-lg blur-sm" />
-          )}
         </div>
 
         <span
           className={cn(
-            "font-medium text-sm whitespace-nowrap duration-300",
+            "text-[13.5px] whitespace-nowrap transition-all duration-300 tracking-tight",
             isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 absolute",
-            isActive ? "text-primary" : "text-sidebar-foreground/80"
+            isActive
+              ? "text-foreground font-semibold"
+              : "text-sidebar-foreground/80 font-medium group-hover:text-sidebar-foreground"
           )}
         >
           {item.label}
         </span>
-
-        {isActive && !isExpanded && (
-          <span className="absolute left-0 w-0.5 h-6 bg-primary rounded-r-full" />
-        )}
       </button>
     );
   };
@@ -197,8 +204,9 @@ export const AppSidebar = ({
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
         "fixed left-0 top-0 h-screen z-50",
-        "bg-sidebar-background/95 backdrop-blur-xl",
-        "border-r border-sidebar-border/50",
+        "bg-sidebar dark:bg-sidebar-background/95 dark:backdrop-blur-xl",
+        "border-r border-sidebar-border",
+        "shadow-[inset_-1px_0_0_hsl(var(--sidebar-border)/0.6)]",
         "hidden md:flex flex-col",
         "duration-300 ease-out",
         isExpanded ? "w-56" : "w-16"
@@ -266,7 +274,7 @@ export const AppSidebar = ({
         {/* Enrichment Tools section — always visible */}
         <div className="flex flex-col gap-0.5">
           {isExpanded && (
-            <span className="px-3 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
+            <span className="px-3 pt-2 pb-1.5 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-[0.16em]">
               Tools
             </span>
           )}
@@ -290,36 +298,43 @@ export const AppSidebar = ({
                 }}
                 title={!isExpanded ? label : undefined}
                 className={cn(
-                  "group relative flex items-center w-full rounded-xl duration-200",
-                  isExpanded ? "px-4 py-2.5 gap-3" : "p-3 justify-center",
+                  "group relative flex items-center w-full rounded-lg transition-colors duration-200",
+                  isExpanded ? "px-3 py-2 gap-3" : "p-2.5 justify-center",
                   isActive
-                    ? "bg-primary/15 text-primary"
-                    : "hover:bg-sidebar-accent/80"
+                    ? [
+                        "bg-card dark:bg-primary/15",
+                        "shadow-[var(--elev-1)] dark:shadow-none",
+                        "ring-1 ring-border/70 dark:ring-0",
+                      ]
+                    : "hover:bg-sidebar-accent"
                 )}
               >
+                {isActive && (
+                  <span
+                    aria-hidden
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-primary"
+                  />
+                )}
                 <div className="relative flex items-center justify-center shrink-0">
                   <Icon
                     className={cn(
-                      "h-4 w-4 duration-200",
-                      isActive ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground/90"
+                      "h-[16px] w-[16px] transition-colors duration-200",
+                      isActive ? "text-primary" : "text-sidebar-foreground/55 group-hover:text-sidebar-foreground"
                     )}
+                    strokeWidth={1.75}
                   />
-                  {isActive && (
-                    <span className="absolute -inset-2 bg-primary/20 rounded-lg blur-sm" />
-                  )}
                 </div>
                 <span
                   className={cn(
-                    "text-[13px] font-medium whitespace-nowrap duration-300 truncate",
+                    "text-[12.5px] whitespace-nowrap transition-all duration-300 truncate tracking-tight",
                     isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 absolute",
-                    isActive ? "text-primary" : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground/90"
+                    isActive
+                      ? "text-foreground font-semibold"
+                      : "text-sidebar-foreground/70 font-medium group-hover:text-sidebar-foreground"
                   )}
                 >
                   {label}
                 </span>
-                {isActive && !isExpanded && (
-                  <span className="absolute left-0 w-0.5 h-5 bg-primary rounded-r-full" />
-                )}
               </button>
             );
           })}
