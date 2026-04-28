@@ -382,7 +382,7 @@ const UserDatabase = () => {
             <div>
               <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Contacts</p>
               <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
-                My <span className="font-display italic font-normal text-primary">database</span>
+                My <span className="font-display text-primary">database</span>
               </h1>
               <p className="text-[13px] text-muted-foreground mt-2 font-mono tabular">
                 <span className="text-foreground/80">{allContacts.length.toLocaleString()}</span> contacts · <span className="text-foreground/80">{companies.length}</span> companies

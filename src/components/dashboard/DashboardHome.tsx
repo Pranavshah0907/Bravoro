@@ -18,12 +18,12 @@ interface ToolDef {
 }
 
 const FEATURED: ToolDef = {
-  type: "recruiting_chat",
-  title: "Recruiting Search",
+  type: "ai_staffing",
+  title: "AI-based Staffing",
   blurb:
-    "Open-ended candidate discovery by role, geography and seniority — speak naturally, get a shortlist.",
-  icon: UserSearch,
-  meta: "Best for active reqs",
+    "Chat naturally with an AI recruiter that builds, filters and shortlists candidates against your role spec — no SQL, no boolean strings.",
+  icon: Bot,
+  meta: "Saved conversations",
 };
 
 const SECONDARY: ToolDef[] = [
@@ -49,11 +49,11 @@ const SECONDARY: ToolDef[] = [
     meta: "CSV or Sheets",
   },
   {
-    type: "ai_staffing",
-    title: "AI-based Staffing",
-    blurb: "Conversational shortlisting against your role spec.",
-    icon: Bot,
-    meta: "Saved chats",
+    type: "recruiting_chat",
+    title: "Recruiting Search",
+    blurb: "Find candidates by role, skills and location using natural language.",
+    icon: UserSearch,
+    meta: "Best for active reqs",
   },
 ];
 
@@ -87,15 +87,13 @@ export const DashboardHome = ({ onSelect, userName }: DashboardHomeProps) => {
           <span className="eyebrow text-foreground/40">Bravoro · Workspace</span>
         </div>
 
-        <h1 className="text-foreground leading-[0.95] tracking-tight max-w-[20ch]">
+        <h1 className="text-foreground leading-[0.95] tracking-[-0.025em] max-w-[20ch]">
           <span className="block text-4xl md:text-5xl lg:text-6xl font-semibold">
             {greeting},
           </span>
-          <span className="block text-5xl md:text-6xl lg:text-7xl">
-            <span className="font-display italic font-normal text-primary">
-              {displayName}
-            </span>
-            <span className="text-foreground/35">.</span>
+          <span className="block text-4xl md:text-5xl lg:text-6xl font-semibold text-primary">
+            {displayName}
+            <span className="text-foreground/30">.</span>
           </span>
         </h1>
 
@@ -201,7 +199,7 @@ const FeaturedCard = ({
 
         {/* CTA pill with island arrow */}
         <div className="mt-7 inline-flex items-center gap-2 rounded-full pl-4 pr-1.5 py-1.5 bg-foreground text-background text-sm font-medium shadow-sm group-hover:shadow-md transition-shadow duration-300">
-          <span>Open Recruiting Search</span>
+          <span>Open {tool.title}</span>
           <span className="h-7 w-7 rounded-full bg-background/15 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-px">
             <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2.25} />
           </span>
@@ -307,7 +305,12 @@ const FootStat = ({
 function useGreeting() {
   const [g, setG] = useState(() => greetingFor(new Date()));
   useEffect(() => {
-    setG(greetingFor(new Date()));
+    // Refresh once a minute so the greeting transitions when the user
+    // sits on the dashboard through 12:00 / 17:00 / 21:00.
+    const tick = () => setG(greetingFor(new Date()));
+    tick();
+    const t = setInterval(tick, 60_000);
+    return () => clearInterval(t);
   }, []);
   return g;
 }

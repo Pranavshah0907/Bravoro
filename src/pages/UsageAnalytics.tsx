@@ -413,7 +413,7 @@ const UsageAnalytics = () => {
             <div>
               <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Usage</p>
               <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
-                <span className="font-display italic font-normal text-primary">Analytics</span>
+                <span className="font-display text-primary">Analytics</span>
               </h1>
               <p className="text-[13px] text-muted-foreground mt-2 font-mono tabular">
                 Last updated · {format(lastUpdate, "MMM d, yyyy · h:mm a")}

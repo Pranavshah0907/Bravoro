@@ -1497,7 +1497,7 @@ const Results = () => {
               <div>
                 <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Activity</p>
                 <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
-                  Search <span className="font-display italic font-normal text-primary">results</span>
+                  Search <span className="font-display text-primary">results</span>
                 </h1>
                 <p className="text-sm text-muted-foreground mt-3 max-w-[42ch]">
                   Every enrichment request, with status, source files and one-click export.

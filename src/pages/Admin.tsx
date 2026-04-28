@@ -888,7 +888,7 @@ const Admin = () => {
                 <div>
                   <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Admin</p>
                   <h2 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
-                    <span className="font-display italic font-normal text-primary">Overview</span>
+                    <span className="font-display text-primary">Overview</span>
                   </h2>
                   <p className="text-sm text-muted-foreground mt-3 max-w-[48ch]">Workspace and user activity, billing snapshot, and pending invites — all in one view.</p>
                 </div>

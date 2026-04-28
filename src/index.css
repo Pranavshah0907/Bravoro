@@ -457,10 +457,14 @@
     box-shadow: 0 0 20px hsl(var(--accent) / 0.6);
   }
 
-  /* ── Editorial display: Instrument Serif italic, used sparingly for hero moments ── */
+  /* ── Display: tightened sans for hero moments. Same Plus Jakarta Sans family
+       as body, but sized big with tight tracking — Stripe / Linear / Mercury feel
+       instead of magazine-serif. ── */
   .font-display {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-feature-settings: "liga", "calt";
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-style: normal;
   }
 
   /* ── Surface utilities ── */

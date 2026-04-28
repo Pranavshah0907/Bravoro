@@ -316,7 +316,7 @@ const Dashboard = () => {
                         const [first, ...rest] = title.split(" ");
                         return (
                           <>
-                            <span className="font-display italic font-normal text-primary">{first}</span>
+                            <span className="font-display text-primary">{first}</span>
                             {rest.length > 0 && <span> {rest.join(" ")}</span>}
                           </>
                         );

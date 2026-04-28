@@ -111,7 +111,7 @@ const DocsPage = () => {
 
             {/* Title block */}
             <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-[1.05] mb-3">
-              <span className="font-display italic font-normal text-primary">{section.title.split(' ')[0]}</span>
+              <span className="font-display text-primary">{section.title.split(' ')[0]}</span>
               {section.title.split(' ').slice(1).length > 0 && (
                 <span> {section.title.split(' ').slice(1).join(' ')}</span>
               )}
