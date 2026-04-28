@@ -203,33 +203,22 @@ const Settings = () => {
       <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === DEVELOPER_EMAIL} />
 
       <div className="flex-1 ml-0 md:ml-16 overflow-y-auto min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
-        {/* Background Effects — same as Dashboard */}
-        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
-          {/* Top-center teal corona */}
-          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-25" style={{
-            background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
-            filter: "blur(60px)",
-            animation: "float 22s ease-in-out infinite",
-          }} />
-          {/* Bottom-right secondary glow */}
-          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{
-            background: "radial-gradient(circle, #58dddd 0%, transparent 65%)",
-            filter: "blur(80px)",
-            opacity: 0.15,
-            animation: "float 18s ease-in-out infinite reverse",
-          }} />
-        </div>
-
         <div className="relative z-10">
           {/* Bravoro logo top-right */}
           <div className="fixed top-6 right-6 md:top-8 md:right-8 z-40 pointer-events-none">
             <BravoroWordmark className="h-6 md:h-7 w-auto text-foreground" />
           </div>
 
-          <div className="p-4 md:p-12 max-w-3xl mx-auto w-full">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight mb-6">
-              Settings
-            </h1>
+          <div className="p-4 md:px-10 md:py-10 max-w-3xl mx-auto w-full">
+            <div className="mb-8">
+              <p className="eyebrow text-foreground/55 mb-2.5">Workspace</p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
+                <span className="font-display italic font-normal text-primary">Settings</span>
+              </h1>
+              <p className="text-sm text-muted-foreground mt-3 max-w-[42ch]">
+                Profile, security, theme and usage. All changes save automatically.
+              </p>
+            </div>
 
           <Tabs defaultValue="profile">
             <TabsList className="bg-muted/50 mb-6">

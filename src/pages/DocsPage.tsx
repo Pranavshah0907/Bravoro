@@ -110,10 +110,13 @@ const DocsPage = () => {
             </div>
 
             {/* Title block */}
-            <h1 className="text-[22px] md:text-[26px] font-bold text-foreground tracking-tight mb-2">
-              {section.title}
+            <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-[1.05] mb-3">
+              <span className="font-display italic font-normal text-primary">{section.title.split(' ')[0]}</span>
+              {section.title.split(' ').slice(1).length > 0 && (
+                <span> {section.title.split(' ').slice(1).join(' ')}</span>
+              )}
             </h1>
-            <p className="text-[14px] text-muted-foreground mb-8 leading-relaxed">
+            <p className="text-[15px] text-muted-foreground mb-10 leading-relaxed max-w-[58ch]">
               {section.subtitle}
             </p>
 

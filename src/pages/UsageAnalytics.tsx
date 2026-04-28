@@ -407,124 +407,95 @@ const UsageAnalytics = () => {
       <MobileTabBar isAdmin={isAdmin} isDeveloper={isDeveloper} />
 
       <main className="flex-1 ml-0 md:ml-16 min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
-        {/* Background Effects — same as Dashboard */}
-        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
-          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-25" style={{
-            background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
-            filter: "blur(60px)",
-            animation: "float 22s ease-in-out infinite",
-          }} />
-          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{
-            background: "radial-gradient(circle, #58dddd 0%, transparent 65%)",
-            filter: "blur(80px)",
-            opacity: 0.15,
-            animation: "float 18s ease-in-out infinite reverse",
-          }} />
-        </div>
-
-        <div className="relative z-10 p-6 md:p-8 max-w-7xl mx-auto space-y-10">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+        <div className="relative z-10 p-6 md:px-10 md:py-10 max-w-[1320px] mx-auto space-y-10">
+          {/* Editorial header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 animate-fade-in">
             <div>
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-                  <Activity className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">Usage Analytics</h1>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Last updated: {format(lastUpdate, "MMM d, yyyy 'at' h:mm a")}
-                  </p>
-                </div>
-              </div>
+              <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Usage</p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
+                <span className="font-display italic font-normal text-primary">Analytics</span>
+              </h1>
+              <p className="text-[13px] text-muted-foreground mt-2 font-mono tabular">
+                Last updated · {format(lastUpdate, "MMM d, yyyy · h:mm a")}
+              </p>
             </div>
-            <Button 
-              onClick={fetchCreditData} 
-              disabled={loading} 
-              variant="outline" 
-              size="sm" 
-              className="border-primary/30 text-foreground hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 text-xs"
+            <Button
+              onClick={fetchCreditData}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="border-border bg-card hover:bg-[hsl(var(--surface-sunken))] text-foreground transition-colors duration-200 text-xs h-9 rounded-lg"
             >
               <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
               Refresh
             </Button>
           </div>
 
-          {/* Credits Remaining Card */}
+          {/* Credits Remaining — editorial display number, paper card */}
           {workspaceCredits && (
-            <Card className={cn(
-              "border-border/40 bg-gradient-to-br from-card to-card/80 animate-fade-in",
-              workspaceCredits.balance <= 0 && "border-red-500/40",
-              workspaceCredits.balance > 0 && workspaceCredits.balance <= workspaceCredits.low_threshold && "border-yellow-500/40"
+            <div className={cn(
+              "card-paper p-6 lg:p-7 animate-fade-in flex items-center justify-between gap-6",
+              workspaceCredits.balance <= 0 && "ring-1 ring-destructive/40",
+              workspaceCredits.balance > 0 && workspaceCredits.balance <= workspaceCredits.low_threshold && "ring-1 ring-amber-500/40"
             )} style={{ animationDelay: "0.03s" }}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                        Credits Remaining
-                      </span>
-                      <span className="text-muted-foreground/35 select-none">·</span>
-                      <span className="text-xs text-muted-foreground">{workspaceCredits.name}</span>
-                    </div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className={cn(
-                        "text-2xl font-bold tabular-nums leading-none",
-                        workspaceCredits.balance <= 0 ? "text-red-700 dark:text-red-400" :
-                        workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-700 dark:text-yellow-400" :
-                        "text-green-700 dark:text-green-400"
-                      )}>
-                        {workspaceCredits.balance.toLocaleString()}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-medium">credits</span>
-                    </div>
-                    {workspaceCredits.balance <= 0 && (
-                      <p className="text-xs text-red-700 dark:text-red-400 mt-1">Searches are blocked. Contact your admin to top up.</p>
-                    )}
-                    {workspaceCredits.balance > 0 && workspaceCredits.balance <= workspaceCredits.low_threshold && (
-                      <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">Low credits — consider requesting a top-up.</p>
-                    )}
-                  </div>
-                  <div className={cn(
-                    "p-3 rounded-xl",
-                    workspaceCredits.balance <= 0 ? "bg-red-500/10" :
-                    workspaceCredits.balance <= workspaceCredits.low_threshold ? "bg-yellow-500/10" :
-                    "bg-green-500/10"
-                  )}>
-                    <Wallet className={cn(
-                      "h-5 w-5",
-                      workspaceCredits.balance <= 0 ? "text-red-700 dark:text-red-400" :
-                      workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-yellow-700 dark:text-yellow-400" :
-                      "text-green-700 dark:text-green-400"
-                    )} />
-                  </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="eyebrow text-muted-foreground">Credits remaining</span>
+                  <span className="text-muted-foreground/30 select-none">/</span>
+                  <span className="text-[12px] text-foreground/80 font-medium tracking-tight truncate">{workspaceCredits.name}</span>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex items-baseline gap-2.5">
+                  <span className={cn(
+                    "font-display tabular text-5xl md:text-6xl leading-none tracking-tight",
+                    workspaceCredits.balance <= 0 ? "text-destructive" :
+                    workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-amber-700 dark:text-amber-400" :
+                    "text-foreground"
+                  )}>
+                    {workspaceCredits.balance.toLocaleString()}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-medium">credits</span>
+                </div>
+                {workspaceCredits.balance <= 0 && (
+                  <p className="text-[12px] text-destructive mt-3">Searches are blocked. Contact your admin to top up.</p>
+                )}
+                {workspaceCredits.balance > 0 && workspaceCredits.balance <= workspaceCredits.low_threshold && (
+                  <p className="text-[12px] text-amber-700 dark:text-amber-400 mt-3">Low credits — consider requesting a top-up.</p>
+                )}
+              </div>
+              <div className={cn(
+                "shrink-0 h-12 w-12 rounded-xl flex items-center justify-center border",
+                workspaceCredits.balance <= 0 ? "bg-destructive/10 border-destructive/30" :
+                workspaceCredits.balance <= workspaceCredits.low_threshold ? "bg-amber-500/10 border-amber-500/30" :
+                "bg-[hsl(var(--surface-tint))] border-primary/20"
+              )}>
+                <Wallet className={cn(
+                  "h-5 w-5",
+                  workspaceCredits.balance <= 0 ? "text-destructive" :
+                  workspaceCredits.balance <= workspaceCredits.low_threshold ? "text-amber-700 dark:text-amber-400" :
+                  "text-primary"
+                )} strokeWidth={1.75} />
+              </div>
+            </div>
           )}
 
           {/* Stats Section */}
-          <div className="space-y-3 animate-fade-in" style={{ animationDelay: "0.05s" }}>
+          <div className="space-y-4 animate-fade-in" style={{ animationDelay: "0.05s" }}>
             {/* Billing cycle header — outside the tiles */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-[3px] h-5 rounded-full bg-primary" />
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold text-foreground">Total Credits</span>
-                  <span className="text-muted-foreground/35 select-none">·</span>
-                  <span className="text-xs font-medium text-primary">Billing Cycle</span>
-                  <span className="text-muted-foreground/35 select-none">·</span>
-                  <span className="text-xs text-muted-foreground">{billingCycleDateLabel}</span>
-                </div>
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="eyebrow text-foreground/70">Total Credits</span>
+                <span className="hidden sm:inline-block h-3 w-px bg-border" />
+                <span className="text-[12px] font-medium text-primary tracking-tight">Billing cycle</span>
+                <span className="text-[12px] text-muted-foreground font-mono tabular">{billingCycleDateLabel}</span>
               </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold text-foreground tabular-nums leading-none">{billingCycleTotal.toLocaleString()}</span>
-                <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-medium">credits</span>
+              <div className="flex items-baseline gap-2">
+                <span className="font-display tabular text-3xl lg:text-4xl text-primary leading-none tracking-tight">{billingCycleTotal.toLocaleString()}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">credits</span>
               </div>
             </div>
 
             {/* Separator */}
-            <div className="h-px bg-gradient-to-r from-primary/40 via-border/60 to-transparent" />
+            <div className="hairline" />
 
             {/* Category breakdown tiles */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -536,54 +507,51 @@ const UsageAnalytics = () => {
               ]).map((item, index) => {
                 const cat = CREDIT_CATEGORIES[item.key];
                 return (
-                  <Card
+                  <div
                     key={item.key}
-                    className="border-border/40 bg-gradient-to-br from-card to-card/80 hover:border-border/60 transition-all duration-300 group"
+                    className="card-paper p-4 lg:p-5 group transition-colors duration-200 hover:border-primary/25"
                     style={{ animationDelay: `${0.08 + index * 0.04}s` }}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{cat.label}</p>
-                          <p className="text-xl font-bold text-foreground mt-0.5 tabular-nums">{item.value.toLocaleString()}</p>
-                          <p className="text-[9px] text-muted-foreground mt-0.5">{cat.rate} credits each</p>
-                        </div>
-                        <div
-                          className="p-2.5 rounded-lg transition-transform duration-300 group-hover:scale-110"
-                          style={{ backgroundColor: `${cat.color}20` }}
-                        >
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                        </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="eyebrow text-muted-foreground truncate">{cat.label}</p>
+                        <p className="text-2xl lg:text-[28px] font-display tabular text-foreground mt-1 leading-none tracking-tight">{item.value.toLocaleString()}</p>
+                        <p className="text-[11px] text-muted-foreground/70 mt-2 font-medium">{cat.rate} credits each</p>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <span
+                        className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${cat.color}1a` }}
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                      </span>
+                    </div>
+                  </div>
                 );
               })}
             </div>
           </div>
 
           {/* Charts section */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Section header */}
-            <div className="flex items-center gap-3">
-              <div className="w-[3px] h-5 rounded-full bg-accent" />
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold text-foreground">Usage Breakdown</span>
-                <span className="text-muted-foreground/35 select-none">·</span>
-                <span className="text-xs text-muted-foreground">Credit distribution &amp; usage over time</span>
-              </div>
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="eyebrow text-foreground/70">Usage breakdown</span>
+              <span className="hidden sm:inline-block h-3 w-px bg-border" />
+              <span className="text-[12px] text-muted-foreground tracking-tight">Credit distribution &amp; usage over time</span>
             </div>
-            <div className="h-px bg-gradient-to-r from-accent/40 via-border/60 to-transparent" />
+            <div className="hairline" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
             {/* Pie Chart Card */}
-            <Card className="lg:col-span-4 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative flex flex-col" style={{ animationDelay: "0.15s" }}>
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-accent to-primary opacity-60" />
-              <CardHeader className="pb-2 pt-4">
-                <CardTitle className="text-base text-foreground flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  Credit Distribution
-                  <span className="text-[10px] font-normal text-muted-foreground ml-1">({getPeriodLabel()})</span>
+            <Card className="lg:col-span-4 card-paper animate-fade-in overflow-hidden relative flex flex-col border-0" style={{ animationDelay: "0.15s" }}>
+              <CardHeader className="pb-2 pt-5 px-5">
+                <CardTitle className="text-[13px] font-semibold text-foreground tracking-tight flex items-center gap-2">
+                  <span className="relative flex items-center justify-center">
+                    <span className="absolute inset-0 rounded-full bg-primary/40 blur-[3px] breathe" />
+                    <span className="relative w-1.5 h-1.5 rounded-full bg-primary" />
+                  </span>
+                  Credit distribution
+                  <span className="text-[10px] font-mono tabular text-muted-foreground/70 ml-1">{getPeriodLabel()}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-4">
@@ -676,13 +644,15 @@ const UsageAnalytics = () => {
             </Card>
 
             {/* Bar Chart Card */}
-            <Card className="lg:col-span-8 border-border/40 bg-gradient-to-br from-card via-card to-card/90 backdrop-blur-sm animate-fade-in overflow-hidden relative flex flex-col" style={{ animationDelay: "0.2s" }}>
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent via-primary to-accent opacity-60" />
-              <CardHeader className="flex flex-col gap-3 pb-3 pt-4">
+            <Card className="lg:col-span-8 card-paper animate-fade-in overflow-hidden relative flex flex-col border-0" style={{ animationDelay: "0.2s" }}>
+              <CardHeader className="flex flex-col gap-3 pb-3 pt-5 px-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <CardTitle className="text-base text-foreground flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                    Usage Over Time
+                  <CardTitle className="text-[13px] font-semibold text-foreground tracking-tight flex items-center gap-2">
+                    <span className="relative flex items-center justify-center">
+                      <span className="absolute inset-0 rounded-full bg-accent/40 blur-[3px] breathe" />
+                      <span className="relative w-1.5 h-1.5 rounded-full bg-accent" />
+                    </span>
+                    Usage over time
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>

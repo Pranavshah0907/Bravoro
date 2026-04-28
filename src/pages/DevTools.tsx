@@ -675,11 +675,12 @@ const DevTools = () => {
       <div className="flex-1 ml-0 md:ml-16 flex flex-col h-screen overflow-hidden pt-14 pb-20 md:pt-0 md:pb-0">
 
         {/* Header */}
-        <header className="shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 px-4 md:px-8 py-3 md:py-4 border-b border-border/40 bg-card/40 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <Terminal className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-foreground tracking-tight">Developer Tools</span>
-            <BravoroWordmark className="ml-2 h-4 w-auto opacity-30 hidden md:block text-foreground" />
+        <header className="shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 px-4 md:px-8 py-3 md:py-4 border-b border-border bg-[hsl(var(--surface-sunken))]">
+          <div className="flex items-center gap-2.5">
+            <Terminal className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+            <span className="eyebrow text-foreground/80">Developer · Tools</span>
+            <span className="hidden md:inline-block h-3 w-px bg-border ml-1" />
+            <BravoroWordmark className="ml-1 h-4 w-auto opacity-50 hidden md:block text-foreground" />
           </div>
 
           <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">

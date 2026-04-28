@@ -376,34 +376,17 @@ const UserDatabase = () => {
       <MobileTabBar isAdmin={isAdmin} isDeveloper={user?.email === "pranavshah0907@gmail.com"} />
 
       <main className="flex-1 ml-0 md:ml-16 min-h-screen pt-14 pb-20 md:pt-0 md:pb-0">
-        {/* Background Effects — matching Analytics/Results */}
-        <div className="fixed inset-0 ml-0 md:ml-16 pointer-events-none overflow-hidden">
-          <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-25" style={{
-            background: "radial-gradient(ellipse, #009da5 0%, transparent 65%)",
-            filter: "blur(60px)",
-            animation: "float 22s ease-in-out infinite",
-          }} />
-          <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full" style={{
-            background: "radial-gradient(circle, #58dddd 0%, transparent 65%)",
-            filter: "blur(80px)",
-            opacity: 0.15,
-            animation: "float 18s ease-in-out infinite reverse",
-          }} />
-        </div>
-
-        <div className="relative z-10 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-          {/* Header — matching Analytics pattern */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-                <Database className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">My Database</h1>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {allContacts.length.toLocaleString()} contacts across {companies.length} companies
-                </p>
-              </div>
+        <div className="relative z-10 p-4 md:px-10 md:py-10 max-w-[1320px] mx-auto space-y-7">
+          {/* Editorial header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 animate-fade-in">
+            <div>
+              <p className="eyebrow text-foreground/55 mb-2.5">Workspace · Contacts</p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight leading-none">
+                My <span className="font-display italic font-normal text-primary">database</span>
+              </h1>
+              <p className="text-[13px] text-muted-foreground mt-2 font-mono tabular">
+                <span className="text-foreground/80">{allContacts.length.toLocaleString()}</span> contacts · <span className="text-foreground/80">{companies.length}</span> companies
+              </p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -437,7 +420,7 @@ const UserDatabase = () => {
           </div>
 
           {/* Search Filters Card */}
-          <Card className="border-border/40 bg-gradient-to-br from-card to-card/80 animate-fade-in" style={{ animationDelay: "0.03s" }}>
+          <Card className="card-paper border-0 animate-fade-in" style={{ animationDelay: "0.03s" }}>
             <CardContent className="p-4 md:p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Company Search */}
@@ -503,11 +486,11 @@ const UserDatabase = () => {
           </Card>
 
           {/* Companies List Card */}
-          <Card className="border-border/40 bg-gradient-to-br from-card to-card/80 animate-fade-in" style={{ animationDelay: "0.06s" }}>
+          <Card className="card-paper border-0 animate-fade-in" style={{ animationDelay: "0.06s" }}>
             <CardContent className="p-0">
-              <div className="px-5 py-3.5 border-b border-border/30 flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Companies ({filteredCompanies.length})
+              <div className="px-5 py-3.5 border-b border-border bg-[hsl(var(--surface-sunken))] flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.16em]">
+                  Companies <span className="font-mono tabular text-foreground/70 ml-1">({filteredCompanies.length})</span>
                 </span>
               </div>
 
