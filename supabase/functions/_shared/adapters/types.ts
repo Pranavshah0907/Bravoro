@@ -1,9 +1,12 @@
-// M1-scoped CRM adapter interface. M2 will extend with dedupCheck.
+// CRM adapter interface. Grows forward — never refactored.
+// M1: testConnection, fetchFieldMetadata, autoMapCustomFields.
+// Spec A (2026-05-06): fetchContacts.
 
 export interface CrmAdapter {
   testConnection(token: string): Promise<ConnectionResult>;
   fetchFieldMetadata(token: string): Promise<FieldMetadata>;
   autoMapCustomFields(metadata: FieldMetadata): CustomFieldMappings;
+  fetchContacts(token: string, opts?: FetchContactsOpts): AsyncGenerator<NormalizedContact, void, void>;
 }
 
 export interface ConnectionResult {
@@ -35,4 +38,24 @@ export class InvalidTokenError extends Error {
     super(message);
     this.name = 'InvalidTokenError';
   }
+}
+
+// ─── Spec A: contact mirror + dedup ────────────────────────────────────────
+
+export interface FetchContactsOpts {
+  /** ISO-8601; if provided, fetch only contacts updated >= this time. */
+  sinceISO?: string;
+  /** Page size. Default 500. */
+  pageSize?: number;
+}
+
+export interface NormalizedContact {
+  externalId: string;
+  name: string | null;
+  emails: string[];
+  primaryEmail: string | null;
+  phones: string[];
+  raw: unknown;
+  /** ISO-8601 timestamp from the source CRM's update_time. */
+  updatedAtISO: string;
 }
