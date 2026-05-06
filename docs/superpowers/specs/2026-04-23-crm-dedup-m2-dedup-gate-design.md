@@ -1,7 +1,9 @@
 # CRM Dedup — Milestone 2: Dedup Gate — Design Spec
 
+> **⚠️ DEPRECATED 2026-05-06.** The mechanism described here (live CRM API calls per dedup, 4-state verdict) is superseded by **`2026-05-06-crm-contact-mirror-and-dedup-api-design.md`** (Supabase mirror, binary verdict). The product goal is unchanged. This file is kept for history and rationale of the change. New work follows the 2026-05-06 spec.
+
 **Date:** 2026-04-23 (draft from PRD; needs brainstorming session before M2 implementation plan)
-**Status:** Draft — open questions must be resolved in a fresh brainstorming session before writing the M2 plan
+**Status:** Deprecated 2026-05-06. See banner above.
 **Source PRD:** `InputFiles/PRD_bravoro_crm_dedup.md`
 **Depends on:** `2026-04-23-crm-dedup-m1-connect-flow-design.md` (M1 must ship first)
 **Companion:** `2026-04-23-crm-dedup-roadmap.md`
