@@ -1,6 +1,7 @@
 import type {
   CrmAdapter, ConnectionResult, FieldMetadata, FieldDef, CustomFieldMappings,
   FetchContactsOpts, NormalizedContact,
+  Destination, CrmUser, OrgInput, PersonInput, DealInput,
 } from './types.ts';
 import { InvalidTokenError } from './types.ts';
 import { normalizeEmail, normalizePhone } from '../normalize.ts';
@@ -121,6 +122,126 @@ export class PipedriveAdapter implements CrmAdapter {
       start = res.additional_data.pagination.next_start;
     }
   }
+
+  // ─── Spec C: push to CRM ─────────────────────────────────────────────────
+
+  async fetchUsers(token: string): Promise<CrmUser[]> {
+    const url = new URL('https://api.pipedrive.com/v1/users');
+    url.searchParams.set('api_token', token);
+    const res = await fetchJson(url.toString());
+    return ((res.data ?? []) as any[]).map((u) => ({
+      externalId: String(u.id),
+      name: u.name ?? '',
+      email: u.email ?? null,
+      active: u.active_flag !== false,
+    }));
+  }
+
+  async listDestinations(token: string): Promise<Destination[]> {
+    const [pRes, sRes] = await Promise.all([
+      fetchJson(`https://api.pipedrive.com/v1/pipelines?api_token=${encodeURIComponent(token)}`),
+      fetchJson(`https://api.pipedrive.com/v1/stages?api_token=${encodeURIComponent(token)}`),
+    ]);
+    const stagesByPipeline = new Map<number, any[]>();
+    for (const st of (sRes.data ?? [])) {
+      if (!stagesByPipeline.has(st.pipeline_id)) stagesByPipeline.set(st.pipeline_id, []);
+      stagesByPipeline.get(st.pipeline_id)!.push(st);
+    }
+    const out: Destination[] = [];
+    for (const p of (pRes.data ?? [])) {
+      const stages = (stagesByPipeline.get(p.id) ?? []).sort((a: any, b: any) => a.order_nr - b.order_nr);
+      if (stages.length === 0) continue;
+      const first = stages[0];
+      out.push({
+        id: `pipeline:${p.id}|stage:${first.id}`,
+        label: `${p.name} — ${first.name}`,
+        group: p.name,
+        pipelineId: String(p.id),
+        stageId: String(first.id),
+      });
+    }
+    return out;
+  }
+
+  async findOrCreateOrganization(
+    token: string,
+    input: OrgInput,
+  ): Promise<{ externalId: string; created: boolean }> {
+    if (!input.domain && !input.name) throw new Error('org_input_empty');
+    if (input.domain) {
+      const u = new URL('https://api.pipedrive.com/v1/organizations/search');
+      u.searchParams.set('api_token', token);
+      u.searchParams.set('term', input.domain);
+      u.searchParams.set('fields', 'address,name');
+      const r = await fetchJson(u.toString());
+      const items = r.data?.items ?? [];
+      if (items.length > 0) return { externalId: String(items[0].item.id), created: false };
+    }
+    if (input.name) {
+      const u = new URL('https://api.pipedrive.com/v1/organizations/search');
+      u.searchParams.set('api_token', token);
+      u.searchParams.set('term', input.name);
+      u.searchParams.set('fields', 'name');
+      const r = await fetchJson(u.toString());
+      const items = r.data?.items ?? [];
+      if (items.length > 0) return { externalId: String(items[0].item.id), created: false };
+    }
+    const url = `https://api.pipedrive.com/v1/organizations?api_token=${encodeURIComponent(token)}`;
+    const created = await fetchJson(url, 1, { method: 'POST', body: { name: input.name ?? input.domain } });
+    return { externalId: String(created.data.id), created: true };
+  }
+
+  async findOrCreatePerson(
+    token: string,
+    input: PersonInput,
+  ): Promise<{ externalId: string; created: boolean; raw?: unknown }> {
+    if (input.email) {
+      const u = new URL('https://api.pipedrive.com/v1/persons/search');
+      u.searchParams.set('api_token', token);
+      u.searchParams.set('term', input.email);
+      u.searchParams.set('fields', 'email');
+      u.searchParams.set('exact_match', 'true');
+      const r = await fetchJson(u.toString());
+      const items = r.data?.items ?? [];
+      if (items.length > 0) return { externalId: String(items[0].item.id), created: false };
+    }
+    const body: any = { name: input.name, visible_to: 3 };
+    if (input.email) body.email = [{ value: input.email, primary: true, label: 'work' }];
+    if (input.phone) body.phone = [{ value: input.phone, primary: true, label: 'work' }];
+    if (input.organizationExternalId) body.org_id = Number(input.organizationExternalId);
+    if (input.jobTitle) body.job_title = input.jobTitle;
+    if (input.customFields) {
+      for (const [k, v] of Object.entries(input.customFields)) {
+        if (v !== undefined && v !== null) body[k] = v;
+      }
+    }
+    const url = `https://api.pipedrive.com/v1/persons?api_token=${encodeURIComponent(token)}`;
+    const created = await fetchJson(url, 1, { method: 'POST', body });
+    return { externalId: String(created.data.id), created: true, raw: created.data };
+  }
+
+  async createDeal(token: string, input: DealInput): Promise<{ externalId: string }> {
+    const body: any = {
+      title: input.title,
+      pipeline_id: Number(input.pipelineId),
+      stage_id: Number(input.stageId),
+      person_id: Number(input.personExternalId),
+      visible_to: 3,
+    };
+    if (input.organizationExternalId) body.org_id = Number(input.organizationExternalId);
+    if (input.ownerExternalId) body.user_id = Number(input.ownerExternalId);
+    if (input.sourceLabel) body.origin = input.sourceLabel;
+    if (input.sourceId) body.origin_id = input.sourceId;
+    if (input.channelLabel) body.channel = input.channelLabel;
+    if (input.customFields) {
+      for (const [k, v] of Object.entries(input.customFields)) {
+        if (v !== undefined && v !== null) body[k] = v;
+      }
+    }
+    const url = `https://api.pipedrive.com/v1/deals?api_token=${encodeURIComponent(token)}`;
+    const created = await fetchJson(url, 1, { method: 'POST', body });
+    return { externalId: String(created.data.id) };
+  }
 }
 
 function normalizeField(raw: any): FieldDef {
@@ -168,11 +289,21 @@ function pipedriveStampToISO(stamp: string | null | undefined): string | null {
   return stamp.replace(' ', 'T') + 'Z';
 }
 
-async function fetchJson(url: string, attempt = 1): Promise<any> {
+async function fetchJson(
+  url: string,
+  attempt = 1,
+  opts?: { method?: string; body?: any },
+): Promise<any> {
   const ctrl = new AbortController();
   const timeout = setTimeout(() => ctrl.abort(), 10_000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal });
+    const init: RequestInit = { signal: ctrl.signal };
+    if (opts?.method) init.method = opts.method;
+    if (opts?.body !== undefined) {
+      init.headers = { 'Content-Type': 'application/json' };
+      init.body = JSON.stringify(opts.body);
+    }
+    const res = await fetch(url, init);
     if (res.status === 401 || res.status === 403) {
       throw new InvalidTokenError();
     }
@@ -180,10 +311,11 @@ async function fetchJson(url: string, attempt = 1): Promise<any> {
       const retryAfterHeader = res.headers.get('Retry-After');
       const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : 250 * attempt;
       await new Promise(r => setTimeout(r, retryAfter));
-      return fetchJson(url, attempt + 1);
+      return fetchJson(url, attempt + 1, opts);
     }
     if (!res.ok) {
-      throw new Error(`Pipedrive ${res.status}`);
+      const txt = await res.text().catch(() => '');
+      throw new Error(`Pipedrive ${res.status}: ${txt.slice(0, 200)}`);
     }
     return await res.json();
   } finally {
