@@ -1,3 +1,4 @@
+Initialising login role...
 export type Json =
   | string
   | number
@@ -11,6 +12,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -241,6 +267,53 @@ export type Database = {
           },
         ]
       }
+      crm_contacts: {
+        Row: {
+          domain: string | null
+          email_normalized: string | null
+          emails_all: string[]
+          external_id: string
+          id: string
+          integration_id: string
+          last_synced_at: string
+          name: string | null
+          phone_normalized: string | null
+          raw: Json
+        }
+        Insert: {
+          domain?: string | null
+          email_normalized?: string | null
+          emails_all?: string[]
+          external_id: string
+          id?: string
+          integration_id: string
+          last_synced_at?: string
+          name?: string | null
+          phone_normalized?: string | null
+          raw: Json
+        }
+        Update: {
+          domain?: string | null
+          email_normalized?: string | null
+          emails_all?: string[]
+          external_id?: string
+          id?: string
+          integration_id?: string
+          last_synced_at?: string
+          name?: string | null
+          phone_normalized?: string | null
+          raw?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_field_metadata: {
         Row: {
           fields_json: Json
@@ -301,6 +374,9 @@ export type Database = {
           account_display_name: string
           account_identifier: string
           connected_by_user_id: string | null
+          contacts_initial_synced: boolean
+          contacts_last_synced_at: string | null
+          contacts_sync_error: string | null
           created_at: string
           crm_type: string
           custom_field_mappings: Json
@@ -315,6 +391,9 @@ export type Database = {
           account_display_name: string
           account_identifier: string
           connected_by_user_id?: string | null
+          contacts_initial_synced?: boolean
+          contacts_last_synced_at?: string | null
+          contacts_sync_error?: string | null
           created_at?: string
           crm_type: string
           custom_field_mappings?: Json
@@ -329,6 +408,9 @@ export type Database = {
           account_display_name?: string
           account_identifier?: string
           connected_by_user_id?: string | null
+          contacts_initial_synced?: boolean
+          contacts_last_synced_at?: string | null
+          contacts_sync_error?: string | null
           created_at?: string
           crm_type?: string
           custom_field_mappings?: Json
@@ -1069,6 +1151,8 @@ export type Database = {
           next_search_id: string
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "user"
@@ -1197,9 +1281,14 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "user"],
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.98.2 (currently installed v2.75.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
