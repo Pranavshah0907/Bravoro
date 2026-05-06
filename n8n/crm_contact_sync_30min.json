@@ -1,0 +1,45 @@
+{
+  "name": "crm_contact_sync_30min",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "minutes", "minutesInterval": 30 }
+          ]
+        }
+      },
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ggvhwxpaovfvoyvzixqw.supabase.co/functions/v1/crm-sync-contacts",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer YOUR_CRM_DEDUP_SECRET" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {}
+      },
+      "name": "POST crm-sync-contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [[{ "node": "POST crm-sync-contacts", "type": "main", "index": 0 }]]
+    }
+  }
+}

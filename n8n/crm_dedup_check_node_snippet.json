@@ -1,0 +1,24 @@
+{
+  "node_to_paste_before_enrichment": {
+    "parameters": {
+      "method": "POST",
+      "url": "https://ggvhwxpaovfvoyvzixqw.supabase.co/functions/v1/crm-dedup-check",
+      "authentication": "none",
+      "sendHeaders": true,
+      "headerParameters": {
+        "parameters": [
+          { "name": "Authorization", "value": "Bearer YOUR_CRM_DEDUP_SECRET" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]
+      },
+      "sendBody": true,
+      "specifyBody": "json",
+      "jsonBody": "={{ JSON.stringify({ workspace_id: $json.workspace_id, leads: $json.leads }) }}",
+      "options": {}
+    },
+    "name": "Dedup check (Bravoro)",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.2
+  },
+  "next_filter_node_javascript": "// Drop into a Code node immediately AFTER 'Dedup check (Bravoro)'.\n// It reads the dedup-check response and the original leads array,\n// and returns only the leads with verdict === 'unique'.\n\nconst dedup = $input.first().json;\nif (!dedup || !Array.isArray(dedup.results)) {\n  // Fail-open: if dedup-check returned an unexpected shape, pass everything\n  // through to enrichment rather than dropping leads.\n  return $('previous-node').first().json.leads.map(l => ({ json: l }));\n}\nconst leads = $('previous-node').first().json.leads;\nreturn dedup.results\n  .filter(r => r.verdict === 'unique')\n  .map(r => ({ json: leads[r.lead_index] }));"
+}
