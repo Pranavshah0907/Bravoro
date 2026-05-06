@@ -247,15 +247,17 @@ export class PipedriveAdapter implements CrmAdapter {
     // Failures here don't fail the push.
     if (input.sourceLabel || input.sourceId || input.channelLabel) {
       try {
+        // Pipedrive Notes render as HTML, so wrap each line in <p> for proper
+        // line breaks. Plain \n collapses to a single line in the UI.
         const noteLines = [
-          input.sourceLabel ? `Source: ${input.sourceLabel}` : null,
-          input.sourceId ? `Bravoro ID: ${input.sourceId}` : null,
-          input.channelLabel ? `Channel: ${input.channelLabel}` : null,
+          input.sourceLabel ? `<p><strong>Source:</strong> ${escapeHtml(input.sourceLabel)}</p>` : '',
+          input.sourceId ? `<p><strong>Bravoro ID:</strong> ${escapeHtml(input.sourceId)}</p>` : '',
+          input.channelLabel ? `<p><strong>Channel:</strong> ${escapeHtml(input.channelLabel)}</p>` : '',
         ].filter(Boolean);
         const noteUrl = `https://api.pipedrive.com/v1/notes?api_token=${encodeURIComponent(token)}`;
         await fetchJson(noteUrl, 1, {
           method: 'POST',
-          body: { content: noteLines.join('\n'), deal_id: Number(dealId) },
+          body: { content: noteLines.join(''), deal_id: Number(dealId) },
         });
       } catch (err) {
         console.warn('source attribution note failed (non-fatal):', (err as Error).message);
@@ -309,6 +311,15 @@ function pipedriveStampToISO(stamp: string | null | undefined): string | null {
   if (!stamp) return null;
   // 'YYYY-MM-DD HH:MM:SS' (UTC) → ISO with Z
   return stamp.replace(' ', 'T') + 'Z';
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 async function fetchJson(
