@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { User as UserIcon, Lock, BarChart3, Loader2, CreditCard } from "lucide-react";
+import { User as UserIcon, Lock, BarChart3, Loader2, CreditCard, Settings2 } from "lucide-react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { MobileTabBar } from "@/components/MobileTabBar";
@@ -22,6 +22,7 @@ interface ProfileData {
   last_name: string;
   email: string;
   workspace_id: string | null;
+  chat_sync_mode: string;
 }
 
 const Settings = () => {
@@ -38,9 +39,13 @@ const Settings = () => {
     last_name: "",
     email: "",
     workspace_id: null,
+    chat_sync_mode: "auto",
   });
   const [workspaceCredits, setWorkspaceCredits] = useState<{ balance: number; name: string } | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Preferences state
+  const [savingSyncMode, setSavingSyncMode] = useState(false);
 
   // Security state
   const [newPassword, setNewPassword] = useState("");
@@ -61,7 +66,7 @@ const Settings = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("first_name, last_name, email, workspace_id")
+        .select("first_name, last_name, email, workspace_id, chat_sync_mode")
         .eq("id", currentUser.id)
         .single();
 
@@ -71,6 +76,7 @@ const Settings = () => {
           last_name: profileData.last_name ?? "",
           email: profileData.email ?? currentUser.email ?? "",
           workspace_id: profileData.workspace_id ?? null,
+          chat_sync_mode: profileData.chat_sync_mode ?? "auto",
         });
 
         if (profileData.workspace_id) {
@@ -180,6 +186,33 @@ const Settings = () => {
     }
   };
 
+  const handleSyncModeChange = async (mode: string) => {
+    if (!user) return;
+    setSavingSyncMode(true);
+    setProfile((p) => ({ ...p, chat_sync_mode: mode }));
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ chat_sync_mode: mode })
+      .eq("id", user.id);
+
+    setSavingSyncMode(false);
+
+    if (error) {
+      setProfile((p) => ({ ...p, chat_sync_mode: p.chat_sync_mode === "auto" ? "manual" : "auto" }));
+      toast({
+        title: "Error",
+        description: "Failed to update preference. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Preference updated",
+        description: `AI Chat results sync set to ${mode}.`,
+      });
+    }
+  };
+
   const initials =
     (profile.first_name?.[0] ?? "").toUpperCase() +
     (profile.last_name?.[0] ?? "").toUpperCase() || "U";
@@ -244,6 +277,10 @@ const Settings = () => {
               <TabsTrigger value="usage" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Usage
+              </TabsTrigger>
+              <TabsTrigger value="preferences" className="gap-2">
+                <Settings2 className="h-4 w-4" />
+                Preferences
               </TabsTrigger>
             </TabsList>
 
@@ -408,6 +445,68 @@ const Settings = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* ── Preferences Tab ── */}
+            <TabsContent value="preferences">
+              <div className="rounded-xl border border-border/40 bg-card/30 backdrop-blur-sm p-6 md:p-8 space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    AI Chat
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Control how AI Chat data syncs to your Results page.
+                  </p>
+                </div>
+
+                <Separator className="bg-border/30" />
+
+                <div className="space-y-4 max-w-md">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Sync to Results</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Choose whether enriched contacts from AI Chat automatically appear on the Results page, or only when you manually click "Sync to Results."
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      variant={profile.chat_sync_mode === "auto" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleSyncModeChange("auto")}
+                      disabled={savingSyncMode || profile.chat_sync_mode === "auto"}
+                      className={
+                        profile.chat_sync_mode === "auto"
+                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          : "border-border/50 hover:bg-muted/50"
+                      }
+                    >
+                      Auto
+                    </Button>
+                    <Button
+                      variant={profile.chat_sync_mode === "manual" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleSyncModeChange("manual")}
+                      disabled={savingSyncMode || profile.chat_sync_mode === "manual"}
+                      className={
+                        profile.chat_sync_mode === "manual"
+                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          : "border-border/50 hover:bg-muted/50"
+                      }
+                    >
+                      Manual
+                    </Button>
+                  </div>
+
+                  <div className="rounded-lg border border-border/30 bg-muted/20 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      {profile.chat_sync_mode === "auto"
+                        ? "Enriched contacts with phone numbers are automatically saved to the Results page after each AI Chat response."
+                        : "Enriched contacts are only synced when you click the \"Sync to Results\" button in the chat header."}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

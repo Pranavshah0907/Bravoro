@@ -57,6 +57,7 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
     const [enrichedContactKeys, setEnrichedContactKeys] = useState<Set<string>>(new Set());
     const [syncing, setSyncing] = useState(false);
     const [showCreditsDialog, setShowCreditsDialog] = useState(false);
+    const [chatSyncMode, setChatSyncMode] = useState<"auto" | "manual">("auto");
 
     const { toast } = useToast();
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -67,6 +68,18 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
     useEffect(() => {
       onConvsChangeRef.current = onConvsChange;
     });
+
+    useEffect(() => {
+      if (!userId) return;
+      supabase
+        .from("profiles")
+        .select("chat_sync_mode")
+        .eq("id", userId)
+        .single()
+        .then(({ data }) => {
+          if (data?.chat_sync_mode === "manual") setChatSyncMode("manual");
+        });
+    }, [userId]);
 
     useEffect(() => {
       if (userId) loadConversations();
@@ -225,14 +238,29 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
       setSyncing(true);
       try {
         const msgs = messages[activeId] ?? [];
+        const chatType = config.chatType === "recruiting" ? "recruiting" : "ai_chat";
+
+        // Save enriched contacts to master DB + credits first
+        const enrichedContacts = msgs
+          .filter((m) => m.role === "assistant" && m.metadata)
+          .flatMap((m) => (m.metadata as MessageMetadata)?.data?.contacts ?? [])
+          .filter((c) => !c.previewOnly && (c.mobilePhone || c.directPhone || (c.phone && c.phone !== "Locked")));
+
+        let searchId = conv.synced_search_id ?? null;
+
+        if (enrichedContacts.length > 0) {
+          const result = await saveChatContacts(
+            userId, activeId, conv.title, searchId,
+            enrichedContacts, null, chatType
+          );
+          searchId = result.searchId;
+        }
+
+        // Then push to search_results for Results page
         const { companiesCount, contactsCount } = await syncChatToResults(
-          userId,
-          activeId,
-          conv.title,
-          msgs,
-          conv.synced_search_id ?? null
+          userId, activeId, conv.title, msgs, searchId
         );
-        // Reload conversation to get updated synced_search_id
+
         const { data: updated } = await supabase
           .from("ai_chat_conversations")
           .select("id, title, session_id, updated_at, chat_type, synced_search_id")
@@ -566,54 +594,54 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
         ],
       }));
 
-      // Auto-save enriched contacts to master DB + search_results (fire-and-forget)
-      const enrichedContacts = replyMetadata?.data?.contacts?.filter(
-        (c) => !c.previewOnly && (c.mobilePhone || c.directPhone || (c.phone && c.phone !== "Locked"))
-      );
-      if (enrichedContacts && enrichedContacts.length > 0) {
+      // In auto mode: save to master DB + credits + Results page immediately
+      // In manual mode: nothing — user clicks "Sync to Results" later
+      if (chatSyncMode === "auto") {
+        const enrichedContacts = replyMetadata?.data?.contacts?.filter(
+          (c) => !c.previewOnly && (c.mobilePhone || c.directPhone || (c.phone && c.phone !== "Locked"))
+        );
         const convForSave = conversations.find((c) => c.id === activeId);
-        saveChatContacts(
-          userId,
-          activeId,
-          convForSave?.title || "Chat",
-          convForSave?.synced_search_id ?? null,
-          enrichedContacts,
-          replyMetadata?.credits ?? null,
-          config.chatType === "recruiting" ? "recruiting" : "ai_chat"
-        )
-          .then((result) => {
-            if (!convForSave?.synced_search_id && result.searchId) {
-              supabase
-                .from("ai_chat_conversations")
-                .select("id, title, session_id, updated_at, chat_type, synced_search_id")
-                .eq("id", activeId)
-                .single()
-                .then(({ data: updated }) => {
-                  if (updated) {
-                    setConversations((prev) =>
-                      prev.map((c) => (c.id === activeId ? (updated as ConversationMeta) : c))
-                    );
-                  }
-                })
-                .catch(() => {});
-            }
-          })
-          .catch((err) => {
-            console.error("[ChatInterface] Auto-save failed:", err);
-          });
-      } else if (replyMetadata?.credits) {
-        // Credits exist but no enriched contacts (e.g. jobs-only response)
-        const convForSave = conversations.find((c) => c.id === activeId);
-        saveChatCreditsOnly(
-          userId,
-          activeId,
-          convForSave?.title || "Chat",
-          convForSave?.synced_search_id ?? null,
-          replyMetadata.credits,
-          config.chatType === "recruiting" ? "recruiting" : "ai_chat"
-        ).catch((err) => {
-          console.error("[ChatInterface] Credits-only save failed:", err);
-        });
+        const convTitle = convForSave?.title || "Chat";
+        const existingSyncId = convForSave?.synced_search_id ?? null;
+        const chatType = config.chatType === "recruiting" ? "recruiting" : "ai_chat";
+
+        const allMsgsForSync: { role: "user" | "assistant"; metadata?: MessageMetadata | null }[] = [
+          ...(messages[activeId] ?? []),
+          { role: "assistant" as const, metadata: replyMetadata },
+        ];
+
+        if (enrichedContacts && enrichedContacts.length > 0) {
+          saveChatContacts(
+            userId, activeId, convTitle, existingSyncId,
+            enrichedContacts, replyMetadata?.credits ?? null, chatType
+          )
+            .then(async (result) => {
+              if (!existingSyncId && result.searchId) {
+                const { data: updated } = await supabase
+                  .from("ai_chat_conversations")
+                  .select("id, title, session_id, updated_at, chat_type, synced_search_id")
+                  .eq("id", activeId)
+                  .single();
+                if (updated) {
+                  setConversations((prev) =>
+                    prev.map((c) => (c.id === activeId ? (updated as ConversationMeta) : c))
+                  );
+                }
+              }
+              if (config.features.syncToResults) {
+                await syncChatToResults(
+                  userId, activeId, convTitle, allMsgsForSync,
+                  result.searchId
+                );
+              }
+            })
+            .catch((err) => console.error("[ChatInterface] Auto-save failed:", err));
+        } else if (replyMetadata?.credits) {
+          saveChatCreditsOnly(
+            userId, activeId, convTitle, existingSyncId,
+            replyMetadata.credits, chatType
+          ).catch((err) => console.error("[ChatInterface] Credits-only save failed:", err));
+        }
       }
 
       setConversations((prev) => {
@@ -708,27 +736,34 @@ export const ChatInterface = forwardRef<ChatHandle, ChatInterfaceProps>(
           </div>
           <div className="flex items-center gap-2">
             {config.features.syncToResults && hasSyncableData(activeMessages) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSyncToResults}
-                disabled={syncing}
-                className={cn(
-                  "h-8 gap-1.5 text-xs font-medium border-border/50",
-                  activeConv?.synced_search_id
-                    ? "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
-                    : "hover:bg-muted/50"
-                )}
-              >
-                {syncing ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : activeConv?.synced_search_id ? (
+              chatSyncMode === "manual" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncToResults}
+                  disabled={syncing}
+                  className={cn(
+                    "h-8 gap-1.5 text-xs font-medium border-border/50",
+                    activeConv?.synced_search_id
+                      ? "text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                      : "hover:bg-muted/50"
+                  )}
+                >
+                  {syncing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : activeConv?.synced_search_id ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <ArrowUpFromLine className="h-3.5 w-3.5" />
+                  )}
+                  {syncing ? "Syncing..." : activeConv?.synced_search_id ? "Synced" : "Sync to Results"}
+                </Button>
+              ) : activeConv?.synced_search_id ? (
+                <span className="h-8 inline-flex items-center gap-1.5 px-3 text-xs font-medium text-emerald-400">
                   <Check className="h-3.5 w-3.5" />
-                ) : (
-                  <ArrowUpFromLine className="h-3.5 w-3.5" />
-                )}
-                {syncing ? "Syncing..." : activeConv?.synced_search_id ? "Synced" : "Sync to Results"}
-              </Button>
+                  Synced
+                </span>
+              ) : null
             )}
             <img src={bravoroLogo} alt="Bravoro" className="h-5 w-auto shrink-0 self-center opacity-80" />
           </div>

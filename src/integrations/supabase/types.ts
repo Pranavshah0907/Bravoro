@@ -496,6 +496,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          chat_sync_mode: string
           created_at: string | null
           email: string
           first_name: string | null
@@ -507,6 +508,7 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          chat_sync_mode?: string
           created_at?: string | null
           email: string
           first_name?: string | null
@@ -518,6 +520,7 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          chat_sync_mode?: string
           created_at?: string | null
           email?: string
           first_name?: string | null
