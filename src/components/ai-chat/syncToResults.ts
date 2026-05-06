@@ -18,19 +18,9 @@ interface GatheredCompany {
   jobs: Array<{ title: string; url: string; postedAt: string }>;
 }
 
-function normalizeDomain(d: string): string {
-  return d.toLowerCase().replace(/^www\./, "");
-}
-
-function companyKey(domain: string | undefined, name: string | undefined): string {
-  if (domain) return normalizeDomain(domain);
-  return (name || "other").toLowerCase();
-}
-
 function gatherChatData(messages: ChatMessage[]) {
   const companiesMap = new Map<string, GatheredCompany>();
   const contactsByCompany = new Map<string, ContactData[]>();
-  // Map company name → canonical key so contacts with only a name merge with domain-keyed companies
   const nameToKey = new Map<string, string>();
 
   for (const msg of messages) {
@@ -40,7 +30,8 @@ function gatherChatData(messages: ChatMessage[]) {
 
     if (data.companies?.length) {
       for (const company of data.companies) {
-        const key = companyKey(company.domain, company.name);
+        // Domains are already normalized at parse time (lowercase, no www.)
+        const key = (company.domain || company.name || "").toLowerCase();
         if (!key) continue;
         if (company.name) nameToKey.set(company.name.toLowerCase(), key);
         const existing = companiesMap.get(key);
@@ -67,8 +58,8 @@ function gatherChatData(messages: ChatMessage[]) {
     if (data.contacts?.length) {
       for (const contact of data.contacts) {
         if (contact.previewOnly) continue;
-        let key = companyKey(contact.companyDomain, contact.companyName);
-        // Merge with known company if contact only has a name
+        // Domains already normalized — use domain, fall back to name
+        let key = (contact.companyDomain || contact.companyName || "other").toLowerCase();
         if (!contact.companyDomain && contact.companyName) {
           const canonical = nameToKey.get(contact.companyName.toLowerCase());
           if (canonical) key = canonical;
