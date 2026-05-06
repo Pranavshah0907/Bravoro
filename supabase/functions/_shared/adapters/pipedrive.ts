@@ -221,6 +221,10 @@ export class PipedriveAdapter implements CrmAdapter {
   }
 
   async createDeal(token: string, input: DealInput): Promise<{ externalId: string }> {
+    // Pipedrive's `origin`, `origin_id`, and `channel` fields are read-only
+    // for Personal API Tokens — they're reserved for Marketplace Apps. We
+    // skip them here. Source attribution is preserved in the Deal note we
+    // append below, plus any user-defined custom fields via input.customFields.
     const body: any = {
       title: input.title,
       pipeline_id: Number(input.pipelineId),
@@ -230,9 +234,6 @@ export class PipedriveAdapter implements CrmAdapter {
     };
     if (input.organizationExternalId) body.org_id = Number(input.organizationExternalId);
     if (input.ownerExternalId) body.user_id = Number(input.ownerExternalId);
-    if (input.sourceLabel) body.origin = input.sourceLabel;
-    if (input.sourceId) body.origin_id = input.sourceId;
-    if (input.channelLabel) body.channel = input.channelLabel;
     if (input.customFields) {
       for (const [k, v] of Object.entries(input.customFields)) {
         if (v !== undefined && v !== null) body[k] = v;
@@ -240,7 +241,28 @@ export class PipedriveAdapter implements CrmAdapter {
     }
     const url = `https://api.pipedrive.com/v1/deals?api_token=${encodeURIComponent(token)}`;
     const created = await fetchJson(url, 1, { method: 'POST', body });
-    return { externalId: String(created.data.id) };
+    const dealId = String(created.data.id);
+
+    // Best-effort source attribution via a Note attached to the Deal.
+    // Failures here don't fail the push.
+    if (input.sourceLabel || input.sourceId || input.channelLabel) {
+      try {
+        const noteLines = [
+          input.sourceLabel ? `Source: ${input.sourceLabel}` : null,
+          input.sourceId ? `Bravoro ID: ${input.sourceId}` : null,
+          input.channelLabel ? `Channel: ${input.channelLabel}` : null,
+        ].filter(Boolean);
+        const noteUrl = `https://api.pipedrive.com/v1/notes?api_token=${encodeURIComponent(token)}`;
+        await fetchJson(noteUrl, 1, {
+          method: 'POST',
+          body: { content: noteLines.join('\n'), deal_id: Number(dealId) },
+        });
+      } catch (err) {
+        console.warn('source attribution note failed (non-fatal):', (err as Error).message);
+      }
+    }
+
+    return { externalId: dealId };
   }
 }
 

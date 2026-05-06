@@ -1849,18 +1849,28 @@ const Results = () => {
         const allContacts = allResults
           .flatMap((r) => r.contact_data ?? [])
           .filter((c): c is Contact => Boolean(c));
-        const leads: PushLeadInput[] = allContacts.map((c) => ({
-          record_id: c.Record_ID ?? `${pushModalSearchId}-${c.Email ?? c.First_Name ?? c.Last_Name ?? Math.random().toString(36).slice(2)}`,
-          first_name: c.First_Name || null,
-          last_name: c.Last_Name || null,
-          email: c.Email || null,
-          domain: c.Domain || null,
-          organization: c.Organization || null,
-          title: c.Title || null,
-          phone_1: c.Phone_Number_1 || null,
-          phone_2: c.Phone_Number_2 || null,
-          linkedin: c.LinkedIn || null,
-        }));
+        const leads: PushLeadInput[] = allContacts.map((c, idx) => {
+          // Build a stable, unique record_id. Falls back to a deterministic
+          // index-based id when Record_ID + email + name are all blank, so
+          // the crm_pushes UNIQUE(record_id) constraint doesn't collide.
+          const fallback =
+            (c.Email && c.Email.trim()) ||
+            (c.First_Name && c.First_Name.trim()) ||
+            (c.Last_Name && c.Last_Name.trim()) ||
+            `idx-${idx}`;
+          return {
+            record_id: c.Record_ID || `${pushModalSearchId}-${fallback}`,
+            first_name: c.First_Name || null,
+            last_name: c.Last_Name || null,
+            email: c.Email || null,
+            domain: c.Domain || null,
+            organization: c.Organization || null,
+            title: c.Title || null,
+            phone_1: c.Phone_Number_1 || null,
+            phone_2: c.Phone_Number_2 || null,
+            linkedin: c.LinkedIn || null,
+          };
+        });
         return (
           <PushToCrmModal
             open={!!pushModalSearchId}

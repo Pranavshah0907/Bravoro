@@ -193,22 +193,29 @@ export function PushToCrmModal({
             </div>
 
             {results && results.length > 0 && (
-              <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1 text-xs">
+              <div className="max-h-64 overflow-y-auto border rounded-md p-2 space-y-1 text-xs">
                 {results.map((r) => (
-                  <div key={r.record_id} className="flex items-center gap-2 px-1 py-0.5">
-                    {r.status === 'success' && (
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                  <div key={r.record_id} className="px-1 py-1 border-b border-border/30 last:border-0">
+                    <div className="flex items-center gap-2">
+                      {r.status === 'success' && (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                      )}
+                      {r.status === 'skipped_idempotent' && (
+                        <CheckCircle2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                      )}
+                      {r.status === 'failed' && (
+                        <XCircle className="h-3 w-3 text-destructive shrink-0" />
+                      )}
+                      <span className="truncate font-mono">{r.record_id}</span>
+                      <span className="text-muted-foreground ml-auto shrink-0">
+                        {r.status === 'skipped_idempotent' ? 'already pushed' : r.status}
+                      </span>
+                    </div>
+                    {r.status === 'failed' && r.error_message && (
+                      <div className="mt-1 ml-5 text-destructive/80 break-words">
+                        {r.error_message}
+                      </div>
                     )}
-                    {r.status === 'skipped_idempotent' && (
-                      <CheckCircle2 className="h-3 w-3 text-muted-foreground shrink-0" />
-                    )}
-                    {r.status === 'failed' && (
-                      <XCircle className="h-3 w-3 text-destructive shrink-0" />
-                    )}
-                    <span className="truncate font-mono">{r.record_id}</span>
-                    <span className="text-muted-foreground ml-auto shrink-0">
-                      {r.status === 'skipped_idempotent' ? 'already pushed' : r.status}
-                    </span>
                   </div>
                 ))}
               </div>
