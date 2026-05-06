@@ -1021,6 +1021,25 @@ const Results = () => {
               <Button
                 size="sm"
                 variant="outline"
+                onClick={() => setPushModalSearchId(search.id)}
+                disabled={!integration || integration.status !== 'connected' || enrichedContacts.length === 0}
+                className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                title={
+                  !integration
+                    ? 'Connect a CRM in Settings → Integrations to enable push'
+                    : integration.status !== 'connected'
+                      ? 'Reconnect your CRM to enable push'
+                      : enrichedContacts.length === 0
+                        ? 'No contacts to push'
+                        : `Push ${enrichedContacts.length} contacts to CRM`
+                }
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Push to CRM
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => handleExportPeopleEnrichment(search.id)}
                 className="hover-lift border-primary/30 text-primary hover:bg-primary/10"
               >
@@ -1154,6 +1173,30 @@ const Results = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h4 className="text-sm font-semibold text-foreground">Contact Results</h4>
           <div className="flex items-center gap-2">
+            {(() => {
+              const totalContacts = companyResults.reduce((acc, r) => acc + (r.contact_data?.length ?? 0), 0);
+              return (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPushModalSearchId(search.id)}
+                  disabled={!integration || integration.status !== 'connected' || totalContacts === 0}
+                  className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  title={
+                    !integration
+                      ? 'Connect a CRM in Settings → Integrations to enable push'
+                      : integration.status !== 'connected'
+                        ? 'Reconnect your CRM to enable push'
+                        : totalContacts === 0
+                          ? 'No contacts to push'
+                          : `Push ${totalContacts} contacts to CRM`
+                  }
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Push to CRM
+                </Button>
+              );
+            })()}
             {search.search_type === "manual" ? (
               <Button
                 size="sm"
