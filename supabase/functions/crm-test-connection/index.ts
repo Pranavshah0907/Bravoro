@@ -74,6 +74,14 @@ serve(async (req) => {
       return json({ ok: false, error: 'Token was rejected when reading fields. Try reconnecting.' });
     }
 
+    // Spec C: also cache users for the owner picker (best-effort, non-fatal)
+    let cachedUsers: any[] = [];
+    try {
+      cachedUsers = await adapter.fetchUsers(token);
+    } catch (err) {
+      console.warn('fetchUsers failed (non-fatal):', (err as Error).message);
+    }
+
     const customFieldMappings = adapter.autoMapCustomFields(metadata);
 
     const { data: integrationId, error: rpcError } = await supabase.rpc('finalize_crm_connection', {
@@ -90,6 +98,15 @@ serve(async (req) => {
     if (rpcError) {
       console.error('finalize_crm_connection failed', rpcError);
       return json({ ok: false, error: 'Failed to save connection. Try again.' }, 500);
+    }
+
+    // Spec C: persist cached users for the owner-picker (best-effort)
+    if (integrationId && cachedUsers.length > 0) {
+      const { error: usersErr } = await supabase
+        .from('integrations')
+        .update({ cached_users: cachedUsers })
+        .eq('id', integrationId);
+      if (usersErr) console.warn('cached_users persist failed (non-fatal):', usersErr.message);
     }
 
     // Spec A: kick off the initial contact-mirror backfill so the user

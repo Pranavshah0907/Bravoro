@@ -114,6 +114,19 @@ serve(async (req) => {
       return json({ ok: false, error: 'Failed to save refreshed metadata. Try again.' }, 500);
     }
 
+    // Spec C: refresh cached_users (best-effort, non-fatal)
+    try {
+      const users = await adapter.fetchUsers(token);
+      if (users.length > 0) {
+        await supabase
+          .from('integrations')
+          .update({ cached_users: users })
+          .eq('id', integration_id);
+      }
+    } catch (err) {
+      console.warn('fetchUsers refresh failed (non-fatal):', (err as Error).message);
+    }
+
     return json({
       ok: true,
       customFieldMappings,
