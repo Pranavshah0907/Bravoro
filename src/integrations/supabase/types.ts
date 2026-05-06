@@ -314,6 +314,82 @@ export type Database = {
           },
         ]
       }
+      crm_pushes: {
+        Row: {
+          bravoro_email: string | null
+          bravoro_record_id: string | null
+          destination_id: string
+          destination_label: string
+          error_message: string | null
+          external_deal_id: string | null
+          external_org_id: string | null
+          external_person_id: string | null
+          id: string
+          integration_id: string
+          pushed_at: string
+          pushed_by_user_id: string | null
+          search_id: string | null
+          status: string
+          workspace_id: string
+        }
+        Insert: {
+          bravoro_email?: string | null
+          bravoro_record_id?: string | null
+          destination_id: string
+          destination_label: string
+          error_message?: string | null
+          external_deal_id?: string | null
+          external_org_id?: string | null
+          external_person_id?: string | null
+          id?: string
+          integration_id: string
+          pushed_at?: string
+          pushed_by_user_id?: string | null
+          search_id?: string | null
+          status: string
+          workspace_id: string
+        }
+        Update: {
+          bravoro_email?: string | null
+          bravoro_record_id?: string | null
+          destination_id?: string
+          destination_label?: string
+          error_message?: string | null
+          external_deal_id?: string | null
+          external_org_id?: string | null
+          external_person_id?: string | null
+          id?: string
+          integration_id?: string
+          pushed_at?: string
+          pushed_by_user_id?: string | null
+          search_id?: string | null
+          status?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_pushes_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_pushes_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_pushes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_field_metadata: {
         Row: {
           fields_json: Json
@@ -373,6 +449,7 @@ export type Database = {
         Row: {
           account_display_name: string
           account_identifier: string
+          cached_users: Json
           connected_by_user_id: string | null
           contacts_initial_synced: boolean
           contacts_last_synced_at: string | null
@@ -380,6 +457,7 @@ export type Database = {
           created_at: string
           crm_type: string
           custom_field_mappings: Json
+          default_owner_external_id: string | null
           id: string
           last_checked_at: string
           last_error: string | null
@@ -390,6 +468,7 @@ export type Database = {
         Insert: {
           account_display_name: string
           account_identifier: string
+          cached_users?: Json
           connected_by_user_id?: string | null
           contacts_initial_synced?: boolean
           contacts_last_synced_at?: string | null
@@ -397,6 +476,7 @@ export type Database = {
           created_at?: string
           crm_type: string
           custom_field_mappings?: Json
+          default_owner_external_id?: string | null
           id?: string
           last_checked_at?: string
           last_error?: string | null
@@ -407,6 +487,7 @@ export type Database = {
         Update: {
           account_display_name?: string
           account_identifier?: string
+          cached_users?: Json
           connected_by_user_id?: string | null
           contacts_initial_synced?: boolean
           contacts_last_synced_at?: string | null
@@ -414,6 +495,7 @@ export type Database = {
           created_at?: string
           crm_type?: string
           custom_field_mappings?: Json
+          default_owner_external_id?: string | null
           id?: string
           last_checked_at?: string
           last_error?: string | null
@@ -1064,6 +1146,18 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: Json
+      }
+      crm_contact_fuzzy_name_match: {
+        Args: {
+          p_domain: string
+          p_integration_id: string
+          p_name: string
+          p_threshold?: number
+        }
+        Returns: {
+          external_id: string
+          similarity_score: number
+        }[]
       }
       decrypt_integration_token: {
         Args: { p_integration_id: string }
