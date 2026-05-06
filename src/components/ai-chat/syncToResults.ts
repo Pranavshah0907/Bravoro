@@ -18,22 +18,31 @@ interface GatheredCompany {
   jobs: Array<{ title: string; url: string; postedAt: string }>;
 }
 
+function normalizeDomain(d: string): string {
+  return d.toLowerCase().replace(/^www\./, "");
+}
+
+function companyKey(domain: string | undefined, name: string | undefined): string {
+  if (domain) return normalizeDomain(domain);
+  return (name || "other").toLowerCase();
+}
+
 function gatherChatData(messages: ChatMessage[]) {
-  // Companies keyed by domain (fallback: name)
   const companiesMap = new Map<string, GatheredCompany>();
-  // Enriched contacts grouped by company key
   const contactsByCompany = new Map<string, ContactData[]>();
+  // Map company name → canonical key so contacts with only a name merge with domain-keyed companies
+  const nameToKey = new Map<string, string>();
 
   for (const msg of messages) {
     if (msg.role !== "assistant") continue;
     const data = (msg.metadata as MessageMetadata | null)?.data;
     if (!data) continue;
 
-    // Collect companies with jobs
     if (data.companies?.length) {
       for (const company of data.companies) {
-        const key = (company.domain || company.name || "").toLowerCase();
+        const key = companyKey(company.domain, company.name);
         if (!key) continue;
+        if (company.name) nameToKey.set(company.name.toLowerCase(), key);
         const existing = companiesMap.get(key);
         if (!existing) {
           companiesMap.set(key, {
@@ -45,7 +54,6 @@ function gatherChatData(messages: ChatMessage[]) {
             })),
           });
         } else {
-          // Merge new jobs (dedupe by URL)
           const existingUrls = new Set(existing.jobs.map((j) => j.url));
           for (const job of company.jobs || []) {
             if (job.url && !existingUrls.has(job.url)) {
@@ -56,11 +64,15 @@ function gatherChatData(messages: ChatMessage[]) {
       }
     }
 
-    // Collect enriched contacts only (skip previews)
     if (data.contacts?.length) {
       for (const contact of data.contacts) {
         if (contact.previewOnly) continue;
-        const key = (contact.companyDomain || contact.companyName || "other").toLowerCase();
+        let key = companyKey(contact.companyDomain, contact.companyName);
+        // Merge with known company if contact only has a name
+        if (!contact.companyDomain && contact.companyName) {
+          const canonical = nameToKey.get(contact.companyName.toLowerCase());
+          if (canonical) key = canonical;
+        }
         if (!contactsByCompany.has(key)) contactsByCompany.set(key, []);
         contactsByCompany.get(key)!.push(contact);
       }
