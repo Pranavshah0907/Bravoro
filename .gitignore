@@ -72,3 +72,6 @@ docs/superpowers/plans/*-SESSION-HANDOFF.md
 
 # Local dev notes (secrets, scratch)
 .dev-notes/
+
+# Deno lock from local test runs (deps pinned in test files)
+deno.lock
