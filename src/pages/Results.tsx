@@ -19,7 +19,10 @@ import {
   MapPin,
   ExternalLink,
   FileText,
+  Upload,
 } from "lucide-react";
+import { PushToCrmModal, type PushLeadInput } from "@/components/integrations/PushToCrmModal";
+import { useIntegration } from "@/components/integrations/useIntegration";
 import { useToast } from "@/hooks/use-toast";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileHeader } from "@/components/MobileHeader";
@@ -352,6 +355,9 @@ const Results = () => {
   const [currentPage, setCurrentPage] = useState<Record<string, number>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [companyBrowserOpen, setCompanyBrowserOpen] = useState<Record<string, boolean>>({});
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [pushModalSearchId, setPushModalSearchId] = useState<string | null>(null);
+  const { integration } = useIntegration(workspaceId);
 
   useEffect(() => {
     checkAuth();
@@ -395,6 +401,14 @@ const Results = () => {
         .eq("user_id", session.user.id)
         .single();
       setIsAdmin(roleData?.role === "admin");
+
+      // Workspace for push-to-CRM
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("workspace_id")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      setWorkspaceId(profile?.workspace_id ?? null);
     } else {
       navigate("/auth");
     }
@@ -913,6 +927,25 @@ const Results = () => {
                 Enriched Contacts <span className="text-muted-foreground font-normal">({allContacts.length} total)</span>
               </h4>
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPushModalSearchId(search.id)}
+                  disabled={!integration || integration.status !== 'connected' || allContacts.length === 0}
+                  className="hover-lift border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  title={
+                    !integration
+                      ? 'Connect a CRM in Settings → Integrations to enable push'
+                      : integration.status !== 'connected'
+                        ? 'Reconnect your CRM to enable push'
+                        : allContacts.length === 0
+                          ? 'No contacts to push'
+                          : `Push ${allContacts.length} contacts to CRM`
+                  }
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Push to CRM
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -1765,6 +1798,37 @@ const Results = () => {
           </div>
         </div>
       </main>
+
+      {pushModalSearchId && (() => {
+        const searchData = searches.find((s) => s.id === pushModalSearchId);
+        if (!searchData) return null;
+        const allResults = searchResults[pushModalSearchId] ?? [];
+        const allContacts = allResults
+          .flatMap((r) => r.contact_data ?? [])
+          .filter((c): c is Contact => Boolean(c));
+        const leads: PushLeadInput[] = allContacts.map((c) => ({
+          record_id: c.Record_ID ?? `${pushModalSearchId}-${c.Email ?? c.First_Name ?? c.Last_Name ?? Math.random().toString(36).slice(2)}`,
+          first_name: c.First_Name || null,
+          last_name: c.Last_Name || null,
+          email: c.Email || null,
+          domain: c.Domain || null,
+          organization: c.Organization || null,
+          title: c.Title || null,
+          phone_1: c.Phone_Number_1 || null,
+          phone_2: c.Phone_Number_2 || null,
+          linkedin: c.LinkedIn || null,
+        }));
+        return (
+          <PushToCrmModal
+            open={!!pushModalSearchId}
+            onOpenChange={(o) => { if (!o) setPushModalSearchId(null); }}
+            searchId={pushModalSearchId}
+            searchName={searchData.company_name ?? ''}
+            currentUserEmail={user?.email ?? null}
+            leads={leads}
+          />
+        );
+      })()}
     </div>
   );
 };
