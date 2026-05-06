@@ -69,3 +69,6 @@ docs/superpowers/plans/*-SESSION-HANDOFF.md
 .superpowers/
 .vercel/
 
+
+# Local dev notes (secrets, scratch)
+.dev-notes/
