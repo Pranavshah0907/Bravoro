@@ -7,6 +7,12 @@ export interface CrmAdapter {
   fetchFieldMetadata(token: string): Promise<FieldMetadata>;
   autoMapCustomFields(metadata: FieldMetadata): CustomFieldMappings;
   fetchContacts(token: string, opts?: FetchContactsOpts): AsyncGenerator<NormalizedContact, void, void>;
+  // Spec C (2026-05-06): push to CRM
+  fetchUsers(token: string): Promise<CrmUser[]>;
+  listDestinations(token: string): Promise<Destination[]>;
+  findOrCreateOrganization(token: string, input: OrgInput): Promise<{ externalId: string; created: boolean }>;
+  findOrCreatePerson(token: string, input: PersonInput): Promise<{ externalId: string; created: boolean; raw?: unknown }>;
+  createDeal(token: string, input: DealInput): Promise<{ externalId: string }>;
 }
 
 export interface ConnectionResult {
@@ -58,4 +64,48 @@ export interface NormalizedContact {
   raw: unknown;
   /** ISO-8601 timestamp from the source CRM's update_time. */
   updatedAtISO: string;
+}
+// ─── Spec C: push to CRM ───────────────────────────────────────────────────
+
+export interface Destination {
+  id: string;
+  label: string;
+  group?: string;
+  pipelineId?: string;
+  stageId?: string;
+}
+
+export interface CrmUser {
+  externalId: string;
+  name: string;
+  email: string | null;
+  active: boolean;
+}
+
+export interface OrgInput {
+  name: string | null;
+  domain: string | null;
+}
+
+export interface PersonInput {
+  name: string;
+  email: string | null;
+  phone: string | null;
+  linkedIn: string | null;
+  jobTitle: string | null;
+  organizationExternalId: string | null;
+  customFields?: Record<string, unknown>;
+}
+
+export interface DealInput {
+  title: string;
+  pipelineId: string;
+  stageId: string;
+  ownerExternalId: string | null;
+  personExternalId: string;
+  organizationExternalId: string | null;
+  sourceLabel: string;
+  sourceId: string | null;
+  channelLabel: string | null;
+  customFields?: Record<string, unknown>;
 }
