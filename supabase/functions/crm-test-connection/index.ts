@@ -92,6 +92,21 @@ serve(async (req) => {
       return json({ ok: false, error: 'Failed to save connection. Try again.' }, 500);
     }
 
+    // Spec A: kick off the initial contact-mirror backfill so the user
+    // doesn't wait up to 30 min for the first n8n cron tick. Fire-and-
+    // forget — never block the connect response on the sync.
+    const dedupSecret = Deno.env.get('CRM_DEDUP_SECRET');
+    if (dedupSecret && integrationId) {
+      fetch(`${supabaseUrl}/functions/v1/crm-sync-contacts`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${dedupSecret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ integration_id: integrationId }),
+      }).catch((e) => console.warn('initial backfill kick-off failed:', (e as Error).message));
+    }
+
     return json({
       ok: true,
       integrationId,
