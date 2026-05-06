@@ -1,7 +1,9 @@
 import type {
   CrmAdapter, ConnectionResult, FieldMetadata, FieldDef, CustomFieldMappings,
+  FetchContactsOpts, NormalizedContact,
 } from './types.ts';
 import { InvalidTokenError } from './types.ts';
+import { normalizeEmail, normalizePhone } from '../normalize.ts';
 
 const WEBSITE_KEYWORDS = ['website', 'webseite', 'homepage', 'url', 'web', 'domain'];
 const LINKEDIN_KEYWORDS = ['linkedin'];
@@ -59,6 +61,66 @@ export class PipedriveAdapter implements CrmAdapter {
     }
     return mapping;
   }
+
+  async *fetchContacts(
+    token: string,
+    opts: FetchContactsOpts = {},
+  ): AsyncGenerator<NormalizedContact, void, void> {
+    const pageSize = opts.pageSize ?? 500;
+    if (opts.sinceISO) {
+      yield* this.fetchContactsDelta(token, opts.sinceISO, pageSize);
+    } else {
+      yield* this.fetchContactsBackfill(token, pageSize);
+    }
+  }
+
+  private async *fetchContactsBackfill(
+    token: string,
+    pageSize: number,
+  ): AsyncGenerator<NormalizedContact, void, void> {
+    let start = 0;
+    while (true) {
+      const url = new URL('https://api.pipedrive.com/v1/persons');
+      url.searchParams.set('api_token', token);
+      url.searchParams.set('start', String(start));
+      url.searchParams.set('limit', String(pageSize));
+      url.searchParams.set('sort', 'update_time ASC');
+      const res = await fetchJson(url.toString());
+      const items = res.data ?? [];
+      if (items.length === 0) return;
+      for (const p of items) yield normalizePerson(p);
+      if (!res.additional_data?.pagination?.more_items_in_collection) return;
+      start = res.additional_data.pagination.next_start;
+    }
+  }
+
+  private async *fetchContactsDelta(
+    token: string,
+    sinceISO: string,
+    pageSize: number,
+  ): AsyncGenerator<NormalizedContact, void, void> {
+    // /v1/recents accepts since_timestamp in 'YYYY-MM-DD HH:MM:SS' form (UTC).
+    const ts = isoToPipedriveStamp(sinceISO);
+    let start = 0;
+    while (true) {
+      const url = new URL('https://api.pipedrive.com/v1/recents');
+      url.searchParams.set('api_token', token);
+      url.searchParams.set('since_timestamp', ts);
+      url.searchParams.set('items', 'person');
+      url.searchParams.set('start', String(start));
+      url.searchParams.set('limit', String(pageSize));
+      const res = await fetchJson(url.toString());
+      const items = res.data ?? [];
+      if (items.length === 0) return;
+      for (const wrapper of items) {
+        // /v1/recents wraps each item: { item: 'person', id, data: {...} }
+        const p = wrapper.data ?? wrapper;
+        yield normalizePerson(p);
+      }
+      if (!res.additional_data?.pagination?.more_items_in_collection) return;
+      start = res.additional_data.pagination.next_start;
+    }
+  }
 }
 
 function normalizeField(raw: any): FieldDef {
@@ -73,6 +135,37 @@ function normalizeField(raw: any): FieldDef {
 function labelMatches(label: string, keywords: string[]): boolean {
   const lbl = label.toLowerCase();
   return keywords.some(k => lbl.includes(k));
+}
+
+function normalizePerson(p: any): NormalizedContact {
+  const emails: string[] = ((p.email ?? []) as Array<{ value?: string }>)
+    .map((e) => normalizeEmail(e?.value))
+    .filter((s): s is string => s != null);
+  const phones: string[] = ((p.phone ?? []) as Array<{ value?: string }>)
+    .map((t) => normalizePhone(t?.value))
+    .filter((s): s is string => s != null);
+  const updatedAtISO = pipedriveStampToISO(p.update_time)
+    ?? new Date().toISOString();
+  return {
+    externalId: String(p.id),
+    name: p.name ?? null,
+    emails,
+    primaryEmail: emails[0] ?? null,
+    phones,
+    raw: p,
+    updatedAtISO,
+  };
+}
+
+function isoToPipedriveStamp(iso: string): string {
+  // 'YYYY-MM-DDTHH:MM:SS.sssZ' → 'YYYY-MM-DD HH:MM:SS' (UTC, drop ms)
+  return iso.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
+}
+
+function pipedriveStampToISO(stamp: string | null | undefined): string | null {
+  if (!stamp) return null;
+  // 'YYYY-MM-DD HH:MM:SS' (UTC) → ISO with Z
+  return stamp.replace(' ', 'T') + 'Z';
 }
 
 async function fetchJson(url: string, attempt = 1): Promise<any> {
