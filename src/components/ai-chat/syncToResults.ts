@@ -126,11 +126,8 @@ function buildResultRows(
     result_type: string;
   }> = [];
 
-  const processedKeys = new Set<string>();
-
-  // 1) Companies that have enriched contacts
+  // Only include companies that have enriched contacts
   for (const [companyKey, contacts] of contactsByCompany) {
-    processedKeys.add(companyKey);
     const companyInfo = companiesMap.get(companyKey);
     const jobs = companyInfo?.jobs || [];
     const companyName = contacts[0].companyName || companyInfo?.company.name || companyKey;
@@ -141,45 +138,6 @@ function buildResultRows(
       company_name: companyName,
       domain,
       contact_data: contacts.map((c) => mapContact(c, jobs)),
-      result_type: "enriched",
-    });
-  }
-
-  // 2) Companies with jobs but no enriched contacts (still useful data)
-  for (const [companyKey, { company, jobs }] of companiesMap) {
-    if (processedKeys.has(companyKey)) continue;
-    if (jobs.length === 0) continue;
-
-    // Create a placeholder contact row to carry the jobs
-    rows.push({
-      search_id: searchId,
-      company_name: company.name || companyKey,
-      domain: company.domain || null,
-      contact_data: [
-        {
-          First_Name: "",
-          Last_Name: "",
-          Email: "",
-          LinkedIn: "",
-          Phone_Number_1: "",
-          Phone_Number_2: "",
-          Organization: company.name || "",
-          Domain: company.domain || "",
-          Title: "",
-          Provider: "",
-          job_search_result: {
-            job_search_status: "jobs_found",
-            results: jobs.map((j) => ({
-              job_title: j.title || "",
-              job_link: j.url || "",
-              last_posted_date: j.postedAt || "",
-              company: company.name || "",
-              company_domain: company.domain || "",
-              location: "",
-            })),
-          },
-        },
-      ],
       result_type: "enriched",
     });
   }
@@ -274,7 +232,6 @@ export function hasSyncableData(messages: ChatMessage[]): boolean {
     const data = (msg.metadata as MessageMetadata | null)?.data;
     if (!data) continue;
     if (data.contacts?.some((c) => !c.previewOnly)) return true;
-    if (data.companies?.some((c) => c.jobs?.length > 0)) return true;
   }
   return false;
 }
