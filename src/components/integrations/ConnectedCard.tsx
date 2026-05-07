@@ -8,12 +8,23 @@ import {
 import { invokeEdgeFunction } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle2, RefreshCw, Unplug } from "lucide-react";
+import { FieldMappingPanel } from "./FieldMappingPanel";
+import type { CustomFieldMappings } from "./EditFieldMappingDialog";
 
 type IntegrationRow = {
   id: string;
   crm_type: string;
   account_display_name: string;
   last_checked_at: string;
+  custom_field_mappings: unknown;
+};
+
+const emptyMapping: CustomFieldMappings = {
+  person: {
+    firstName: [], lastName: [], email: [], mobilePhone: [],
+    directPhone: [], jobTitle: [], linkedin: [], website: [],
+  },
+  org: { name: [], domain: [], website: [], linkedin: [], industry: [] },
 };
 
 interface Props {
@@ -101,6 +112,11 @@ export function ConnectedCard({ integration, fieldCounts, onChanged }: Props) {
               </p>
             )}
           </div>
+          <FieldMappingPanel
+            integrationId={integration.id}
+            mapping={(integration.custom_field_mappings ?? emptyMapping) as CustomFieldMappings}
+            onMappingSaved={onChanged}
+          />
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
               {refreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}

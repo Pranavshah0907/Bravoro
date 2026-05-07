@@ -35,8 +35,23 @@ export interface FieldDef {
 }
 
 export interface CustomFieldMappings {
-  person: { websiteField: string[]; linkedinField: string[] };
-  org: { websiteField: string[]; practiceType: string[] };
+  person: {
+    firstName: string[];
+    lastName: string[];
+    email: string[];
+    mobilePhone: string[];
+    directPhone: string[];
+    jobTitle: string[];
+    linkedin: string[];
+    website: string[];
+  };
+  org: {
+    name: string[];
+    domain: string[];
+    website: string[];
+    linkedin: string[];
+    industry: string[];
+  };
 }
 
 export class InvalidTokenError extends Error {

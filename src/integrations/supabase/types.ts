@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -1250,6 +1249,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      update_crm_field_mappings: {
+        Args: { p_integration_id: string; p_mappings: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
@@ -1387,5 +1390,3 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.98.2 (currently installed v2.75.0)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

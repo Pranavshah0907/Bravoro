@@ -6,8 +6,12 @@ import type {
 import { InvalidTokenError } from './types.ts';
 import { normalizeEmail, normalizePhone } from '../normalize.ts';
 
-const WEBSITE_KEYWORDS = ['website', 'webseite', 'homepage', 'url', 'web', 'domain'];
-const LINKEDIN_KEYWORDS = ['linkedin'];
+const WEBSITE_KEYWORDS      = ['website', 'webseite', 'homepage', 'url', 'web'];
+const LINKEDIN_KEYWORDS     = ['linkedin'];
+const MOBILE_KEYWORDS       = ['mobile', 'cell', 'handy'];
+const DIRECT_PHONE_KEYWORDS = ['direct', 'dial', 'office', 'work phone'];
+const DOMAIN_KEYWORDS       = ['domain'];
+const INDUSTRY_KEYWORDS     = ['industry', 'branche', 'sector', 'category', 'practice', 'specialization'];
 
 export class PipedriveAdapter implements CrmAdapter {
   async testConnection(token: string): Promise<ConnectionResult> {
@@ -47,19 +51,42 @@ export class PipedriveAdapter implements CrmAdapter {
   }
 
   autoMapCustomFields(metadata: FieldMetadata): CustomFieldMappings {
+    // Seed with Pipedrive native field keys for slots that have native equivalents.
     const mapping: CustomFieldMappings = {
-      person: { websiteField: [], linkedinField: [] },
-      org: { websiteField: [], practiceType: [] },
+      person: {
+        firstName:   ['first_name'],
+        lastName:    ['last_name'],
+        email:       ['email'],
+        mobilePhone: [],
+        directPhone: [],
+        jobTitle:    ['job_title'],
+        linkedin:    [],
+        website:     [],
+      },
+      org: {
+        name:     ['name'],
+        domain:   [],
+        website:  ['website'],
+        linkedin: [],
+        industry: [],
+      },
     };
+
     for (const f of metadata.person) {
       if (!f.isCustom) continue;
-      if (labelMatches(f.label, WEBSITE_KEYWORDS))  mapping.person.websiteField.push(f.key);
-      if (labelMatches(f.label, LINKEDIN_KEYWORDS)) mapping.person.linkedinField.push(f.key);
+      if (labelMatches(f.label, WEBSITE_KEYWORDS))      mapping.person.website.push(f.key);
+      if (labelMatches(f.label, LINKEDIN_KEYWORDS))     mapping.person.linkedin.push(f.key);
+      if (labelMatches(f.label, MOBILE_KEYWORDS))       mapping.person.mobilePhone.push(f.key);
+      if (labelMatches(f.label, DIRECT_PHONE_KEYWORDS)) mapping.person.directPhone.push(f.key);
     }
     for (const f of metadata.org) {
       if (!f.isCustom) continue;
-      if (labelMatches(f.label, WEBSITE_KEYWORDS)) mapping.org.websiteField.push(f.key);
+      if (labelMatches(f.label, WEBSITE_KEYWORDS))  mapping.org.website.push(f.key);
+      if (labelMatches(f.label, DOMAIN_KEYWORDS))   mapping.org.domain.push(f.key);
+      if (labelMatches(f.label, LINKEDIN_KEYWORDS)) mapping.org.linkedin.push(f.key);
+      if (labelMatches(f.label, INDUSTRY_KEYWORDS)) mapping.org.industry.push(f.key);
     }
+
     return mapping;
   }
 
