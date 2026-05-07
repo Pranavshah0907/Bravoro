@@ -132,7 +132,7 @@ COMMENT ON COLUMN public.profiles.theme_preference IS 'User-selected theme: ligh
 - [ ] **Step 3: Apply the migration**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_4803da6f3b82d9cb7c183d33d169934413f2d7c3 \
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN \
   /c/Users/prana/scoop/shims/supabase.exe db push
 ```
 
@@ -141,7 +141,7 @@ Expected output: `Applying migration 20260423000001_add_theme_preference_to_prof
 - [ ] **Step 4: Regenerate TypeScript types**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_4803da6f3b82d9cb7c183d33d169934413f2d7c3 \
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN \
   /c/Users/prana/scoop/shims/supabase.exe gen types typescript --linked \
   > src/integrations/supabase/types.ts
 ```

@@ -530,7 +530,7 @@ serve(async (req) => {
 - [ ] **Step 2: Deploy the edge function**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe functions deploy save-chat-contacts --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe functions deploy save-chat-contacts --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
 ```
 
 - [ ] **Step 3: Commit**
@@ -909,7 +909,7 @@ git commit -m "feat: auto-save enriched chat contacts to master DB, replace bare
 - [ ] **Step 1: Deploy the edge function**
 
 ```bash
-SUPABASE_ACCESS_TOKEN=sbp_29df1ea5254707857dbea5c5b3f444aa1bd8a084 /c/Users/prana/scoop/shims/supabase.exe functions deploy save-chat-contacts --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
+SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN /c/Users/prana/scoop/shims/supabase.exe functions deploy save-chat-contacts --no-verify-jwt --project-ref ggvhwxpaovfvoyvzixqw
 ```
 
 - [ ] **Step 2: Test the full flow**

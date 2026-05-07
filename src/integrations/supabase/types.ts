@@ -267,6 +267,252 @@ export type Database = {
           },
         ]
       }
+      crm_contacts: {
+        Row: {
+          domain: string | null
+          email_normalized: string | null
+          emails_all: string[]
+          external_id: string
+          id: string
+          integration_id: string
+          last_synced_at: string
+          name: string | null
+          phone_normalized: string | null
+          raw: Json
+        }
+        Insert: {
+          domain?: string | null
+          email_normalized?: string | null
+          emails_all?: string[]
+          external_id: string
+          id?: string
+          integration_id: string
+          last_synced_at?: string
+          name?: string | null
+          phone_normalized?: string | null
+          raw: Json
+        }
+        Update: {
+          domain?: string | null
+          email_normalized?: string | null
+          emails_all?: string[]
+          external_id?: string
+          id?: string
+          integration_id?: string
+          last_synced_at?: string
+          name?: string | null
+          phone_normalized?: string | null
+          raw?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pushes: {
+        Row: {
+          bravoro_email: string | null
+          bravoro_record_id: string | null
+          destination_id: string
+          destination_label: string
+          error_message: string | null
+          external_deal_id: string | null
+          external_org_id: string | null
+          external_person_id: string | null
+          id: string
+          integration_id: string
+          pushed_at: string
+          pushed_by_user_id: string | null
+          search_id: string | null
+          status: string
+          workspace_id: string
+        }
+        Insert: {
+          bravoro_email?: string | null
+          bravoro_record_id?: string | null
+          destination_id: string
+          destination_label: string
+          error_message?: string | null
+          external_deal_id?: string | null
+          external_org_id?: string | null
+          external_person_id?: string | null
+          id?: string
+          integration_id: string
+          pushed_at?: string
+          pushed_by_user_id?: string | null
+          search_id?: string | null
+          status: string
+          workspace_id: string
+        }
+        Update: {
+          bravoro_email?: string | null
+          bravoro_record_id?: string | null
+          destination_id?: string
+          destination_label?: string
+          error_message?: string | null
+          external_deal_id?: string | null
+          external_org_id?: string | null
+          external_person_id?: string | null
+          id?: string
+          integration_id?: string
+          pushed_at?: string
+          pushed_by_user_id?: string | null
+          search_id?: string | null
+          status?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_pushes_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_pushes_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_pushes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_field_metadata: {
+        Row: {
+          fields_json: Json
+          integration_id: string
+          object_type: string
+          refreshed_at: string
+        }
+        Insert: {
+          fields_json: Json
+          integration_id: string
+          object_type: string
+          refreshed_at?: string
+        }
+        Update: {
+          fields_json?: Json
+          integration_id?: string
+          object_type?: string
+          refreshed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_field_metadata_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_secrets: {
+        Row: {
+          created_at: string
+          integration_id: string
+          vault_secret_id: string
+        }
+        Insert: {
+          created_at?: string
+          integration_id: string
+          vault_secret_id: string
+        }
+        Update: {
+          created_at?: string
+          integration_id?: string
+          vault_secret_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_secrets_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: true
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          account_display_name: string
+          account_identifier: string
+          cached_users: Json
+          connected_by_user_id: string | null
+          contacts_initial_synced: boolean
+          contacts_last_synced_at: string | null
+          contacts_sync_error: string | null
+          created_at: string
+          crm_type: string
+          custom_field_mappings: Json
+          default_owner_external_id: string | null
+          id: string
+          last_checked_at: string
+          last_error: string | null
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          account_display_name: string
+          account_identifier: string
+          cached_users?: Json
+          connected_by_user_id?: string | null
+          contacts_initial_synced?: boolean
+          contacts_last_synced_at?: string | null
+          contacts_sync_error?: string | null
+          created_at?: string
+          crm_type: string
+          custom_field_mappings?: Json
+          default_owner_external_id?: string | null
+          id?: string
+          last_checked_at?: string
+          last_error?: string | null
+          status: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          account_display_name?: string
+          account_identifier?: string
+          cached_users?: Json
+          connected_by_user_id?: string | null
+          contacts_initial_synced?: boolean
+          contacts_last_synced_at?: string | null
+          contacts_sync_error?: string | null
+          created_at?: string
+          crm_type?: string
+          custom_field_mappings?: Json
+          default_owner_external_id?: string | null
+          id?: string
+          last_checked_at?: string
+          last_error?: string | null
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           completed_at: string | null
@@ -494,6 +740,36 @@ export type Database = {
           },
         ]
       }
+      people_enrichment_drafts: {
+        Row: {
+          created_at: string | null
+          grid_data: Json
+          id: string
+          name: string
+          row_count: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          grid_data?: Json
+          id?: string
+          name?: string
+          row_count?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           chat_sync_mode: string
@@ -504,6 +780,7 @@ export type Database = {
           id: string
           last_name: string | null
           requires_password_reset: boolean | null
+          theme_preference: string
           updated_at: string | null
           workspace_id: string | null
         }
@@ -516,6 +793,7 @@ export type Database = {
           id: string
           last_name?: string | null
           requires_password_reset?: boolean | null
+          theme_preference?: string
           updated_at?: string | null
           workspace_id?: string | null
         }
@@ -528,6 +806,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           requires_password_reset?: boolean | null
+          theme_preference?: string
           updated_at?: string | null
           workspace_id?: string | null
         }
@@ -871,6 +1150,22 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_contact_fuzzy_name_match: {
+        Args: {
+          p_domain: string
+          p_integration_id: string
+          p_name: string
+          p_threshold?: number
+        }
+        Returns: {
+          external_id: string
+          similarity_score: number
+        }[]
+      }
+      decrypt_integration_token: {
+        Args: { p_integration_id: string }
+        Returns: string
+      }
       deduct_workspace_credits: {
         Args: {
           p_amount: number
@@ -879,6 +1174,28 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: Json
+      }
+      delete_integration_cascade: {
+        Args: { p_integration_id: string }
+        Returns: undefined
+      }
+      encrypt_integration_token: {
+        Args: { p_integration_id: string; p_token: string }
+        Returns: string
+      }
+      finalize_crm_connection: {
+        Args: {
+          p_account_display_name: string
+          p_account_identifier: string
+          p_connected_by_user_id: string
+          p_crm_type: string
+          p_custom_field_mappings: Json
+          p_org_fields: Json
+          p_person_fields: Json
+          p_token: string
+          p_workspace_id: string
+        }
+        Returns: string
       }
       get_queue_position: { Args: { p_search_id: string }; Returns: number }
       get_user_enriched_contact: {
@@ -906,6 +1223,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      refresh_crm_metadata: {
+        Args: {
+          p_custom_field_mappings: Json
+          p_integration_id: string
+          p_org_fields: Json
+          p_person_fields: Json
+        }
+        Returns: undefined
+      }
       release_api_slot: {
         Args: { p_search_id: string; p_slot_name: string }
         Returns: {
@@ -922,6 +1248,8 @@ export type Database = {
           next_search_id: string
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "user"
@@ -1059,5 +1387,5 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.90.0 (currently installed v2.75.0)
+A new version of Supabase CLI is available: v2.98.2 (currently installed v2.75.0)
 We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

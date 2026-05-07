@@ -11,3 +11,27 @@ verify_jwt = false
 
 [functions.validate-reset-token]
 verify_jwt = false
+
+[functions.crm-test-connection]
+verify_jwt = false
+
+[functions.crm-refresh-metadata]
+verify_jwt = false
+
+[functions.crm-disconnect]
+verify_jwt = false
+
+[functions.crm-health-check]
+verify_jwt = false
+
+[functions.crm-sync-contacts]
+verify_jwt = false
+
+[functions.crm-dedup-check]
+verify_jwt = false
+
+[functions.crm-list-destinations]
+verify_jwt = false
+
+[functions.crm-push]
+verify_jwt = false
