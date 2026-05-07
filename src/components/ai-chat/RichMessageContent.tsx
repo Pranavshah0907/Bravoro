@@ -360,21 +360,26 @@ function EnrichedContactCard({ contact }: { contact: ContactData }) {
 }
 
 function EnrichedContactsPanel({ contacts }: { contacts: ContactData[] }) {
-  // Group by company
-  const byCompany = new Map<string, ContactData[]>();
+  // Group by company (case-insensitive key, preserve first-seen display name)
+  const byCompany = new Map<string, { displayName: string; contacts: ContactData[] }>();
   for (const c of contacts) {
-    const key = c.companyName || c.companyDomain || "Other";
-    if (!byCompany.has(key)) byCompany.set(key, []);
-    byCompany.get(key)!.push(c);
+    const raw = c.companyName || c.companyDomain || "Other";
+    const key = raw.toLowerCase();
+    const existing = byCompany.get(key);
+    if (existing) {
+      existing.contacts.push(c);
+    } else {
+      byCompany.set(key, { displayName: raw, contacts: [c] });
+    }
   }
 
   return (
     <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden divide-y divide-border/30">
-      {Array.from(byCompany.entries()).map(([company, groupContacts]) => (
-        <div key={company}>
+      {Array.from(byCompany.values()).map(({ displayName, contacts: groupContacts }) => (
+        <div key={displayName}>
           <div className="px-3.5 py-2 bg-muted/20 flex items-center gap-2">
             <Building2 className="h-3 w-3 text-emerald-400" />
-            <span className="text-[12px] font-semibold text-foreground/80">{company}</span>
+            <span className="text-[12px] font-semibold text-foreground/80">{displayName}</span>
           </div>
           <div className="divide-y divide-border/20">
             {groupContacts.map((contact) => (
@@ -664,12 +669,17 @@ export function RichMessageContent({
   const previewContacts = data?.contacts?.filter((c) => c.previewOnly) ?? [];
   const enrichedContacts = data?.contacts?.filter((c) => !c.previewOnly) ?? [];
 
-  // Group preview contacts by company for checkbox selection
-  const previewByCompany = new Map<string, ContactData[]>();
+  // Group preview contacts by company for checkbox selection (case-insensitive)
+  const previewByCompany = new Map<string, { displayName: string; contacts: ContactData[] }>();
   for (const contact of previewContacts) {
-    const key = contact.companyName || contact.companyDomain || "Other";
-    if (!previewByCompany.has(key)) previewByCompany.set(key, []);
-    previewByCompany.get(key)!.push(contact);
+    const raw = contact.companyName || contact.companyDomain || "Other";
+    const key = raw.toLowerCase();
+    const existing = previewByCompany.get(key);
+    if (existing) {
+      existing.contacts.push(contact);
+    } else {
+      previewByCompany.set(key, { displayName: raw, contacts: [contact] });
+    }
   }
 
   return (
@@ -703,11 +713,11 @@ export function RichMessageContent({
             ) : undefined
           }
         >
-          {Array.from(previewByCompany.entries()).map(
-            ([companyName, contacts]) => (
+          {Array.from(previewByCompany.values()).map(
+            ({ displayName, contacts }) => (
               <ContactGroup
-                key={companyName}
-                companyName={companyName}
+                key={displayName}
+                companyName={displayName}
                 contacts={contacts}
                 selectedKeys={selectedContactKeys}
                 enrichedKeys={enrichedContactKeys}
