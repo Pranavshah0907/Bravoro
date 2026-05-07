@@ -13,6 +13,11 @@ interface ChatMessage {
 
 /* ── Gather data from all messages in the conversation ─────────── */
 
+function normDomain(d: string | undefined | null): string {
+  if (!d) return "";
+  return d.trim().toLowerCase().replace(/^(?:https?:\/\/)?(?:www\.)?/, "").replace(/\/+$/, "");
+}
+
 interface GatheredCompany {
   company: CompanyData;
   jobs: Array<{ title: string; url: string; postedAt: string }>;
@@ -30,8 +35,7 @@ function gatherChatData(messages: ChatMessage[]) {
 
     if (data.companies?.length) {
       for (const company of data.companies) {
-        // Domains are already normalized at parse time (lowercase, no www.)
-        const key = (company.domain || company.name || "").toLowerCase();
+        const key = normDomain(company.domain) || (company.name || "").toLowerCase();
         if (!key) continue;
         if (company.name) nameToKey.set(company.name.toLowerCase(), key);
         const existing = companiesMap.get(key);
@@ -58,8 +62,7 @@ function gatherChatData(messages: ChatMessage[]) {
     if (data.contacts?.length) {
       for (const contact of data.contacts) {
         if (contact.previewOnly) continue;
-        // Domains already normalized — use domain, fall back to name
-        let key = (contact.companyDomain || contact.companyName || "other").toLowerCase();
+        let key = normDomain(contact.companyDomain) || (contact.companyName || "other").toLowerCase();
         if (!contact.companyDomain && contact.companyName) {
           const canonical = nameToKey.get(contact.companyName.toLowerCase());
           if (canonical) key = canonical;
