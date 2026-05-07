@@ -85,6 +85,8 @@ export interface CrmUser {
 export interface OrgInput {
   name: string | null;
   domain: string | null;
+  /** When creating a new Org, assign it to this CRM user. Existing Orgs are not re-owned. */
+  ownerExternalId?: string | null;
 }
 
 export interface PersonInput {
@@ -94,6 +96,8 @@ export interface PersonInput {
   linkedIn: string | null;
   jobTitle: string | null;
   organizationExternalId: string | null;
+  /** When creating a new Person, assign them to this CRM user. Existing Persons are not re-owned. */
+  ownerExternalId?: string | null;
   customFields?: Record<string, unknown>;
 }
 

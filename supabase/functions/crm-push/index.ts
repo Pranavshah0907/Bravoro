@@ -138,6 +138,7 @@ serve(async (req) => {
             const o = await adapter.findOrCreateOrganization(token, {
               name: lead.organization ?? null,
               domain: domain ?? null,
+              ownerExternalId: owner_external_id ?? null,
             });
             orgId = o.externalId;
           } catch (err) {
@@ -165,6 +166,7 @@ serve(async (req) => {
               linkedIn: lead.linkedin ?? null,
               jobTitle: lead.title ?? null,
               organizationExternalId: orgId,
+              ownerExternalId: owner_external_id ?? null,
             });
             personId = p.externalId;
             // Update mirror so next dedup-check sees this Person without waiting for cron
@@ -190,6 +192,7 @@ serve(async (req) => {
             linkedIn: lead.linkedin ?? null,
             jobTitle: lead.title ?? null,
             organizationExternalId: orgId,
+            ownerExternalId: owner_external_id ?? null,
           });
           personId = p.externalId;
         }

@@ -187,7 +187,9 @@ export class PipedriveAdapter implements CrmAdapter {
       if (items.length > 0) return { externalId: String(items[0].item.id), created: false };
     }
     const url = `https://api.pipedrive.com/v1/organizations?api_token=${encodeURIComponent(token)}`;
-    const created = await fetchJson(url, 1, { method: 'POST', body: { name: input.name ?? input.domain } });
+    const createBody: any = { name: input.name ?? input.domain };
+    if (input.ownerExternalId) createBody.owner_id = Number(input.ownerExternalId);
+    const created = await fetchJson(url, 1, { method: 'POST', body: createBody });
     return { externalId: String(created.data.id), created: true };
   }
 
@@ -210,6 +212,7 @@ export class PipedriveAdapter implements CrmAdapter {
     if (input.phone) body.phone = [{ value: input.phone, primary: true, label: 'work' }];
     if (input.organizationExternalId) body.org_id = Number(input.organizationExternalId);
     if (input.jobTitle) body.job_title = input.jobTitle;
+    if (input.ownerExternalId) body.owner_id = Number(input.ownerExternalId);
     if (input.customFields) {
       for (const [k, v] of Object.entries(input.customFields)) {
         if (v !== undefined && v !== null) body[k] = v;
