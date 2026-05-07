@@ -49,7 +49,7 @@ serve(async (req) => {
 
     const { data: integration, error: lookupErr } = await supabase
       .from('integrations')
-      .select('id, crm_type, workspace_id')
+      .select('id, crm_type, workspace_id, custom_field_mappings')
       .eq('id', integration_id)
       .maybeSingle();
     if (lookupErr) {
@@ -101,7 +101,10 @@ serve(async (req) => {
       throw err;
     }
 
-    const customFieldMappings = adapter.autoMapCustomFields(metadata);
+    // M1.5: refresh updates only the field-metadata cache. The mapping is
+    // owned by the user (set at connect time, edited via crm-update-mapping)
+    // and must not be clobbered by a refresh.
+    const customFieldMappings = integration.custom_field_mappings;
 
     const { error: rpcError } = await supabase.rpc('refresh_crm_metadata', {
       p_integration_id: integration_id,
