@@ -75,3 +75,6 @@ docs/superpowers/plans/*-SESSION-HANDOFF.md
 
 # Deno lock from local test runs (deps pinned in test files)
 deno.lock
+
+# Derived artifacts (PDFs exported from markdown, etc.)
+n8n/*.pdf

@@ -110,18 +110,32 @@ serve(async (req) => {
     }
 
     // Spec A: kick off the initial contact-mirror backfill so the user
-    // doesn't wait up to 30 min for the first n8n cron tick. Fire-and-
-    // forget — never block the connect response on the sync.
+    // doesn't wait up to 30 min for the first n8n cron tick.
+    //
+    // Use EdgeRuntime.waitUntil() to properly background the call so the
+    // platform doesn't flag the parent function as leaking compute. Falls
+    // back to a plain fire-and-forget on runtimes that don't expose it.
     const dedupSecret = Deno.env.get('CRM_DEDUP_SECRET');
     if (dedupSecret && integrationId) {
-      fetch(`${supabaseUrl}/functions/v1/crm-sync-contacts`, {
+      const backfill = fetch(`${supabaseUrl}/functions/v1/crm-sync-contacts`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${dedupSecret}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ integration_id: integrationId }),
+      }).then((r) => {
+        if (!r.ok) console.warn('initial backfill returned', r.status);
       }).catch((e) => console.warn('initial backfill kick-off failed:', (e as Error).message));
+
+      const er = (globalThis as any).EdgeRuntime;
+      if (er && typeof er.waitUntil === 'function') {
+        er.waitUntil(backfill);
+      }
+      // If EdgeRuntime.waitUntil isn't available, the promise still runs;
+      // we just don't get a guarantee that the runtime keeps the isolate
+      // alive past the Response. That's acceptable — the n8n cron will
+      // backfill within 30 min as a fallback.
     }
 
     return json({
