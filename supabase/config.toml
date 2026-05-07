@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.crm-push]
 verify_jwt = false
+
+[functions.crm-verify-pushes]
+verify_jwt = false

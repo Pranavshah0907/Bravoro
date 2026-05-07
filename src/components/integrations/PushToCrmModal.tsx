@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Upload, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, Upload, AlertCircle, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { invokeEdgeFunction } from '@/integrations/supabase/client';
 import { useCrmDestinations } from './useCrmDestinations';
 import { useCrmPushes } from './useCrmPushes';
@@ -56,11 +56,60 @@ export function PushToCrmModal({
   const [ownerId, setOwnerId] = useState<string>(UNASSIGNED);
   const [pushing, setPushing] = useState(false);
   const [results, setResults] = useState<PushResult[] | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const verifiedForThisOpen = useRef(false);
 
   // Default destination → first option
   useEffect(() => {
     if (destinations.length > 0 && !destinationId) setDestinationId(destinations[0].id);
   }, [destinations, destinationId]);
+
+  // Reset the verification gate every time the modal closes/reopens
+  useEffect(() => {
+    if (!open) verifiedForThisOpen.current = false;
+  }, [open]);
+
+  // Auto-verify previously-pushed contacts when modal opens with non-zero push history.
+  // If the user deleted those Deals in Pipedrive in the meantime, the dead crm_pushes
+  // rows get cleaned up here so the Push button becomes active again.
+  const verifyPushes = async (silent = false) => {
+    setVerifying(true);
+    try {
+      const { data, error } = await invokeEdgeFunction<{
+        ok?: boolean; verified?: number; removed?: number; error?: string;
+      }>('crm-verify-pushes', { body: { search_id: searchId } });
+      if (!silent) {
+        if (error || !data?.ok) {
+          toast({
+            title: 'Couldn\'t verify push history',
+            description: error?.message ?? data?.error ?? 'Unknown error',
+            variant: 'destructive',
+          });
+        } else if ((data.removed ?? 0) > 0) {
+          toast({
+            title: 'Push history refreshed',
+            description: `${data.removed} contact${data.removed === 1 ? '' : 's'} removed from Pipedrive — ready to re-push.`,
+          });
+        } else {
+          toast({
+            title: 'Push history is up to date',
+            description: `All ${data.verified ?? 0} previously-pushed contacts still exist in Pipedrive.`,
+          });
+        }
+      }
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    if (verifiedForThisOpen.current) return;
+    if (pushes.size === 0) return;
+    verifiedForThisOpen.current = true;
+    verifyPushes(true); // silent — no toast on auto-run
+    // useCrmPushes' realtime channel will pick up the DELETEs and update pushes Map
+  }, [open, pushes.size]);
 
   // Default owner → match by email; else Unassigned
   useEffect(() => {
@@ -138,9 +187,23 @@ export function PushToCrmModal({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Push contacts to CRM</DialogTitle>
-          <DialogDescription>
-            {leads.length} contacts in this search.
-            {pushes.size > 0 && ` ${pushes.size} already pushed.`}
+          <DialogDescription className="flex items-center gap-2">
+            <span>
+              {leads.length} contacts in this search.
+              {pushes.size > 0 && ` ${pushes.size} already pushed.`}
+            </span>
+            {pushes.size > 0 && (
+              <button
+                type="button"
+                onClick={() => verifyPushes(false)}
+                disabled={verifying}
+                className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Re-check whether the already-pushed contacts still exist in Pipedrive"
+              >
+                <RefreshCw className={`h-3 w-3 ${verifying ? 'animate-spin' : ''}`} />
+                {verifying ? 'Verifying…' : 'Re-check'}
+              </button>
+            )}
           </DialogDescription>
         </DialogHeader>
 
