@@ -195,19 +195,15 @@ export async function saveChatContacts(
  */
 export async function saveChatCreditsOnly(
   userId: string,
-  conversationId: string,
-  conversationTitle: string,
+  _conversationId: string,
+  _conversationTitle: string,
   existingSearchId: string | null,
   credits: Credits,
-  chatType: string = "ai_chat"
+  _chatType: string = "ai_chat"
 ): Promise<void> {
-  const searchId = await ensureSearchRecord(
-    userId,
-    conversationId,
-    conversationTitle,
-    existingSearchId,
-    chatType
-  );
+  if (!existingSearchId) return;
+
+  const searchId = existingSearchId;
 
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData?.session?.access_token;

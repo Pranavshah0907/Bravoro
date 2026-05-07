@@ -186,25 +186,31 @@ function ContactGroup({
   companyName,
   contacts,
   selectedKeys,
+  enrichedKeys,
   onToggle,
 }: {
   companyName: string;
   contacts: ContactData[];
   selectedKeys?: Set<string>;
+  enrichedKeys?: Set<string>;
   onToggle?: (contact: ContactData, key: string) => void;
 }) {
   const allKeys = contacts.map((c) => contactKey(c));
-  const allSelected = selectedKeys ? allKeys.every((k) => selectedKeys.has(k)) : false;
+  const selectableKeys = allKeys.filter((k) => !enrichedKeys?.has(k));
+  const allSelected = selectedKeys && selectableKeys.length > 0
+    ? selectableKeys.every((k) => selectedKeys.has(k))
+    : false;
 
   return (
     <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
       <div className="px-3.5 py-2 border-b border-border/30 flex items-center gap-2">
-        {onToggle && (
+        {onToggle && selectableKeys.length > 0 && (
           <button
             type="button"
             onClick={() => {
               contacts.forEach((c) => {
                 const k = contactKey(c);
+                if (enrichedKeys?.has(k)) return;
                 if (allSelected || !selectedKeys?.has(k)) onToggle(c, k);
               });
             }}
@@ -230,27 +236,29 @@ function ContactGroup({
       <div className="divide-y divide-border/20">
         {contacts.map((contact, i) => {
           const key = allKeys[i];
-          const checked = selectedKeys?.has(key) ?? false;
+          const isEnriched = enrichedKeys?.has(key) ?? false;
+          const checked = isEnriched || (selectedKeys?.has(key) ?? false);
           return (
             <div
               key={i}
               className={`px-3.5 py-2 flex items-center gap-2.5 transition-colors ${
-                onToggle ? "cursor-pointer hover:bg-muted/30" : ""
-              } ${checked ? "bg-emerald-500/5" : ""}`}
-              onClick={() => onToggle?.(contact, key)}
+                onToggle && !isEnriched ? "cursor-pointer hover:bg-muted/30" : ""
+              } ${checked ? "bg-emerald-500/5" : ""} ${isEnriched ? "opacity-60" : ""}`}
+              onClick={() => !isEnriched && onToggle?.(contact, key)}
             >
               {onToggle && (
                 <button
                   type="button"
+                  disabled={isEnriched}
                   className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                     checked
                       ? "bg-emerald-500 border-emerald-500"
                       : "border-border/60 hover:border-emerald-400/60"
-                  }`}
+                  } ${isEnriched ? "cursor-not-allowed" : ""}`}
                   tabIndex={-1}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onToggle(contact, key);
+                    if (!isEnriched) onToggle(contact, key);
                   }}
                 >
                   {checked && (
@@ -434,22 +442,27 @@ function CollapsibleSection({
 function SelectAllButton({
   contacts,
   selectedKeys,
+  enrichedKeys,
   onToggle,
 }: {
   contacts: ContactData[];
   selectedKeys?: Set<string>;
+  enrichedKeys?: Set<string>;
   onToggle: (contact: ContactData, key: string) => void;
 }) {
-  const allKeys = contacts.map((c) => contactKey(c));
-  const allSelected = selectedKeys ? allKeys.every((k) => selectedKeys.has(k)) : false;
+  const selectableContacts = contacts.filter((c) => !enrichedKeys?.has(contactKey(c)));
+  const allSelected = selectedKeys && selectableContacts.length > 0
+    ? selectableContacts.every((c) => selectedKeys.has(contactKey(c)))
+    : false;
+
+  if (selectableContacts.length === 0) return null;
 
   return (
     <button
       type="button"
       onClick={() => {
-        contacts.forEach((c) => {
+        selectableContacts.forEach((c) => {
           const k = contactKey(c);
-          // If all selected → deselect all; otherwise → select unselected
           if (allSelected || !selectedKeys?.has(k)) onToggle(c, k);
         });
       }}
@@ -684,6 +697,7 @@ export function RichMessageContent({
               <SelectAllButton
                 contacts={previewContacts}
                 selectedKeys={selectedContactKeys}
+                enrichedKeys={enrichedContactKeys}
                 onToggle={onToggleContact}
               />
             ) : undefined
@@ -696,6 +710,7 @@ export function RichMessageContent({
                 companyName={companyName}
                 contacts={contacts}
                 selectedKeys={selectedContactKeys}
+                enrichedKeys={enrichedContactKeys}
                 onToggle={onToggleContact}
               />
             )

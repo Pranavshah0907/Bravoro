@@ -1,5 +1,10 @@
 import type { StructuredData, Credits } from "./types";
 
+function normalizeDomain(d: string | undefined | null): string {
+  if (!d) return "";
+  return d.trim().toLowerCase().replace(/^(?:https?:\/\/)?(?:www\.)?/, "").replace(/\/+$/, "");
+}
+
 /** Map recruiting agent's "candidates" key → standard "contacts" key */
 function normalizeCandidates(data: StructuredData | null): void {
   if (!data) return;
@@ -13,6 +18,20 @@ function normalizeCandidates(data: StructuredData | null): void {
 }
 
 /** Map n8n enrichment field names to ContactData interface */
+function normalizeStructuredDomains(data: StructuredData | null): void {
+  if (!data) return;
+  if (data.companies) {
+    for (const company of data.companies) {
+      company.domain = normalizeDomain(company.domain);
+    }
+  }
+  if (data.contacts) {
+    for (const contact of data.contacts) {
+      contact.companyDomain = normalizeDomain(contact.companyDomain);
+    }
+  }
+}
+
 function normalizeEnrichedContacts(data: StructuredData | null): void {
   if (!data?.contacts) return;
   for (const contact of data.contacts) {
@@ -106,6 +125,7 @@ export function parseN8nResponse(item: Record<string, unknown>): {
         structuredData = parsed as StructuredData;
         normalizeCandidates(structuredData);
         normalizeEnrichedContacts(structuredData);
+        normalizeStructuredDomains(structuredData);
       }
     }
   }
@@ -144,6 +164,7 @@ export function parseN8nResponse(item: Record<string, unknown>): {
           const parsed = rawParsed as StructuredData;
           normalizeCandidates(parsed);
           normalizeEnrichedContacts(parsed);
+          normalizeStructuredDomains(parsed);
           if (
             (Array.isArray(parsed.companies) && parsed.companies.length > 0) ||
             (Array.isArray(parsed.contacts) && parsed.contacts.length > 0)

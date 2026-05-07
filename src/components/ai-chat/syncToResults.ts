@@ -13,27 +13,31 @@ interface ChatMessage {
 
 /* ── Gather data from all messages in the conversation ─────────── */
 
+function normDomain(d: string | undefined | null): string {
+  if (!d) return "";
+  return d.trim().toLowerCase().replace(/^(?:https?:\/\/)?(?:www\.)?/, "").replace(/\/+$/, "");
+}
+
 interface GatheredCompany {
   company: CompanyData;
   jobs: Array<{ title: string; url: string; postedAt: string }>;
 }
 
 function gatherChatData(messages: ChatMessage[]) {
-  // Companies keyed by domain (fallback: name)
   const companiesMap = new Map<string, GatheredCompany>();
-  // Enriched contacts grouped by company key
   const contactsByCompany = new Map<string, ContactData[]>();
+  const nameToKey = new Map<string, string>();
 
   for (const msg of messages) {
     if (msg.role !== "assistant") continue;
     const data = (msg.metadata as MessageMetadata | null)?.data;
     if (!data) continue;
 
-    // Collect companies with jobs
     if (data.companies?.length) {
       for (const company of data.companies) {
-        const key = (company.domain || company.name || "").toLowerCase();
+        const key = normDomain(company.domain) || (company.name || "").toLowerCase();
         if (!key) continue;
+        if (company.name) nameToKey.set(company.name.toLowerCase(), key);
         const existing = companiesMap.get(key);
         if (!existing) {
           companiesMap.set(key, {
@@ -45,7 +49,6 @@ function gatherChatData(messages: ChatMessage[]) {
             })),
           });
         } else {
-          // Merge new jobs (dedupe by URL)
           const existingUrls = new Set(existing.jobs.map((j) => j.url));
           for (const job of company.jobs || []) {
             if (job.url && !existingUrls.has(job.url)) {
@@ -56,11 +59,14 @@ function gatherChatData(messages: ChatMessage[]) {
       }
     }
 
-    // Collect enriched contacts only (skip previews)
     if (data.contacts?.length) {
       for (const contact of data.contacts) {
         if (contact.previewOnly) continue;
-        const key = (contact.companyDomain || contact.companyName || "other").toLowerCase();
+        let key = normDomain(contact.companyDomain) || (contact.companyName || "other").toLowerCase();
+        if (!contact.companyDomain && contact.companyName) {
+          const canonical = nameToKey.get(contact.companyName.toLowerCase());
+          if (canonical) key = canonical;
+        }
         if (!contactsByCompany.has(key)) contactsByCompany.set(key, []);
         contactsByCompany.get(key)!.push(contact);
       }
@@ -126,11 +132,8 @@ function buildResultRows(
     result_type: string;
   }> = [];
 
-  const processedKeys = new Set<string>();
-
-  // 1) Companies that have enriched contacts
+  // Only include companies that have enriched contacts
   for (const [companyKey, contacts] of contactsByCompany) {
-    processedKeys.add(companyKey);
     const companyInfo = companiesMap.get(companyKey);
     const jobs = companyInfo?.jobs || [];
     const companyName = contacts[0].companyName || companyInfo?.company.name || companyKey;
@@ -141,45 +144,6 @@ function buildResultRows(
       company_name: companyName,
       domain,
       contact_data: contacts.map((c) => mapContact(c, jobs)),
-      result_type: "enriched",
-    });
-  }
-
-  // 2) Companies with jobs but no enriched contacts (still useful data)
-  for (const [companyKey, { company, jobs }] of companiesMap) {
-    if (processedKeys.has(companyKey)) continue;
-    if (jobs.length === 0) continue;
-
-    // Create a placeholder contact row to carry the jobs
-    rows.push({
-      search_id: searchId,
-      company_name: company.name || companyKey,
-      domain: company.domain || null,
-      contact_data: [
-        {
-          First_Name: "",
-          Last_Name: "",
-          Email: "",
-          LinkedIn: "",
-          Phone_Number_1: "",
-          Phone_Number_2: "",
-          Organization: company.name || "",
-          Domain: company.domain || "",
-          Title: "",
-          Provider: "",
-          job_search_result: {
-            job_search_status: "jobs_found",
-            results: jobs.map((j) => ({
-              job_title: j.title || "",
-              job_link: j.url || "",
-              last_posted_date: j.postedAt || "",
-              company: company.name || "",
-              company_domain: company.domain || "",
-              location: "",
-            })),
-          },
-        },
-      ],
       result_type: "enriched",
     });
   }
@@ -274,7 +238,6 @@ export function hasSyncableData(messages: ChatMessage[]): boolean {
     const data = (msg.metadata as MessageMetadata | null)?.data;
     if (!data) continue;
     if (data.contacts?.some((c) => !c.previewOnly)) return true;
-    if (data.companies?.some((c) => c.jobs?.length > 0)) return true;
   }
   return false;
 }
